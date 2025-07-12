@@ -135,7 +135,7 @@ function HomeContent() {
             <HeroFlags />
           </div>
         </div>
-{/*         <CurrencyRatesWidget /> */}
+        <CurrencyRatesWidget />
 
         <FeaturesSection />
 
