@@ -1,20 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
-  const manifest = {
-    accountAssociation: {
-      header: process.env.FARCASTER_HEADER!,
-      payload: process.env.FARCASTER_PAYLOAD!,
-    },
-    frame: {
-      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME!,
-      version: '1.0.0',
-      iconUrl: `${process.env.NEXT_PUBLIC_URL}/favicon.png`,
-      homeUrl: process.env.NEXT_PUBLIC_URL!,
-    },
-  };
+function withValidProperties(
+  properties: Record<string, undefined | string | string[]>,
+) {
+  return Object.fromEntries(
+    Object.entries(properties).filter(([key, value]) => {
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return !!value;
+    }),
+  );
+}
 
-  return NextResponse.json(manifest);
+export async function GET() {
+  const URL = process.env.NEXT_PUBLIC_URL;
+
+  return Response.json({
+    accountAssociation: {
+      header: process.env.FARCASTER_HEADER,
+      payload: process.env.FARCASTER_PAYLOAD,
+      signature: process.env.FARCASTER_SIGNATURE,
+    },
+    frame: withValidProperties({
+      version: 'next',
+      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
+      iconUrl: `${URL}/icon.png`,
+      homeUrl: URL,
+      imageUrl: `${URL}/api/og/nedapay-frame`,
+      buttonTitle: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
+      splashImageUrl: `${URL}/splash.png`,
+      splashBackgroundColor: '#1e293b',
+      webhookUrl: `${URL}/api/webhook`,
+    }),
+  });
 }
 
 export const dynamic = 'force-dynamic';

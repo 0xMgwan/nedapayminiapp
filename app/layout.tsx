@@ -7,22 +7,55 @@ import { Providers } from './providers';
 import AppToaster from './components/Toaster';
 import {Analytics} from '@vercel/analytics/next';
 
-export const metadata: Metadata = {
-  title: 'NedaPay',
-  description: 'Accept Stablecoins, Swap instantly, Cash Out Easily, Track Transactions',
-  keywords: ['NedaPay', 'Stablecoins', 'Swap', 'Cash Out', 'Track Transactions'],
-  authors: [{ name: 'NedaPay' }],
-  openGraph: {
-    title: 'NedaPay',
-    description: 'Accept Stablecoins, Swap instantly, Cash Out Easily, Track Transactions',
-    type: 'website',
-    locale: 'en',
-    siteName: 'NedaPay',
-  },
-  icons: {
-    icon: '/favicon.png',
-  }
-};
+const URL = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+const PROJECT_NAME = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: PROJECT_NAME,
+    description: 'Seamless crypto payments on Base network with USDC integration. Send money, pay bills, and manage payments globally.',
+    keywords: ['NedaPay', 'Farcaster', 'MiniApp', 'Base', 'USDC', 'Crypto Payments', 'Stablecoins'],
+    authors: [{ name: 'NedaPay' }],
+    openGraph: {
+      title: `${PROJECT_NAME} MiniApp`,
+      description: 'Seamless crypto payments on Base network with USDC integration',
+      type: 'website',
+      locale: 'en',
+      siteName: PROJECT_NAME,
+      images: [
+        {
+          url: `${URL}/api/og/nedapay-frame`,
+          width: 1200,
+          height: 630,
+          alt: `${PROJECT_NAME} MiniApp`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${PROJECT_NAME} MiniApp`,
+      description: 'Seamless crypto payments on Base network with USDC integration',
+      images: [`${URL}/api/og/nedapay-frame`],
+    },
+    other: {
+      'fc:frame': 'vNext',
+      'fc:frame:image': `${URL}/api/og/nedapay-frame`,
+      'fc:frame:button:1': `Launch ${PROJECT_NAME}`,
+      'fc:frame:button:1:action': 'link',
+      'fc:frame:button:1:target': `${URL}/farcaster`,
+      'of:version': 'vNext',
+      'of:accepts:xmtp': '2024-02-01',
+      'of:image': `${URL}/api/og/nedapay-frame`,
+      'of:button:1': `Launch ${PROJECT_NAME}`,
+      'of:button:1:action': 'link',
+      'of:button:1:target': `${URL}/farcaster`,
+    },
+    icons: {
+      icon: '/favicon.png',
+    },
+    manifest: `${URL}/.well-known/farcaster.json`,
+  };
+}
 
 export default function RootLayout({
   children,
