@@ -5,10 +5,10 @@ import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, WalletIcon } from '@heroicons/react/24/outline';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
-import { stablecoins } from '../data/stablecoins';
-import { initiatePaymentOrder } from '../utils/paycrest';
-import { executeUSDCTransaction } from '../utils/wallet';
-import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from '../utils/paycrest';
+import { stablecoins } from './data/stablecoins';
+import { initiatePaymentOrder } from './utils/paycrest';
+import { executeUSDCTransaction } from './utils/wallet';
+import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
 import Image from 'next/image';
 
 type Tab = 'send' | 'pay' | 'deposit' | 'link';
