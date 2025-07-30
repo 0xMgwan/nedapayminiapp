@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import * as LucideReact from "lucide-react";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
@@ -41,6 +42,7 @@ function HomeContent() {
   const [loading, setLoading] = useState(false);
   const { Loader2 } = LucideReact;
   const walletSelectorRef = useRef<{ triggerLogin: () => void } | null>(null);
+  const { setFrameReady, isFrameReady } = useMiniKit();
 
   const toggleFaq = useCallback((index: number) => {
     setExpandedFaqs((prev) => ({
@@ -52,6 +54,13 @@ function HomeContent() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Initialize MiniKit when app is ready
+  useEffect(() => {
+    if (mounted && !isFrameReady) {
+      setFrameReady();
+    }
+  }, [mounted, isFrameReady, setFrameReady]);
 
   if (!mounted) return null;
 

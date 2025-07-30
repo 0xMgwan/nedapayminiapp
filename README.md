@@ -1,175 +1,197 @@
-# NEDA Pay 
-A comprehensive Stablecoins digital payment platform built with Next.js, React, ethers.js, wagmi, Privy, and Coinbase OnchainKit. NEDA Pay offers end-to-end payment solutions for both individuals and businesses, including stablecoin management, fiat offramping, and robust compliance features.
+# NedaPay MiniApp 🚀
+
+A comprehensive Farcaster MiniApp for seamless crypto payments, built on Base network with USDC integration.
+
+## 🌟 Features
+
+### Core Functionality
+- **Send Money**: Transfer USDC to phone numbers across multiple countries
+- **Pay Bills**: Pay for goods, services, and bills using USDC
+- **Deposit/Buy**: Purchase USDC using local currencies
+- **Payment Links**: Generate shareable payment request links
+- **Real-time Rates**: Live exchange rates for multiple currencies
+
+### Advanced Features
+- **Multi-country Support**: Tanzania, Kenya, Nigeria, Uganda, Ghana, and more
+- **Farcaster Integration**: Native MiniApp experience within Farcaster
+- **Wallet Integration**: Seamless connection with Farcaster custody wallets
+- **QR Code Generation**: EIP-681 compatible QR codes for wallet scanning
+- **Transaction History**: Complete payment tracking and history
+- **Responsive Design**: Mobile-first, premium UI/UX
+
+## 🛠 Tech Stack
+
+- **Framework**: Next.js 14 with App Router
+- **Styling**: Tailwind CSS with custom animations
+- **Blockchain**: Base network (Ethereum L2)
+- **Wallet**: Privy Auth + Coinbase OnchainKit MiniKit
+- **Payments**: Paycrest API integration
+- **Database**: Prisma with PostgreSQL
+- **Deployment**: Vercel
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Farcaster account with custody wallet
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/0xMgwan/nedapayminiapp.git
+   cd nedapayminiapp
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   Create `.env.local` file:
+   ```env
+   # Privy Configuration
+   NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
+   PRIVY_APP_SECRET=your_privy_app_secret
+
+   # Coinbase OnchainKit
+   NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key
+
+   # Paycrest API
+   PAYCREST_API_KEY=your_paycrest_api_key
+   PAYCREST_BASE_URL=https://api.paycrest.io
+
+   # Database
+   DATABASE_URL=your_postgresql_url
+
+   # Farcaster MiniApp (Generated via npx create-onchain --manifest)
+   FARCASTER_HEADER=your_farcaster_header
+   FARCASTER_PAYLOAD=your_farcaster_payload
+   FARCASTER_SIGNATURE=your_farcaster_signature
+   NEXT_PUBLIC_URL=your_deployment_url
+   ```
+
+4. **Database Setup**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Run Development Server**
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3001](http://localhost:3001) to view the app.
+
+## 📱 MiniApp Structure
+
+### Main Routes
+- `/farcaster` - Main MiniApp interface
+- `/payment-request` - Payment request handler
+- `/.well-known/farcaster.json` - Farcaster manifest
+
+### Key Components
+- **MiniKitProvider**: Farcaster MiniKit integration
+- **Premium UI Components**: Custom buttons, tabs, and animations
+- **Payment Processing**: USDC transactions on Base network
+- **Multi-currency Support**: Real-time exchange rates
+
+## 🔧 Development
+
+### Generate Farcaster Manifest
+```bash
+npx create-onchain --manifest
+```
+
+### Build for Production
+```bash
+npm run build
+```
+
+### Run Tests
+```bash
+npm test
+```
+
+## 🌍 Supported Countries & Currencies
+
+| Country | Currency | Flag |
+|---------|----------|------|
+| Tanzania | TZS | 🇹🇿 |
+| Kenya | KES | 🇰🇪 |
+| Nigeria | NGN | 🇳🇬 |
+| Uganda | UGX | 🇺🇬 |
+| Ghana | GHS | 🇬🇭 |
+
+## 🔐 Security Features
+
+- **Wallet Security**: Farcaster custody wallet integration
+- **Transaction Signing**: Real wallet signatures required
+- **API Security**: Secure Paycrest API integration
+- **Environment Variables**: Sensitive data protection
+
+## 📊 API Integration
+
+### Paycrest API
+- **Onramp**: Buy USDC with local currencies
+- **Offramp**: Convert USDC to local currencies
+- **Payment Processing**: Handle bill payments and transfers
+
+### Exchange Rates
+- Real-time currency conversion
+- Multiple provider fallbacks
+- Cached rates for performance
+
+## 🎨 UI/UX Features
+
+- **Premium Animations**: Smooth transitions and hover effects
+- **Dark Theme**: Consistent with Farcaster design
+- **Mobile Responsive**: Optimized for mobile devices
+- **Brand Integration**: Base and USDC logos throughout
+- **Accessibility**: WCAG compliant design
+
+## 🚀 Deployment
+
+### Vercel Deployment
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Environment Variables for Production
+Ensure all environment variables are set in your deployment platform.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- **Live Demo**: [Your Deployment URL]
+- **Farcaster Frame**: [Your Frame URL]
+- **Documentation**: [Your Docs URL]
+
+## 👨‍💻 Developer
+
+Built by [David Machuche](https://github.com/0xMgwan)
+
+## 🙏 Acknowledgments
+
+- Farcaster team for MiniKit
+- Base network for infrastructure
+- Coinbase for OnchainKit
+- Paycrest for payment processing
 
 ---
 
-## Table of Contents
-- [NEDA Pay](#neda-pay)
-  - [Table of Contents](#table-of-contents)
-  - [Key Features](#key-features)
-    - [Digital Payment Solutions](#digital-payment-solutions)
-    - [Merchant Features](#merchant-features)
-    - [Compliance \& Security](#compliance--security)
-    - [User Experience](#user-experience)
-  - [Aerodrome Swaps](#aerodrome-swaps)
-  - [Privy Authentication](#privy-authentication)
-  - [Fiat Offramping](#fiat-offramping)
-  - [Architecture](#architecture)
-
----
-
-## Key Features
-
-### Digital Payment Solutions
-- **Stablecoin Management:**
-  - Real-time balance tracking
-  - Secure stablecoin transactions in Base Network
-  - Integration with major stablecoins
-  - Transaction history and analytics
-
-- **Fiat Offramping:**
-  - Direct USDC to fiat conversion
-  - Multiple fiat currency support
-  - Integrated payment processors
-  - Gas abstraction for seamless transactions
-
-### Merchant Features
-- **Business Verification (KYB):**
-  - Multi-step business verification process
-  - Document upload and verification
-  - Business information management
-  - Ownership structure tracking
-  - Corporate agreement acceptance
-
-- **Payment Processing:**
-  - Secure payment links
-  - Invoice creation and management
-  - Mobile withdrawal options
-  - Transaction monitoring
-
-### Compliance & Security
-- **Individual KYC:**
-  - Multi-factor identity verification
-  - Document upload and validation
-  - Personal information management
-  - Financial background assessment
-
-- **Business KYB:**
-  - Comprehensive business verification
-  - Document management system
-  - Ownership structure tracking
-  - Corporate compliance checks
-  - Audit trail and monitoring
-
-- **Security Features:**
-  - Privy Authentication System:
-    - Embedded and external wallet support
-    - Social login integration
-    - Persistent authentication
-  - Data Encryption:
-    - End-to-end encryption
-    - Secure document storage
-    - Compliance with data protection standards
-  - Audit Trail:
-    - Comprehensive activity logging
-    - User action tracking
-    - Compliance monitoring
-
-### User Experience
-- **Modern UI/UX:**
-  - Responsive design
-  - Intuitive navigation
-  - Clear status indicators
-  - Progress tracking
-
-- **Workflow Management:**
-  - Step-by-step verification process
-  - Document upload interface
-  - Status updates and notifications
-  - Review and approval workflow
-
-- **Multi-Wallet Support:**
-  - Connect with MetaMask, Coinbase Wallet, and others by wallet connect or use Privy's embedded wallets.
-  - Persistent wallet connection state across all pages.
-  - ENS (.eth) and Base Name (.base) resolution for user-friendly display.
-
-- **Stablecoin Balances:**
-  - Real-time fetching of ERC-20 balances for supported stablecoins (e.g., cNGN, ZARP, EURC, etc.).
-  - Each stablecoin entry now includes an explicit `decimals` field for precise formatting and conversion.
-  - Shows all stablecoins, but only fetches balances for tokens deployed on the connected network.
-
-- **Network Detection:**
-  - Detects the connected network and prompts users to switch if not on Base Mainnet.
-  - Only fetches balances for tokens on the current chain (using `chainId`).
-
-- **Error Handling:**
-  - Per-token error icons and tooltips for contract call failures (e.g., missing `decimals()` function).
-  - Suppresses uncaught contract errors in the browser console.
-
-- **User Experience:**
-  - Clean, modern UI with clear feedback for network and token issues.
-  - Swap modal displays user-friendly quotes and output estimates, clamped to the correct number of decimals for each token.
-  - Always displays all tokens, with '0' balance for those not on the current network.
-
----
-
-## Aerodrome Swaps
-
-- The dashboard integrates directly with the Aerodrome DEX for token swaps.
-- Supports both stable and volatile pools, using the official Aerodrome router and factory.
-- Swap modal fetches quotes and executes swaps with proper decimals for every supported stablecoin.
-- Output estimates are always formatted for human readability, based on each token's decimals.
-
----
-
-## Privy Authentication
-
-NEDA Pay uses Privy for comprehensive authentication and wallet management:
-
-- **Embedded Wallets:**
-  - Users can create wallets directly within the application.
-  - No need to download additional wallet extensions.
-  - Secured by Privy's infrastructure with MPC (Multi-Party Computation).
-  - Gas abstraction available - users don't need to hold ETH for transaction fees.
-
-- **External Wallet Support:**
-  - Full compatibility with existing EOAs (Externally Owned Accounts).
-  - Supports MetaMask, Coinbase Wallet, WalletConnect, and other popular wallets.
-  - Seamless switching between embedded and external wallets.
-
-- **Authentication Methods:**
-  - Social logins (Farcaster).
-  - Email authentication.
-  - Traditional wallet connection.
-
----
-
-## Fiat Offramping
-
-Comprehensive fiat offramping solution integrated directly into the merchant dashboard:
-
-- **USDC to Fiat Conversion:**
-  - Direct conversion from USDC to local fiat currencies.
-  - Competitive exchange rates with real-time pricing.
-  - Support for multiple fiat currencies based on merchant location.
-
-- **Gas Abstraction:**
-  - Embedded wallet users enjoy gasless transactions during offramping.
-  - Transaction fees are automatically deducted from the conversion amount.
-  - No need to maintain ETH balances for gas fees.
-
-- **Compliance & KYC:**
-  - In progress
-
----
-
-## Architecture
-
-- **Frontend:** Next.js (App Router), React, Tailwind CSS
-- **Authentication:** Privy (embedded wallets + EOA support)
-- **Wallets:** wagmi, ethers.js, Coinbase OnchainKit, viem
-- **State Management:** React Context (GlobalWalletContext)
-- **Stablecoin Data:** TypeScript config in `app/data/stablecoins.ts`
-
-
----
+**Made with ❤️ for the Farcaster ecosystem**

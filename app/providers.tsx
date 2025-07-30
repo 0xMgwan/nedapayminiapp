@@ -8,6 +8,7 @@ import { createConfig as createPrivyConfig } from "@privy-io/wagmi";
 import { WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PrivyProvider } from "@privy-io/react-auth";
+import { MiniKitProvider } from '@coinbase/onchainkit/minikit';
 
 // Create a query client for React Query
 const queryClient = new QueryClient();
@@ -51,7 +52,14 @@ export function Providers(props: { children: ReactNode }) {
         }}
       >
         <QueryClientProvider client={queryClient}>
-          <WagmiProvider config={wagmiConfig}>{props.children}</WagmiProvider>
+          <WagmiProvider config={wagmiConfig}>
+            <MiniKitProvider
+              apiKey={process.env.NEXT_PUBLIC_CDP_CLIENT_API_KEY}
+              chain={base}
+            >
+              {props.children}
+            </MiniKitProvider>
+          </WagmiProvider>
         </QueryClientProvider>
       </PrivyProvider>
     </ThemeProvider>

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     console.log('Payment order initiated successfully:', order);
     return NextResponse.json(order);
   } catch (error) {
-    console.error('Error initiating payment order:', error);
+    console.error('❌ Error initiating payment order:', error);
     if (error instanceof Error) {
       console.error('Error details:', {
         name: error.name,
@@ -85,8 +85,15 @@ export async function POST(request: NextRequest) {
         stack: error.stack
       });
     }
+    
+    // Return more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { message: 'Internal Server Error' },
+      { 
+        message: 'Internal Server Error',
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : 'No stack trace available'
+      },
       { status: 500 }
     );
   }
