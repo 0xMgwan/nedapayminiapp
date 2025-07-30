@@ -53,7 +53,17 @@ function HomeContent() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Detect if accessed from Farcaster and redirect to MiniApp
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isFarcaster = userAgent.includes('farcaster') || 
+                       userAgent.includes('warpcast') ||
+                       window.location !== window.parent.location;
+    
+    if (isFarcaster) {
+      router.push('/farcaster');
+    }
+  }, [router]);
 
   // Initialize MiniKit when app is ready
   useEffect(() => {
