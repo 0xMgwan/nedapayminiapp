@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { stablecoins } from "../data/stablecoins";
@@ -17,7 +17,7 @@ interface PaymentData {
   createdAt: string;
 }
 
-export default function PaymentRequestPage() {
+function PaymentRequestPageContent() {
   const searchParams = useSearchParams();
   const { authenticated, login, user } = usePrivy();
   const { wallets } = useWallets();
@@ -448,5 +448,29 @@ export default function PaymentRequestPage() {
       
       {showSuccessModal && <SuccessModal />}
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function PaymentRequestLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 w-full max-w-md">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-white mb-2">Loading Payment Request</h2>
+          <p className="text-gray-400">Please wait while we load your payment details...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main export with Suspense wrapper
+export default function PaymentRequestPage() {
+  return (
+    <Suspense fallback={<PaymentRequestLoading />}>
+      <PaymentRequestPageContent />
+    </Suspense>
   );
 }
