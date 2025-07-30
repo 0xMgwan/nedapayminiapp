@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         <meta property="fc:frame:image" content="${URL}/api/og/nedapay-frame">
         <meta property="fc:frame:button:1" content="Open ${PROJECT_NAME}">
         <meta property="fc:frame:button:1:action" content="link">
-        <meta property="fc:frame:button:1:target" content="${URL}/farcaster">
+        <meta property="fc:frame:button:1:target" content="${URL}">
         <meta property="fc:frame:button:1:post_url" content="${URL}/api/webhook">
         
         <!-- Open Graph -->
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
           <h1>${PROJECT_NAME} MiniApp</h1>
           <p>Seamless crypto payments on Base network with USDC integration</p>
-          <a href="${URL}/farcaster" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+          <a href="${URL}" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
             Open MiniApp
           </a>
         </div>

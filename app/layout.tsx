@@ -42,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'fc:frame:image': `${URL}/api/og/nedapay-frame`,
       'fc:frame:button:1': `Open ${PROJECT_NAME}`,
       'fc:frame:button:1:action': 'link',
-      'fc:frame:button:1:target': `${URL}/farcaster`,
+      'fc:frame:button:1:target': URL,
       'fc:frame:button:1:post_url': `${URL}/api/webhook`,
       'of:version': 'vNext',
       'of:accepts:xmtp': '2024-02-01',
@@ -50,7 +50,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'of:image': `${URL}/api/og/nedapay-frame`,
       'of:button:1': `Open ${PROJECT_NAME}`,
       'of:button:1:action': 'link',
-      'of:button:1:target': `${URL}/farcaster`,
+      'of:button:1:target': URL,
     },
     icons: {
       icon: '/favicon.png',

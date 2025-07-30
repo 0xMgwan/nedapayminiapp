@@ -26,7 +26,7 @@ export async function GET() {
       version: 'next',
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
       iconUrl: `${URL}/icon.png`,
-      homeUrl: `${URL}/farcaster`,
+      homeUrl: URL,
       imageUrl: `${URL}/api/og/nedapay-frame`,
       buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
@@ -34,7 +34,7 @@ export async function GET() {
       webhookUrl: `${URL}/api/webhook`,
     }),
     miniapp: {
-      url: `${URL}/farcaster`,
+      url: URL,
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
       description: 'Seamless crypto payments on Base network with USDC integration',
       icon: `${URL}/icon.png`,
