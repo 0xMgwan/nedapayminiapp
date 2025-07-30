@@ -7,8 +7,9 @@ import { base } from 'wagmi/chains';
 export function MiniKitContextProvider({ children }: { children: ReactNode }) {
   return (
     <MiniKitProvider
-      apiKey={process.env.NEXT_PUBLIC_CDP_CLIENT_API_KEY}
+      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY!}
       chain={base}
+      projectId={process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}
     >
       {children}
     </MiniKitProvider>

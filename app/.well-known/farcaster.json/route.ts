@@ -26,7 +26,7 @@ export async function GET() {
       version: 'next',
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
       iconUrl: `${URL}/icon.png`,
-      homeUrl: URL,
+      homeUrl: `${URL}/farcaster`,
       imageUrl: `${URL}/api/og/nedapay-frame`,
       buttonTitle: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
