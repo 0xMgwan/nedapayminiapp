@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import * as LucideReact from "lucide-react";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
-import { stablecoins } from "./data/stablecoins";
-import WalletSelector from "./components/WalletSelector";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import { stablecoins } from "../data/stablecoins";
+import WalletSelector from "../components/WalletSelector";
 import { useRef } from "react";
-import Flags from "./components/Flags";
-import HeroFeaturesHomePage from "./components/HeroFeaturesHomePage";
+import Flags from "../components/Flags";
+import HeroFeaturesHomePage from "../components/HeroFeaturesHomePage";
 import {
   Globe2,
   Zap,
@@ -24,12 +24,12 @@ import {
   TrendingUp,
   PlayCircle,
 } from "lucide-react";
-import FeaturesSection from "./components/FeaturesSection";
-import HowItWorksSection from "./components/HowItWorksSection";
-import FaqSection from "./components/FaqSection";
-import HeroFlags from "./components/HeroFlags";
-import Supporters from "./components/SupportersSection";
-import YouTubeEmbedButton from "./components/YouTubeEmbedButton";
+import FeaturesSection from "../components/FeaturesSection";
+import HowItWorksSection from "../components/HowItWorksSection";
+import FaqSection from "../components/FaqSection";
+import HeroFlags from "../components/HeroFlags";
+import Supporters from "../components/SupportersSection";
+import YouTubeEmbedButton from "../components/YouTubeEmbedButton";
 import CurrencyRatesWidget from "@/offramp/RatesComponents";
 
 function HomeContent() {
