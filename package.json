@@ -8,7 +8,15 @@
     "url": "https://github.com/0xMgwan/nedapayminiapp.git"
   },
   "author": "David Machuche <david@nedapay.com>",
-  "keywords": ["farcaster", "miniapp", "crypto", "payments", "usdc", "base", "blockchain"],
+  "keywords": [
+    "farcaster",
+    "miniapp",
+    "crypto",
+    "payments",
+    "usdc",
+    "base",
+    "blockchain"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -22,6 +30,7 @@
     "@biconomy/abstractjs": "^1.0.18",
     "@coinbase/onchainkit": "^0.38.7",
     "@emailjs/browser": "^4.4.1",
+    "@farcaster/miniapp-sdk": "^0.1.8",
     "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.1.1",

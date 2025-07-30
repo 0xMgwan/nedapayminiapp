@@ -28,11 +28,18 @@ export async function GET() {
       iconUrl: `${URL}/icon.png`,
       homeUrl: `${URL}/farcaster`,
       imageUrl: `${URL}/api/og/nedapay-frame`,
-      buttonTitle: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
+      buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
       webhookUrl: `${URL}/api/webhook`,
     }),
+    miniapp: {
+      url: `${URL}/farcaster`,
+      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
+      description: 'Seamless crypto payments on Base network with USDC integration',
+      icon: `${URL}/icon.png`,
+      manifest: `${URL}/.well-known/farcaster.json`,
+    },
   });
 }
 
