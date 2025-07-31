@@ -94,8 +94,13 @@ export default function FarcasterMiniApp() {
   const { authenticated, user, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
-  // Get connected wallet info - prioritize embedded wallets for social logins
-  const connectedWallet = wallets[0]; // Use the first available wallet (embedded or external)
+  // Get connected wallet info - prioritize main wallets over embedded wallets
+  const connectedWallet = wallets.find(wallet => 
+    wallet.connectorType === 'coinbase_wallet' || 
+    wallet.connectorType === 'metamask' ||
+    wallet.connectorType === 'wallet_connect'
+  ) || wallets.find(wallet => wallet.connectorType === 'embedded') || wallets[0];
+  
   const walletAddress = connectedWallet?.address;
   
   // Debug wallet info

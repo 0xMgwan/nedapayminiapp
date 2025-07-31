@@ -35,14 +35,20 @@ export function Providers(props: { children: ReactNode }) {
         appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
         config={{
           appearance: {
-            walletList: ['metamask', 'coinbase_wallet', 'wallet_connect', 'binance', 'bybit_wallet', 'okx_wallet'],
+            walletList: ['coinbase_wallet', 'metamask', 'wallet_connect'],
             walletChainType: 'ethereum-only',
-            showWalletLoginFirst: false,
+            showWalletLoginFirst: true,
+            theme: 'light',
+            accentColor: '#8B5CF6',
           },
           embeddedWallets: {
             ethereum: {
               createOnLogin: "users-without-wallets",
             },
+          },
+          // Handle iframe contexts like Farcaster
+          mfa: {
+            noPromptOnMfaRequired: true,
           },
           defaultChain: base,
           // WalletConnect configuration for Reown
