@@ -85,9 +85,21 @@ export default function FarcasterMiniApp() {
   const { authenticated, user, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
-  // Get connected wallet info
-  const connectedWallet = wallets.find(wallet => wallet.connectorType !== 'embedded') || wallets[0];
+  // Get connected wallet info - prioritize embedded wallets for social logins
+  const connectedWallet = wallets[0]; // Use the first available wallet (embedded or external)
   const walletAddress = connectedWallet?.address;
+  
+  // Debug wallet info
+  useEffect(() => {
+    if (connectedWallet) {
+      console.log('Connected Wallet Info:', {
+        address: connectedWallet.address,
+        connectorType: connectedWallet.connectorType,
+        walletClientType: connectedWallet.walletClientType,
+        isEmbedded: connectedWallet.connectorType === 'embedded'
+      });
+    }
+  }, [connectedWallet]);
   
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
   
