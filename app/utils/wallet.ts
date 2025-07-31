@@ -21,17 +21,39 @@ export async function executeUSDCTransaction(
       throw new Error('No wallet provider found');
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
+    // Check if ethereum provider is available
+    if (!window.ethereum.request) {
+      throw new Error('Invalid wallet provider');
+    }
+
+    // Request account access if needed
+    await (window.ethereum as any).request({ method: 'eth_requestAccounts' });
+
+    // Use ethers v5 syntax
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    
+    // Get the connected address
+    const signerAddress = await signer.getAddress();
+    console.log('Connected wallet address:', signerAddress);
     
     // Create contract instance
     const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, signer);
     
-    // Convert amount to USDC decimals (6 decimals)
-    const amountInWei = ethers.parseUnits(amount.toString(), 6);
+    // Convert amount to USDC decimals (6 decimals) - ethers v5 syntax
+    const amountInWei = ethers.utils.parseUnits(amount.toString(), 6);
+    
+    console.log('Executing USDC transfer:', {
+      to: toAddress,
+      amount: amount,
+      amountInWei: amountInWei.toString(),
+      from: signerAddress
+    });
     
     // Execute the transfer
     const tx = await usdcContract.transfer(toAddress, amountInWei);
+    
+    console.log('Transaction submitted:', tx.hash);
     
     // Wait for transaction confirmation
     const receipt = await tx.wait();
@@ -40,13 +62,24 @@ export async function executeUSDCTransaction(
       hash: receipt.hash,
       to: toAddress,
       amount: amount,
-      description: description
+      description: description,
+      status: receipt.status
     });
     
     return receipt.status === 1;
-  } catch (error) {
+  } catch (error: any) {
     console.error('USDC transaction failed:', error);
-    return false;
+    
+    // Provide more specific error messages
+    if (error?.message?.includes('user rejected')) {
+      throw new Error('Transaction was rejected by user');
+    } else if (error?.message?.includes('insufficient funds')) {
+      throw new Error('Insufficient USDC balance');
+    } else if (error?.message?.includes('gas')) {
+      throw new Error('Transaction failed due to gas issues');
+    } else {
+      throw new Error(`Blockchain transaction failed: ${error?.message || 'Unknown error'}`);
+    }
   }
 }
 
@@ -56,11 +89,12 @@ export async function getUSDCBalance(walletAddress: string): Promise<string> {
       return '0';
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    // Use ethers v5 syntax
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
     const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, provider);
     
     const balance = await usdcContract.balanceOf(walletAddress);
-    const formattedBalance = ethers.formatUnits(balance, 6);
+    const formattedBalance = ethers.utils.formatUnits(balance, 6);
     
     return formattedBalance;
   } catch (error) {
