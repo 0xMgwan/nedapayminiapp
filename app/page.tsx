@@ -49,6 +49,7 @@ export default function FarcasterMiniApp() {
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
   const [amount, setAmount] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [recipientName, setRecipientName] = useState('');
   const [tillNumber, setTillNumber] = useState('');
   const [businessNumber, setBusinessNumber] = useState('');
   // Removed duplicate walletAddress state - using connectedWallet?.address directly
@@ -330,9 +331,9 @@ export default function FarcasterMiniApp() {
       const usdcAmount = currency === 'local' ? (paymentAmount / rate).toFixed(6) : paymentAmount.toFixed(6);
       
       // Execute the blockchain transaction
-      const blockchainSuccess = await executeUSDCTransaction(paymentOrder.data.receiveAddress, parseFloat(usdcAmount));
+      const blockchainResult = await executeUSDCTransaction(paymentOrder.data.receiveAddress, parseFloat(usdcAmount));
       
-      if (!blockchainSuccess) {
+      if (!blockchainResult.success) {
         throw new Error('Blockchain transaction failed');
       }
       
@@ -342,7 +343,8 @@ export default function FarcasterMiniApp() {
         success: true,
         orderId: paymentOrder.data?.id || 'unknown',
         paymentOrder: paymentOrder,
-        amount: usdcAmount
+        amount: usdcAmount,
+        hash: blockchainResult.hash
       };
     } catch (error: any) {
       console.error('Paycrest transaction failed:', error);
@@ -515,13 +517,13 @@ export default function FarcasterMiniApp() {
   }, [amount, tillNumber, businessNumber, paymentType, walletAddress, authenticated, payCurrency, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
 
   const renderSendTab = () => (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Country Selector */}
       <div className="relative">
         <select 
           value={selectedCountry.code}
           onChange={(e) => setSelectedCountry(countries.find(c => c.code === e.target.value) || countries[0])}
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {countries.map((country) => (
             <option key={country.code} value={country.code}>
@@ -533,18 +535,18 @@ export default function FarcasterMiniApp() {
       </div>
 
       {/* Send Money Button */}
-      <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm transition-colors">
+      <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors">
         Send Money
       </button>
 
       {/* Mobile Money Provider */}
       <div>
-        <label className="block text-sm text-gray-300 font-medium mb-1.5">Select Mobile Money Provider</label>
+        <label className="block text-xs text-gray-300 font-medium mb-1">Select Mobile Money Provider</label>
         <div className="relative">
           <select 
             value={selectedInstitution}
             onChange={(e) => setSelectedInstitution(e.target.value)}
-            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-xl px-4 py-3 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
+            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
           >
             <option value="">Choose provider...</option>
             {institutions.map((institution) => (
@@ -553,30 +555,42 @@ export default function FarcasterMiniApp() {
               </option>
             ))}
           </select>
-          <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
         </div>
+      </div>
+
+      {/* Recipient Name */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">Recipient Name</label>
+        <input
+          type="text"
+          value={recipientName}
+          onChange={(e) => setRecipientName(e.target.value)}
+          placeholder="John Doe"
+          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       {/* Phone Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1.5">Enter Telephone Number</label>
+        <label className="block text-xs text-gray-400 mb-1">Enter Telephone Number</label>
         <input
           type="text"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
           placeholder="089999"
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       {/* Amount Input with Currency Switching */}
       <div>
-        <div className="flex justify-between items-center mb-1.5">
+        <div className="flex justify-between items-center mb-1">
           <label className="text-xs text-gray-400">Enter Amount</label>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <button 
               onClick={() => setSendCurrency('local')}
-              className={`relative px-4 py-2 text-xs rounded-xl font-bold transition-all duration-300 ease-out overflow-hidden group ${
+              className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group ${
                 sendCurrency === 'local' 
                   ? 'bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 text-white shadow-xl shadow-orange-500/30 transform scale-110 border-2 border-orange-400/50' 
                   : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-orange-400/30 active:scale-95'
@@ -608,7 +622,7 @@ export default function FarcasterMiniApp() {
             
             <button 
               onClick={() => setSendCurrency('usdc')}
-              className={`relative px-4 py-2 text-xs rounded-xl font-bold transition-all duration-300 ease-out overflow-hidden group flex items-center gap-2 ${
+              className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group flex items-center gap-1 ${
                 sendCurrency === 'usdc' 
                   ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
                   : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30 active:scale-95'
@@ -642,7 +656,7 @@ export default function FarcasterMiniApp() {
             </button>
           </div>
         </div>
-        <div className="bg-slate-700 rounded-lg px-3 py-3">
+        <div className="bg-slate-700 rounded-lg px-3 py-2">
           <div className="flex items-center">
             <span className="text-sm text-gray-400 mr-2">
               {sendCurrency === 'local' ? selectedCountry.currency : 'USDC'}
@@ -653,14 +667,14 @@ export default function FarcasterMiniApp() {
               onChange={(e) => setAmount(e.target.value)}
               placeholder={sendCurrency === 'local' ? '1000' : '1.5'}
               step={sendCurrency === 'local' ? '1' : '0.01'}
-              className="bg-transparent text-white text-lg font-light flex-1 focus:outline-none"
+              className="bg-transparent text-white text-base font-light flex-1 focus:outline-none"
             />
           </div>
         </div>
         
         {/* Currency Conversion Display */}
         {amount && (
-          <div className="mt-2 text-center text-sm text-gray-400 font-medium">
+          <div className="mt-1 text-center text-xs text-gray-400 font-medium">
             {sendCurrency === 'local' ? (
               <span>≈ {(parseFloat(amount) / parseFloat(currentRate)).toFixed(4)} USDC</span>
             ) : (
@@ -671,18 +685,18 @@ export default function FarcasterMiniApp() {
       </div>
 
       {/* Payment Details */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex justify-between items-center">
           <span className="text-gray-400 text-xs">You'll pay</span>
-          <div className="flex items-center gap-1.5">
-            <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
-            <span className="text-white text-sm">Base</span>
+          <div className="flex items-center gap-1">
+            <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
+            <span className="text-white text-xs">Base</span>
             <ChevronDownIcon className="w-3 h-3 text-gray-400" />
           </div>
         </div>
         
         <div className="text-right">
-          <div className="text-sm text-gray-400">
+          <div className="text-xs text-gray-400">
             Balance: <span className="text-blue-400 font-medium flex items-center gap-1">
               {walletBalance}
               <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
@@ -696,7 +710,7 @@ export default function FarcasterMiniApp() {
           1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
         </div>
 
-        <div className="space-y-1 text-xs">
+        <div className="space-y-0.5 text-xs">
           <div className="flex justify-between">
             <span className="text-gray-400">Total {selectedCountry.currency}</span>
             <span className="text-white">{paymentDetails.totalLocal} {selectedCountry.currency}</span>
@@ -1619,10 +1633,10 @@ export default function FarcasterMiniApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-3">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-2">
       <div className="max-w-sm mx-auto">
         {/* Top Header with Wallet */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <Image 
               src="/NEDApayLogo.png" 
@@ -1677,7 +1691,7 @@ export default function FarcasterMiniApp() {
         </div>
 
         {/* Floating Rates Ticker */}
-        <div className="mb-4 relative overflow-hidden bg-gradient-to-r from-purple-900/20 via-blue-900/20 to-indigo-900/20 backdrop-blur-sm rounded-xl py-2">
+        <div className="mb-2 relative overflow-hidden bg-gradient-to-r from-purple-900/20 via-blue-900/20 to-indigo-900/20 backdrop-blur-sm rounded-lg py-1.5">
           <div className="flex animate-scroll-left whitespace-nowrap">
             {/* First set of rates */}
             {Object.entries(floatingRates).map(([currency, data]) => {
@@ -1798,8 +1812,8 @@ export default function FarcasterMiniApp() {
 
 
         {/* Tab Navigation */}
-        <div className="bg-slate-900/90 rounded-2xl p-2 mb-4 border border-slate-700/50 shadow-2xl">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="bg-slate-900/90 rounded-xl p-1.5 mb-2 border border-slate-700/50 shadow-2xl">
+          <div className="grid grid-cols-4 gap-1">
             {[
               { key: 'send' as Tab, label: 'Send', icon: ArrowUpIcon },
               { key: 'pay' as Tab, label: 'Pay', icon: CurrencyDollarIcon },
@@ -1809,7 +1823,7 @@ export default function FarcasterMiniApp() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`relative py-4 px-3 rounded-xl text-sm font-bold transition-all duration-300 ease-out flex items-center justify-center gap-2 overflow-hidden group ${
+                className={`relative py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 ease-out flex items-center justify-center gap-1 overflow-hidden group ${
                   activeTab === key
                     ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 text-white shadow-2xl shadow-blue-500/30 transform scale-105 border-2 border-blue-400/50'
                     : 'text-white bg-slate-800/60 hover:bg-slate-700/80 hover:scale-102 hover:shadow-lg border-2 border-transparent hover:border-slate-600/30 active:scale-95 active:shadow-inner'
@@ -1846,7 +1860,7 @@ export default function FarcasterMiniApp() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-gray-800 rounded-2xl p-4">
+        <div className="bg-gray-800 rounded-xl p-3">
           {renderTabContent()}
         </div>
       </div>

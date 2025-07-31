@@ -14,7 +14,7 @@ export async function executeUSDCTransaction(
   toAddress: string, 
   amount: number, 
   description?: string
-): Promise<boolean> {
+): Promise<{ success: boolean; hash: string }> {
   try {
     // Get the provider and signer from the connected wallet
     if (typeof window === 'undefined' || !window.ethereum) {
@@ -66,7 +66,10 @@ export async function executeUSDCTransaction(
       status: receipt.status
     });
     
-    return receipt.status === 1;
+    return {
+      success: receipt.status === 1,
+      hash: receipt.hash
+    };
   } catch (error: any) {
     console.error('USDC transaction failed:', error);
     
