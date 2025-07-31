@@ -12,22 +12,17 @@ export async function GET(req: NextRequest) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>${PROJECT_NAME} MiniApp</title>
   
-  <!-- Farcaster Frame Meta Tags (EXACT FORMAT) -->
+  <!-- Farcaster MiniApp Embed Detection (CORRECT FORMAT per docs) -->
+  <meta name="fc:miniapp" content='{"version":"1","imageUrl":"${URL}/api/og/nedapay-frame","button":{"title":"Open ${PROJECT_NAME}","action":{"type":"launch_miniapp","url":"${URL}","name":"${PROJECT_NAME}","splashImageUrl":"${URL}/splash.png","splashBackgroundColor":"#1e293b"}}}'>
+  <!-- Backward compatibility -->
+  <meta name="fc:frame" content='{"version":"1","imageUrl":"${URL}/api/og/nedapay-frame","button":{"title":"Open ${PROJECT_NAME}","action":{"type":"launch_frame","url":"${URL}","name":"${PROJECT_NAME}","splashImageUrl":"${URL}/splash.png","splashBackgroundColor":"#1e293b"}}}'>
+  
+  <!-- Traditional Frame Meta Tags -->
   <meta property="fc:frame" content="vNext">
   <meta property="fc:frame:image" content="${URL}/api/og/nedapay-frame">
   <meta property="fc:frame:button:1" content="Open ${PROJECT_NAME}">
   <meta property="fc:frame:button:1:action" content="link">
   <meta property="fc:frame:button:1:target" content="${URL}">
-  
-  <!-- Farcaster MiniApp Embed Detection -->
-  <meta name="farcaster:frame" content="vNext">
-  <meta name="farcaster:frame:miniapp" content="true">
-  <meta name="farcaster:frame:miniapp:url" content="${URL}">
-  <meta name="farcaster:frame:miniapp:manifest" content="${URL}/.well-known/farcaster.json">
-  
-  <!-- Additional Embed Detection -->
-  <meta name="fc:frame" content="vNext">
-  <meta name="fc:frame:miniapp" content="true">
   
   <!-- Open Graph -->
   <meta property="og:title" content="${PROJECT_NAME} MiniApp">
