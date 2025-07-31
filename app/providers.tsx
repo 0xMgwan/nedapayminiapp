@@ -35,15 +35,14 @@ export function Providers(props: { children: ReactNode }) {
         appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
         config={{
           appearance: {
-            // Prioritize WalletConnect for mobile iframe compatibility
-            walletList: ['wallet_connect', 'coinbase_wallet', 'metamask'],
+            // MiniApp simplified wallet options: only Coinbase Wallet
+            walletList: ['coinbase_wallet'],
             walletChainType: 'ethereum-only',
-            showWalletLoginFirst: true,
+            showWalletLoginFirst: false,
             theme: 'light',
             accentColor: '#8B5CF6',
-            // Optimize for mobile iframe
-            landingHeader: 'Connect Wallet',
-            loginMessage: 'Connect your wallet to continue',
+            landingHeader: 'Connect to NedaPay',
+            loginMessage: 'Connect with Coinbase Wallet, Farcaster, or Email',
           },
           embeddedWallets: {
             ethereum: {
@@ -58,7 +57,7 @@ export function Providers(props: { children: ReactNode }) {
           // WalletConnect configuration for Reown
           walletConnectCloudProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
           // Prioritize Farcaster and social logins for embedded wallet creation
-          loginMethods: ['farcaster', 'google', 'email', 'wallet', 'sms', 'twitter', 'discord', 'github'],
+          loginMethods: ['farcaster', 'email', 'wallet'],
           // Additional iframe-specific settings
           legal: {
             termsAndConditionsUrl: undefined,

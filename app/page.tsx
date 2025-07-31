@@ -89,34 +89,37 @@ export default function FarcasterMiniApp() {
     recipient: string;
     type: 'send' | 'pay';
   } | null>(null);
+  
+  // Track user's preferred wallet selection
+  const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
 
   // Farcaster MiniApp SDK initialization
   const { authenticated, user, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
-  // Get the correct wallet for the current session
-  // Priority: 1) Embedded wallet for social logins, 2) Primary external wallet
+  // SIMPLIFIED MINIAPP WALLET SELECTION: Only Coinbase Wallet and Embedded
   const connectedWallet = (() => {
     if (!authenticated || wallets.length === 0) return null;
     
-    // If user has social login (Gmail, Farcaster, etc.), prioritize embedded wallet
-    if (user?.email || user?.farcaster || user?.google || user?.twitter) {
+    // If user has social login (Farcaster, Email), use embedded wallet
+    const hasSocialLogin = !!(user?.email || user?.farcaster);
+    if (hasSocialLogin) {
       const embeddedWallet = wallets.find(w => w.connectorType === 'embedded');
       if (embeddedWallet) {
+        console.log('📱 Using embedded wallet for social login');
         return embeddedWallet;
       }
     }
     
-    // For external wallets, prioritize based on wallet type hierarchy
-    // This helps distinguish between MetaMask and Coinbase when both are connected
-    const metamaskWallet = wallets.find(w => w.connectorType === 'metamask');
+    // Otherwise, use Coinbase Wallet (the only external wallet option)
     const coinbaseWallet = wallets.find(w => w.connectorType === 'coinbase_wallet');
-    const walletConnectWallet = wallets.find(w => w.connectorType === 'wallet_connect');
+    if (coinbaseWallet) {
+      console.log('🔵 Using Coinbase Wallet');
+      return coinbaseWallet;
+    }
     
-    // Return the first available wallet in priority order
-    // Note: The user's last action should determine which one is "active"
-    // For now, we'll use the most recently connected (last in array)
-    return wallets[wallets.length - 1];
+    // Fallback: use first available wallet
+    return wallets[0];
   })();
   
   const walletAddress = connectedWallet?.address;
@@ -144,16 +147,13 @@ export default function FarcasterMiniApp() {
       fullAddress: w.address
     })));
     
-    // Show specific wallet types found
-    const metamaskWallet = wallets.find(w => w.connectorType === 'metamask');
+    // Show specific wallet types found (MiniApp: only Coinbase and Embedded)
     const coinbaseWallet = wallets.find(w => w.connectorType === 'coinbase_wallet');
     const embeddedWallet = wallets.find(w => w.connectorType === 'embedded');
     
-    console.log('Wallet types found:', {
-      hasMetaMask: !!metamaskWallet,
+    console.log('MiniApp wallet types found:', {
       hasCoinbase: !!coinbaseWallet,
       hasEmbedded: !!embeddedWallet,
-      metamaskAddress: metamaskWallet?.address?.substring(0, 10) + '...',
       coinbaseAddress: coinbaseWallet?.address?.substring(0, 10) + '...',
       embeddedAddress: embeddedWallet?.address?.substring(0, 10) + '...'
     });
@@ -162,14 +162,25 @@ export default function FarcasterMiniApp() {
       const isEmbedded = connectedWallet.connectorType === 'embedded';
       const hasSocialLogin = !!(user?.email || user?.farcaster || user?.google || user?.twitter);
       
-      console.log('Selected Wallet:', {
+      console.log('🔍 SELECTED WALLET:', {
         address: connectedWallet.address,
+        shortAddress: connectedWallet.address?.substring(0, 6) + '...' + connectedWallet.address?.substring(-4),
         connectorType: connectedWallet.connectorType,
         walletClientType: connectedWallet.walletClientType,
         isEmbedded: isEmbedded,
         loginMethod: isEmbedded ? 'Social/Embedded' : 'External Wallet',
-        selectionReason: hasSocialLogin && isEmbedded ? 'Prioritized embedded wallet for social login' : 'Most recent wallet'
+        selectionReason: hasSocialLogin && isEmbedded ? 'Social login → embedded wallet' : 'Last wallet in array',
+        arrayIndex: wallets.findIndex(w => w.address === connectedWallet.address)
       });
+      
+      // CRITICAL: Show if this matches what user expects (MiniApp: Coinbase or Embedded only)
+      if (connectedWallet.connectorType === 'coinbase_wallet') {
+        console.log('🔵 USER SHOULD SEE: Coinbase Wallet info');
+      } else if (connectedWallet.connectorType === 'embedded') {
+        console.log('📱 USER SHOULD SEE: Embedded/Social wallet info (Farcaster or Email)');
+      } else {
+        console.log('❓ UNEXPECTED WALLET TYPE:', connectedWallet.connectorType, connectedWallet.walletClientType);
+      }
       
       // Show user info for embedded wallets
       if (isEmbedded && user) {
@@ -189,6 +200,19 @@ export default function FarcasterMiniApp() {
     }
     console.log('===================');
   }, [connectedWallet, wallets, user]);
+  
+  // Track wallet connections and set preferred wallet
+  useEffect(() => {
+    if (wallets.length > 0 && authenticated) {
+      const latestWallet = wallets[wallets.length - 1];
+      
+      // If this is a new external wallet connection, set it as preferred
+      if (latestWallet.connectorType !== 'embedded') {
+        console.log('Setting preferred wallet:', latestWallet.connectorType);
+        setPreferredWalletType(latestWallet.connectorType);
+      }
+    }
+  }, [wallets.length, authenticated]);
   
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
   
