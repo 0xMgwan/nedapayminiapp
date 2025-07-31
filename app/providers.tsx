@@ -35,11 +35,15 @@ export function Providers(props: { children: ReactNode }) {
         appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
         config={{
           appearance: {
-            walletList: ['coinbase_wallet', 'metamask', 'wallet_connect'],
+            // Prioritize WalletConnect for mobile iframe compatibility
+            walletList: ['wallet_connect', 'coinbase_wallet', 'metamask'],
             walletChainType: 'ethereum-only',
             showWalletLoginFirst: true,
             theme: 'light',
             accentColor: '#8B5CF6',
+            // Optimize for mobile iframe
+            landingHeader: 'Connect Wallet',
+            loginMessage: 'Connect your wallet to continue',
           },
           embeddedWallets: {
             ethereum: {
@@ -55,6 +59,11 @@ export function Providers(props: { children: ReactNode }) {
           walletConnectCloudProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
           // Allow framing in iframe contexts like Farcaster
           loginMethods: ['wallet', 'email', 'sms', 'google', 'twitter', 'discord', 'github', 'farcaster'],
+          // Additional iframe-specific settings
+          legal: {
+            termsAndConditionsUrl: undefined,
+            privacyPolicyUrl: undefined,
+          },
         }}
       >
         <QueryClientProvider client={queryClient}>
