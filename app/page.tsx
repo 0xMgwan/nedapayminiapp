@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
-import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, WalletIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon } from '@heroicons/react/24/outline';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
@@ -666,27 +666,23 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
         
-        <div className="text-right">
+        <div className="text-right mb-3">
           <div className="text-xs text-gray-400">
-            Balance: <span className="text-blue-400 font-medium flex items-center gap-1">
-              {walletBalance}
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-              USDC
-             </span>
-            <button 
+            Balance: <button 
               onClick={() => setAmount(walletBalance)}
-              className="ml-2 text-blue-500 text-xs hover:text-blue-400 transition-colors"
+              className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
             >
-              {walletBalance} USDC
+              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+              USDC {walletBalance}
             </button>
           </div>
         </div>
 
-        <div className="text-center text-xs text-gray-400">
+        <div className="text-center text-xs text-gray-400 mb-4">
           1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
         </div>
 
-        <div className="space-y-0.5 text-xs">
+        <div className="space-y-1 text-xs mb-4">
           <div className="flex justify-between">
             <span className="text-gray-400">Total {selectedCountry.currency}</span>
             <span className="text-white">{paymentDetails.totalLocal} {selectedCountry.currency}</span>
@@ -707,7 +703,7 @@ export default function FarcasterMiniApp() {
         <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 rounded-full p-1 overflow-hidden">
           {/* Progress Background */}
           <div 
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full transition-all duration-300 ease-out"
+            className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full transition-all duration-150 ease-in-out"
             style={{ width: `${swipeProgress}%` }}
           />
           
@@ -715,7 +711,7 @@ export default function FarcasterMiniApp() {
           <div className="relative flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
-                <ArrowUpIcon className="w-4 h-4 text-green-600" />
+                <ArrowRightIcon className="w-4 h-4 text-green-600" />
               </div>
               <span className="text-white font-medium text-sm">
                 {isSwipeComplete ? '✅ Sending...' : 'Swipe to Send'}
@@ -1210,16 +1206,12 @@ export default function FarcasterMiniApp() {
           
           <div className="text-right mb-2">
             <div className="text-sm text-gray-400">
-              Balance: <span className="text-blue-400 font-medium flex items-center gap-1">
-                {walletBalance}
-                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                USDC
-              </span>
-              <button 
+              Balance: <button 
                 onClick={() => setAmount(walletBalance)}
-                className="ml-2 text-blue-500 text-xs hover:text-blue-400 transition-colors"
+                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
               >
-                {walletBalance} USDC
+                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                USDC {walletBalance}
               </button>
             </div>
           </div>
@@ -1253,7 +1245,7 @@ export default function FarcasterMiniApp() {
         <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 rounded-full p-1 overflow-hidden">
           {/* Progress Background */}
           <div 
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-300 ease-out"
+            className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-150 ease-in-out"
             style={{ width: `${swipeProgress}%` }}
           />
           
