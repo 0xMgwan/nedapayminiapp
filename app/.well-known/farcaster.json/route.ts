@@ -22,6 +22,7 @@ export async function GET() {
       screenshotUrls: [
         `${URL}/api/og/nedapay-frame`
       ],
+      webhookUrl: `${URL}/api/webhook`,
       requiredChains: [
         'eip155:8453' // Base mainnet
       ],
