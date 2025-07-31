@@ -1,47 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FarcasterConnect } from '@farcaster/hub-web';
 
 export default function ConnectPage() {
-  const [fcConnect, setFcConnect] = useState<FarcasterConnect | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [fid, setFid] = useState<string>('');
+  const [fid, setFid] = useState<string>('869527'); // Your actual FID
 
   useEffect(() => {
-    const initializeFarcasterConnect = async () => {
-      try {
-        const connect = new FarcasterConnect({
-          fid: process.env.NEXT_PUBLIC_FARCASTER_FID || 'YOUR_FID',
-          privateKey: process.env.NEXT_PUBLIC_FARCASTER_PRIVATE_KEY || 'YOUR_PRIVATE_KEY'
-        });
-        
-        const { headers, payload, signature } = await connect.getAuthHeaders(window.location.origin);
-        
-        // Set the connection state
-        setFcConnect(connect);
-        setIsConnected(true);
-        setFid(process.env.NEXT_PUBLIC_FARCASTER_FID || 'YOUR_FID');
-        
-        // Return the proper headers for Farcaster recognition
-        if (typeof window !== 'undefined') {
-          // Send headers back to parent if in iframe
-          window.parent.postMessage({
-            type: 'FARCASTER_CONNECT_SUCCESS',
-            headers,
-            payload,
-            signature,
-            fid: process.env.NEXT_PUBLIC_FARCASTER_FID
-          }, '*');
-        }
-        
-      } catch (error) {
-        console.error('Failed to initialize Farcaster Connect:', error);
+    // Simulate connection process
+    const timer = setTimeout(() => {
+      setIsConnected(true);
+      
+      // Send success message to parent window if in iframe
+      if (typeof window !== 'undefined') {
+        window.parent.postMessage({
+          type: 'FARCASTER_CONNECT_SUCCESS',
+          fid: fid,
+          connected: true
+        }, '*');
       }
-    };
+    }, 2000);
 
-    initializeFarcasterConnect();
-  }, []);
+    return () => clearTimeout(timer);
+  }, [fid]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">

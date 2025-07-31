@@ -19,6 +19,9 @@ export async function GET() {
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
       universalLink: `${URL}/connect`,
+      screenshotUrls: [
+        `${URL}/api/og/nedapay-frame`
+      ],
       requiredChains: [
         'eip155:8453' // Base mainnet
       ],
