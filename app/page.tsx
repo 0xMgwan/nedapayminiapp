@@ -75,7 +75,7 @@ export default function FarcasterMiniApp() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
     orderId: string;
-    hash: string;
+    hash?: string;
     amount: string;
     recipient: string;
     type: 'send' | 'pay';
@@ -883,7 +883,7 @@ export default function FarcasterMiniApp() {
                 <span className="text-blue-400 text-xs font-medium">Blockchain Transaction</span>
               </div>
               <p className="text-gray-300 font-mono text-xs break-all">
-                {successData.hash.slice(0, 20)}...{successData.hash.slice(-10)}
+                {successData.hash ? `${successData.hash.slice(0, 20)}...${successData.hash.slice(-10)}` : 'Transaction completed'}
               </p>
             </div>
           </div>
@@ -906,7 +906,9 @@ export default function FarcasterMiniApp() {
             </button>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(successData.hash);
+                if (successData.hash) {
+                  navigator.clipboard.writeText(successData.hash);
+                }
                 // Could add a toast here
               }}
               className="bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-4 rounded-xl transition-colors"
