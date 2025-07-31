@@ -44,12 +44,8 @@ const nextConfig = {
         source: '/(.*)',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'ALLOWALL',
-          },
-          {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://*.farcaster.xyz https://*.privy.io https://auth.privy.io https://warpcast.com;",
+            value: "frame-ancestors 'self' https://farcaster.xyz https://*.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wallet.farcaster.xyz https://*.privy.io https://auth.privy.io;",
           },
           {
             key: 'Access-Control-Allow-Origin',

@@ -51,18 +51,26 @@ export function middleware(request: NextRequest) {
     console.log('Middleware: Wallet connection verified, allowing access to protected route');
   }
 
-  return NextResponse.next();
+  // Create response with CORS and framing headers for Farcaster compatibility
+  const response = NextResponse.next();
+  
+  // Add CORS headers
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Add framing headers for Farcaster
+  response.headers.set('Content-Security-Policy', 
+    "frame-ancestors 'self' https://farcaster.xyz https://*.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wallet.farcaster.xyz https://*.privy.io https://auth.privy.io;"
+  );
+  
+  return response;
 }
 
-// Configure the middleware to run on specific paths
+// Configure the middleware to run on ALL paths for CORS
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/payments/:path*',
-    '/payment-link/:path*',
-    '/stablecoins/:path*',
-    '/settings/:path*',
-    '/offramp/:path*'
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
 
