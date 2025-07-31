@@ -674,7 +674,6 @@ export default function FarcasterMiniApp() {
           <div className="flex items-center gap-1">
             <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
             <span className="text-white text-xs">Base</span>
-            <ChevronDownIcon className="w-3 h-3 text-gray-400" />
           </div>
         </div>
         
@@ -924,7 +923,6 @@ export default function FarcasterMiniApp() {
             <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
             <span className="text-white text-sm font-medium">USDC</span>
           </div>
-          <ChevronDownIcon className="w-4 h-4 text-gray-400" />
         </div>
       </div>
 
@@ -1212,7 +1210,6 @@ export default function FarcasterMiniApp() {
             <div className="flex items-center gap-2">
               <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
               <span className="text-white text-sm font-medium">Base</span>
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
             </div>
           </div>
           
