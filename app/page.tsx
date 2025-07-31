@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, WalletIcon } from '@heroicons/react/24/outline';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
@@ -58,7 +58,7 @@ export default function FarcasterMiniApp() {
   const [selectedStablecoin, setSelectedStablecoin] = useState(stablecoins[0]);
   const [generatedLink, setGeneratedLink] = useState('');
   const [paymentType, setPaymentType] = useState<'goods' | 'bill' | 'send'>('goods');
-  const [isFrameReady, setIsFrameReady] = useState(false);
+
   const [isLoadingRate, setIsLoadingRate] = useState(false);
   const [currentRate, setCurrentRate] = useState('2547');
   const [currencies, setCurrencies] = useState<Array<{ code: string; name: string; symbol: string }>>([]);
@@ -263,19 +263,14 @@ export default function FarcasterMiniApp() {
     fetchRate(selectedCountry.currency);
   }, [selectedCountry, fetchRate]);
 
-  // Initialize Farcaster MiniApp SDK
+  // Initialize OnchainKit MiniKit (REQUIRED for proper Farcaster embedding)
+  const { setFrameReady, isFrameReady } = useMiniKit();
+  
   useEffect(() => {
-    const initializeFarcasterSDK = async () => {
-      try {
-        await sdk.actions.ready();
-        setIsFrameReady(true);
-      } catch (error) {
-        console.error('Failed to initialize Farcaster SDK:', error);
-      }
-    };
-    
-    initializeFarcasterSDK();
-  }, []);
+    if (!isFrameReady) {
+      setFrameReady();
+    }
+  }, [setFrameReady, isFrameReady]);
 
   const paymentDetails = calculatePaymentDetails();
 
