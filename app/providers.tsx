@@ -47,7 +47,7 @@ export function Providers(props: { children: ReactNode }) {
           },
           embeddedWallets: {
             ethereum: {
-              createOnLogin: "users-without-wallets",
+              createOnLogin: "all-users", // Create embedded wallet for all users including social logins
             },
           },
           // Handle iframe contexts like Farcaster
@@ -57,8 +57,8 @@ export function Providers(props: { children: ReactNode }) {
           defaultChain: base,
           // WalletConnect configuration for Reown
           walletConnectCloudProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
-          // Allow framing in iframe contexts like Farcaster
-          loginMethods: ['wallet', 'email', 'sms', 'google', 'twitter', 'discord', 'github', 'farcaster'],
+          // Prioritize Farcaster and social logins for embedded wallet creation
+          loginMethods: ['farcaster', 'google', 'email', 'wallet', 'sms', 'twitter', 'discord', 'github'],
           // Additional iframe-specific settings
           legal: {
             termsAndConditionsUrl: undefined,

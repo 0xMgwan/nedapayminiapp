@@ -94,26 +94,51 @@ export default function FarcasterMiniApp() {
   const { authenticated, user, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
-  // Get connected wallet info - prioritize main wallets over embedded wallets
-  const connectedWallet = wallets.find(wallet => 
-    wallet.connectorType === 'coinbase_wallet' || 
-    wallet.connectorType === 'metamask' ||
-    wallet.connectorType === 'wallet_connect'
-  ) || wallets.find(wallet => wallet.connectorType === 'embedded') || wallets[0];
+  // Get the most recently connected wallet (last in array)
+  // This ensures each wallet shows its own address and balance
+  const connectedWallet = wallets.length > 0 ? wallets[wallets.length - 1] : null;
   
   const walletAddress = connectedWallet?.address;
   
-  // Debug wallet info
+  // Debug wallet info and handle wallet changes
   useEffect(() => {
+    console.log('=== WALLET DEBUG ===');
+    console.log('Total wallets:', wallets.length);
+    console.log('All wallets:', wallets.map((w, i) => ({
+      index: i,
+      address: w.address?.substring(0, 10) + '...',
+      type: w.connectorType,
+      client: w.walletClientType
+    })));
+    
     if (connectedWallet) {
-      console.log('Connected Wallet Info:', {
+      const isEmbedded = connectedWallet.connectorType === 'embedded';
+      console.log('Selected Wallet (most recent):', {
         address: connectedWallet.address,
         connectorType: connectedWallet.connectorType,
         walletClientType: connectedWallet.walletClientType,
-        isEmbedded: connectedWallet.connectorType === 'embedded'
+        isEmbedded: isEmbedded,
+        loginMethod: isEmbedded ? 'Social/Embedded' : 'External Wallet'
       });
+      
+      // Show user info for embedded wallets
+      if (isEmbedded && user) {
+        console.log('User Info (for embedded wallet):', {
+          email: user.email?.address,
+          farcaster: user.farcaster?.username,
+          google: user.google?.email,
+          twitter: user.twitter?.username
+        });
+      }
+      
+      // Clear balance immediately when wallet changes
+      setWalletBalance('0.00');
+    } else {
+      console.log('No wallet connected');
+      setWalletBalance('0.00');
     }
-  }, [connectedWallet]);
+    console.log('===================');
+  }, [connectedWallet, wallets]);
   
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
   
@@ -125,17 +150,28 @@ export default function FarcasterMiniApp() {
     }
     
     try {
-      // Try to get provider from connected wallet
-      const connectedWallet = wallets.find(wallet => wallet.address === walletAddress);
+      const isEmbedded = connectedWallet?.connectorType === 'embedded';
+      console.log('Fetching balance for:', {
+        address: walletAddress?.substring(0, 10) + '...',
+        type: connectedWallet?.connectorType,
+        isEmbedded: isEmbedded,
+        method: isEmbedded ? 'Social/Embedded Wallet' : 'External Wallet'
+      });
+      
+      // Use the already-selected connectedWallet directly
       let provider = undefined;
       
       if (connectedWallet) {
         provider = await connectedWallet.getEthereumProvider();
+        console.log('Provider obtained for', isEmbedded ? 'embedded' : 'external', 'wallet');
       }
       
       // Use our utility function to get balance
       const balance = await getUSDCBalance(walletAddress, provider);
-      setWalletBalance(parseFloat(balance).toFixed(2));
+      const formattedBalance = parseFloat(balance).toFixed(2);
+      
+      console.log('Balance fetched successfully:', formattedBalance, 'for', isEmbedded ? 'embedded' : 'external', 'wallet');
+      setWalletBalance(formattedBalance);
       
     } catch (error) {
       console.error('Failed to fetch USDC balance:', error);
@@ -143,7 +179,7 @@ export default function FarcasterMiniApp() {
       const mockBalance = (Math.random() * 100 + 50).toFixed(2);
       setWalletBalance(mockBalance);
     }
-  }, [walletAddress, authenticated, wallets]);
+  }, [walletAddress, authenticated, connectedWallet]);
   
   // Fetch balance when wallet connects
   useEffect(() => {
