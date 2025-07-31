@@ -39,15 +39,36 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     other: {
 
-      // Farcaster MiniApp meta tag (exact format per docs)
-      'fc:miniapp': `{"name":"${PROJECT_NAME}","url":"${URL}","imageUrl":"${URL}/api/og/nedapay-frame"}`,
-      
-      // Farcaster Frame meta tag for backward compatibility
-      'fc:frame': 'vNext',
-      'fc:frame:image': `${URL}/api/og/nedapay-frame`,
-      'fc:frame:button:1': `Open ${PROJECT_NAME}`,
-      'fc:frame:button:1:action': 'link',
-      'fc:frame:button:1:target': URL,
+      // Critical Farcaster MiniApp Embed Detection (WORKING FORMAT)
+      'fc:miniapp': JSON.stringify({
+        version: '1',
+        imageUrl: `${URL}/api/og/nedapay-frame`,
+        button: {
+          title: `Open ${PROJECT_NAME}`,
+          action: {
+            type: 'launch_miniapp',
+            url: URL,
+            name: PROJECT_NAME,
+            splashImageUrl: `${URL}/splash.png`,
+            splashBackgroundColor: '#1e293b'
+          }
+        }
+      }),
+      // Backward compatibility
+      'fc:frame': JSON.stringify({
+        version: '1',
+        imageUrl: `${URL}/api/og/nedapay-frame`,
+        button: {
+          title: `Open ${PROJECT_NAME}`,
+          action: {
+            type: 'launch_frame',
+            url: URL,
+            name: PROJECT_NAME,
+            splashImageUrl: `${URL}/splash.png`,
+            splashBackgroundColor: '#1e293b'
+          }
+        }
+      }),
       
       // OpenFrames
       'of:version': 'vNext',
