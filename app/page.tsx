@@ -90,6 +90,9 @@ export default function FarcasterMiniApp() {
     type: 'send' | 'pay';
   } | null>(null);
   
+  // Wallet disconnection notification state
+  const [showDisconnectionNotice, setShowDisconnectionNotice] = useState(false);
+  
   // Track user's preferred wallet selection
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
 
@@ -200,6 +203,70 @@ export default function FarcasterMiniApp() {
     }
     console.log('===================');
   }, [connectedWallet, wallets, user]);
+  
+  // WALLET DISCONNECTION DETECTION: Listen to wallet events and notify user
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.ethereum) {
+      // Type-safe ethereum provider
+      const ethereum = window.ethereum as any;
+      
+      // Listen for account changes (when user switches wallets or disconnects)
+      const handleAccountsChanged = (newAccounts: string[]) => {
+        console.log('🔄 ACCOUNTS CHANGED:', newAccounts);
+        if (newAccounts.length === 0) {
+          // User disconnected their wallet
+          console.log('🚫 Wallet disconnected from provider');
+          
+          // Show notification to user
+          setShowDisconnectionNotice(true);
+          
+          // Auto-hide notification after 5 seconds
+          setTimeout(() => {
+            setShowDisconnectionNotice(false);
+          }, 5000);
+          
+          // Optionally trigger Privy logout to clean up state
+          if (authenticated) {
+            console.log('🔄 Logging out due to wallet disconnection');
+            setTimeout(() => {
+              logout();
+            }, 2000); // Give user time to see the notification
+          }
+        } else {
+          // User switched accounts - this will trigger a re-render
+          console.log('🔄 User switched to account:', newAccounts[0].substring(0, 8) + '...');
+        }
+      };
+      
+      // Listen for chain changes
+      const handleChainChanged = (chainId: string) => {
+        console.log('🔗 Chain changed to:', chainId);
+      };
+      
+      // Add event listeners with type safety
+      if (ethereum.on) {
+        ethereum.on('accountsChanged', handleAccountsChanged);
+        ethereum.on('chainChanged', handleChainChanged);
+      }
+      
+      // Cleanup function to remove event listeners
+      return () => {
+        if (ethereum.removeListener) {
+          ethereum.removeListener('accountsChanged', handleAccountsChanged);
+          ethereum.removeListener('chainChanged', handleChainChanged);
+        }
+      };
+    }
+  }, [authenticated, logout]);
+  
+  // PRIVY DISCONNECTION DETECTION: Listen to Privy authentication changes
+  useEffect(() => {
+    if (!authenticated && wallets.length === 0) {
+      console.log('🚫 Privy session ended - user logged out');
+      // Clear any cached data when user logs out
+      setWalletBalance('0.00');
+    }
+  }, [authenticated, wallets.length]);
   
   // Track wallet connections and set preferred wallet
   useEffect(() => {
@@ -1742,6 +1809,19 @@ export default function FarcasterMiniApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-2">
+      {/* Wallet Disconnection Notification */}
+      {showDisconnectionNotice && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-600/90 backdrop-blur-sm border border-red-500/50 rounded-lg px-4 py-3 shadow-xl animate-bounce">
+          <div className="flex items-center gap-2 text-white">
+            <span className="text-lg">🚫</span>
+            <div>
+              <p className="font-medium text-sm">Wallet Disconnected</p>
+              <p className="text-xs text-red-200">Please reconnect to continue</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-sm mx-auto">
         {/* Top Header with Wallet */}
         <div className="flex items-center justify-between mb-3">
