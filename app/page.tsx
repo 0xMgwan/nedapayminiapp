@@ -689,7 +689,7 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
 
-        <div className="text-center text-xs text-gray-400 mb-4">
+        <div className="text-center text-xs text-gray-300 mb-4 font-semibold">
           1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
         </div>
 
@@ -930,13 +930,13 @@ export default function FarcasterMiniApp() {
       <div className="relative">
         <button
           onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-xl px-4 py-4 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-3 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{selectedCountry.flag}</span>
-            <span className="text-white font-medium text-lg">{selectedCountry.name}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{selectedCountry.flag}</span>
+            <span className="text-white font-medium text-sm">{selectedCountry.name}</span>
           </div>
-          <ChevronDownIcon className={`w-5 h-5 text-gray-400 transition-transform ${
+          <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${
             isCountryDropdownOpen ? 'rotate-180' : ''
           }`} />
         </button>
@@ -967,10 +967,10 @@ export default function FarcasterMiniApp() {
       </div>
 
       {/* Payment Type Buttons */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         <button
           onClick={() => setPaymentType('goods')}
-          className={`relative py-4 px-4 rounded-2xl text-sm font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
+          className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
             paymentType === 'goods' 
               ? 'bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 text-white border-emerald-400/60 shadow-2xl shadow-emerald-500/40 transform scale-105' 
               : 'bg-slate-800/80 text-white hover:bg-slate-700/90 border-slate-600/50 hover:border-emerald-500/30 hover:scale-102 hover:shadow-xl hover:shadow-emerald-500/10 active:scale-95'
@@ -1002,7 +1002,7 @@ export default function FarcasterMiniApp() {
         
         <button
           onClick={() => setPaymentType('bill')}
-          className={`relative py-4 px-4 rounded-2xl text-sm font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
+          className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
             paymentType === 'bill' 
               ? 'bg-gradient-to-br from-blue-500 via-cyan-600 to-sky-700 text-white border-blue-400/60 shadow-2xl shadow-blue-500/40 transform scale-105' 
               : 'bg-slate-800/80 text-white hover:bg-slate-700/90 border-slate-600/50 hover:border-blue-500/30 hover:scale-102 hover:shadow-xl hover:shadow-blue-500/10 active:scale-95'
@@ -1034,7 +1034,7 @@ export default function FarcasterMiniApp() {
         
         <button
           onClick={() => setPaymentType('send')}
-          className={`relative py-4 px-4 rounded-2xl text-sm font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
+          className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
             paymentType === 'send' 
               ? 'bg-gradient-to-br from-purple-500 via-pink-600 to-rose-700 text-white border-purple-400/60 shadow-2xl shadow-purple-500/40 transform scale-105' 
               : 'bg-slate-800/80 text-white hover:bg-slate-700/90 border-slate-600/50 hover:border-purple-500/30 hover:scale-102 hover:shadow-xl hover:shadow-purple-500/10 active:scale-95'
@@ -1077,7 +1077,7 @@ export default function FarcasterMiniApp() {
                 value={tillNumber}
                 onChange={(e) => setTillNumber(e.target.value)}
                 placeholder="Enter paybill number"
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -1091,7 +1091,7 @@ export default function FarcasterMiniApp() {
                 value={businessNumber}
                 onChange={(e) => setBusinessNumber(e.target.value)}
                 placeholder="Enter account number"
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -1108,7 +1108,7 @@ export default function FarcasterMiniApp() {
               value={tillNumber}
               onChange={(e) => setTillNumber(e.target.value)}
               placeholder={paymentType === 'goods' ? 'Enter till number' : 'Enter till number'}
-              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -1225,7 +1225,7 @@ export default function FarcasterMiniApp() {
             </div>
           </div>
 
-          <div className="text-center text-xs text-gray-400 mb-4">
+          <div className="text-center text-xs text-gray-300 mb-4 font-semibold">
             1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
           </div>
         </div>
