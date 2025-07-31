@@ -25,14 +25,18 @@ export async function GET() {
         'actions.signIn',
         'wallet.getEthereumProvider',
         'actions.sendTransaction'
-      ]
+      ],
+      _lastUpdated: new Date().toISOString()
     },
   });
 
-  // Add cache-busting headers to force fresh fetch
-  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  // Add stronger cache-busting headers to force fresh fetch
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
+  response.headers.set('Last-Modified', new Date().toUTCString());
+  response.headers.set('ETag', `"${Date.now()}"`);
+  response.headers.set('Vary', '*');
   
   return response;
 }
