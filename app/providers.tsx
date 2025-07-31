@@ -42,13 +42,17 @@ export function Providers(props: { children: ReactNode }) {
         config={{
           appearance: {
             walletList: ['metamask', 'coinbase_wallet', 'wallet_connect', 'binance', 'bybit_wallet', 'okx_wallet'],
-            walletChainType: 'ethereum-only'},
+            walletChainType: 'ethereum-only',
+            showWalletLoginFirst: false,
+          },
           embeddedWallets: {
             ethereum: {
               createOnLogin: "users-without-wallets",
             },
           },
           defaultChain: base,
+          // Allow framing in iframe contexts like Farcaster
+          loginMethods: ['wallet', 'email', 'sms', 'google', 'twitter', 'discord', 'github', 'farcaster'],
         }}
       >
         <QueryClientProvider client={queryClient}>
