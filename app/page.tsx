@@ -95,7 +95,7 @@ export default function FarcasterMiniApp() {
   const { wallets } = useWallets();
 
   // Get the correct wallet for the current session
-  // Priority: 1) Embedded wallet for current user, 2) Most recent external wallet
+  // Priority: 1) Embedded wallet for social logins, 2) Primary external wallet
   const connectedWallet = (() => {
     if (!authenticated || wallets.length === 0) return null;
     
@@ -107,7 +107,15 @@ export default function FarcasterMiniApp() {
       }
     }
     
-    // Otherwise, use the most recently connected wallet
+    // For external wallets, prioritize based on wallet type hierarchy
+    // This helps distinguish between MetaMask and Coinbase when both are connected
+    const metamaskWallet = wallets.find(w => w.connectorType === 'metamask');
+    const coinbaseWallet = wallets.find(w => w.connectorType === 'coinbase_wallet');
+    const walletConnectWallet = wallets.find(w => w.connectorType === 'wallet_connect');
+    
+    // Return the first available wallet in priority order
+    // Note: The user's last action should determine which one is "active"
+    // For now, we'll use the most recently connected (last in array)
     return wallets[wallets.length - 1];
   })();
   
@@ -127,12 +135,28 @@ export default function FarcasterMiniApp() {
       google: user?.google?.email
     });
     console.log('Total wallets:', wallets.length);
-    console.log('All wallets:', wallets.map((w, i) => ({
+    console.log('All wallets (detailed):', wallets.map((w, i) => ({
       index: i,
-      address: w.address?.substring(0, 10) + '...',
+      address: w.address?.substring(0, 6) + '...' + w.address?.substring(-4),
       type: w.connectorType,
-      client: w.walletClientType
+      client: w.walletClientType,
+      isLast: i === wallets.length - 1,
+      fullAddress: w.address
     })));
+    
+    // Show specific wallet types found
+    const metamaskWallet = wallets.find(w => w.connectorType === 'metamask');
+    const coinbaseWallet = wallets.find(w => w.connectorType === 'coinbase_wallet');
+    const embeddedWallet = wallets.find(w => w.connectorType === 'embedded');
+    
+    console.log('Wallet types found:', {
+      hasMetaMask: !!metamaskWallet,
+      hasCoinbase: !!coinbaseWallet,
+      hasEmbedded: !!embeddedWallet,
+      metamaskAddress: metamaskWallet?.address?.substring(0, 10) + '...',
+      coinbaseAddress: coinbaseWallet?.address?.substring(0, 10) + '...',
+      embeddedAddress: embeddedWallet?.address?.substring(0, 10) + '...'
+    });
     
     if (connectedWallet) {
       const isEmbedded = connectedWallet.connectorType === 'embedded';
