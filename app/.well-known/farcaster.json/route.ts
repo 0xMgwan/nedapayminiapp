@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
-  return Response.json({
+  const response = Response.json({
     accountAssociation: {
       header: process.env.FARCASTER_HEADER,
       payload: process.env.FARCASTER_PAYLOAD,
@@ -28,6 +28,13 @@ export async function GET() {
       ]
     },
   });
+
+  // Add cache-busting headers to force fresh fetch
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  
+  return response;
 }
 
 export const dynamic = 'force-dynamic';
