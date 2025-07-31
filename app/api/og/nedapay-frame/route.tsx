@@ -10,91 +10,54 @@ export async function GET() {
           height: '100%',
           width: '100%',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#1e40af',
-          backgroundImage: 'linear-gradient(45deg, #1e40af 0%, #7c3aed 100%)',
+          background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%)',
         }}
       >
+        {/* NedaPay Logo */}
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            textAlign: 'center',
-            padding: '40px',
           }}
         >
-          <h1
-            style={{
-              fontSize: '64px',
-              fontWeight: 'bold',
-              marginBottom: '20px',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-            }}
-          >
-            NedaPay
-          </h1>
-          <p
-            style={{
-              fontSize: '28px',
-              marginBottom: '30px',
-              opacity: 0.9,
-            }}
-          >
-            Accept Stablecoins, Swap instantly, Cash Out Easily
-          </p>
+          {/* Logo Icon */}
           <div
             style={{
               display: 'flex',
-              gap: '20px',
               alignItems: 'center',
+              marginRight: '20px',
             }}
           >
-            <div
+            <svg
+              width="80"
+              height="80"
+              viewBox="0 0 100 100"
               style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '18px',
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
               }}
             >
-              USDC
-            </div>
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '18px',
-              }}
-            >
-              cNGN
-            </div>
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '18px',
-              }}
-            >
-              TSHC
-            </div>
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '18px',
-              }}
-            >
-              IDRX
-            </div>
+              <rect x="10" y="20" width="25" height="60" rx="4" fill="white" opacity="0.9" />
+              <rect x="40" y="10" width="25" height="80" rx="4" fill="white" opacity="0.95" />
+              <rect x="70" y="30" width="25" height="40" rx="4" fill="white" />
+            </svg>
           </div>
+          
+          {/* Logo Text */}
+          <h1
+            style={{
+              fontSize: '72px',
+              fontWeight: '600',
+              margin: '0',
+              letterSpacing: '-2px',
+              textShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            }}
+          >
+            NEDApay
+          </h1>
         </div>
       </div>
     ),
