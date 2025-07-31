@@ -13,12 +13,12 @@ const PROJECT_NAME = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: PROJECT_NAME,
-    description: 'Seamless crypto payments on Base network with USDC integration. Send money, pay bills, and manage payments globally.',
+    description: 'Pay, Accept, Swap and On/Offramp your Stablecoins to Fiat in seconds.',
     keywords: ['NedaPay', 'Farcaster', 'MiniApp', 'Base', 'USDC', 'Crypto Payments', 'Stablecoins'],
     authors: [{ name: 'NedaPay' }],
     openGraph: {
       title: `${PROJECT_NAME} MiniApp`,
-      description: 'Seamless crypto payments on Base network with USDC integration',
+      description: 'Pay, Accept, Swap and On/Offramp your Stablecoins to Fiat in seconds.',
       type: 'website',
       locale: 'en',
       siteName: PROJECT_NAME,
@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: `${PROJECT_NAME} MiniApp`,
-      description: 'Seamless crypto payments on Base network with USDC integration',
+      description: 'Pay, Accept, Swap and On/Offramp your Stablecoins to Fiat in seconds.',
       images: [`${URL}/og-image.png`],
     },
     other: {

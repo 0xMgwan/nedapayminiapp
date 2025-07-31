@@ -48,6 +48,15 @@ export default function FarcasterMiniApp() {
   const [selectedToken, setSelectedToken] = useState(stablecoins[0]);
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
   const [amount, setAmount] = useState('');
+
+  // Debug component initialization
+  useEffect(() => {
+    console.log('FarcasterMiniApp component initializing:', {
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
+  }, []);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [tillNumber, setTillNumber] = useState('');
