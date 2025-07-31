@@ -94,15 +94,38 @@ export default function FarcasterMiniApp() {
   const { authenticated, user, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
-  // Get the most recently connected wallet (last in array)
-  // This ensures each wallet shows its own address and balance
-  const connectedWallet = wallets.length > 0 ? wallets[wallets.length - 1] : null;
+  // Get the correct wallet for the current session
+  // Priority: 1) Embedded wallet for current user, 2) Most recent external wallet
+  const connectedWallet = (() => {
+    if (!authenticated || wallets.length === 0) return null;
+    
+    // If user has social login (Gmail, Farcaster, etc.), prioritize embedded wallet
+    if (user?.email || user?.farcaster || user?.google || user?.twitter) {
+      const embeddedWallet = wallets.find(w => w.connectorType === 'embedded');
+      if (embeddedWallet) {
+        return embeddedWallet;
+      }
+    }
+    
+    // Otherwise, use the most recently connected wallet
+    return wallets[wallets.length - 1];
+  })();
   
   const walletAddress = connectedWallet?.address;
   
   // Debug wallet info and handle wallet changes
   useEffect(() => {
     console.log('=== WALLET DEBUG ===');
+    console.log('Authenticated:', authenticated);
+    console.log('User info:', {
+      hasEmail: !!user?.email,
+      hasFarcaster: !!user?.farcaster,
+      hasGoogle: !!user?.google,
+      hasTwitter: !!user?.twitter,
+      email: user?.email?.address,
+      farcaster: user?.farcaster?.username,
+      google: user?.google?.email
+    });
     console.log('Total wallets:', wallets.length);
     console.log('All wallets:', wallets.map((w, i) => ({
       index: i,
@@ -113,12 +136,15 @@ export default function FarcasterMiniApp() {
     
     if (connectedWallet) {
       const isEmbedded = connectedWallet.connectorType === 'embedded';
-      console.log('Selected Wallet (most recent):', {
+      const hasSocialLogin = !!(user?.email || user?.farcaster || user?.google || user?.twitter);
+      
+      console.log('Selected Wallet:', {
         address: connectedWallet.address,
         connectorType: connectedWallet.connectorType,
         walletClientType: connectedWallet.walletClientType,
         isEmbedded: isEmbedded,
-        loginMethod: isEmbedded ? 'Social/Embedded' : 'External Wallet'
+        loginMethod: isEmbedded ? 'Social/Embedded' : 'External Wallet',
+        selectionReason: hasSocialLogin && isEmbedded ? 'Prioritized embedded wallet for social login' : 'Most recent wallet'
       });
       
       // Show user info for embedded wallets
@@ -138,7 +164,7 @@ export default function FarcasterMiniApp() {
       setWalletBalance('0.00');
     }
     console.log('===================');
-  }, [connectedWallet, wallets]);
+  }, [connectedWallet, wallets, user]);
   
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
   
