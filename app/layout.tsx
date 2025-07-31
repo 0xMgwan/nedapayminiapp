@@ -35,14 +35,14 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: `${PROJECT_NAME} MiniApp`,
       description: 'Seamless crypto payments on Base network with USDC integration',
-      images: [`${URL}/api/og/nedapay-frame`],
+      images: [`${URL}/og-image.png`],
     },
     other: {
 
       // Critical Farcaster MiniApp Embed Detection (WORKING FORMAT)
       'fc:miniapp': JSON.stringify({
         version: '1',
-        imageUrl: `${URL}/api/og/nedapay-frame`,
+        imageUrl: `${URL}/og-image.png`,
         button: {
           title: `Open ${PROJECT_NAME}`,
           action: {
@@ -57,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
       // Backward compatibility
       'fc:frame': JSON.stringify({
         version: '1',
-        imageUrl: `${URL}/api/og/nedapay-frame`,
+        imageUrl: `${URL}/og-image.png`,
         button: {
           title: `Open ${PROJECT_NAME}`,
           action: {

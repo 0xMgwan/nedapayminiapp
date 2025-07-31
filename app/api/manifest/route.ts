@@ -7,9 +7,9 @@ export async function GET(req: NextRequest) {
     description: 'Accept Stablecoins, Swap instantly, Cash Out Easily',
     icon: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/favicon.png`,
     homeUrl: process.env.NEXT_PUBLIC_URL || 'http://localhost:3001',
-    imageUrl: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/api/og/nedapay-frame`,
+    imageUrl: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/og-image.png`,
     buttonTitle: 'Open NedaPay',
-    splashImageUrl: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/api/og/nedapay-frame`,
+    splashImageUrl: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/splash.png`,
     splashBackgroundColor: '#1e40af',
     theme: {
       colorScheme: 'light',
