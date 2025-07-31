@@ -14,13 +14,13 @@ export async function GET() {
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
       iconUrl: `${URL}/icon.png`,
       homeUrl: URL,
-      imageUrl: `${URL}/api/og/nedapay-frame`,
+      imageUrl: `${URL}/og-image.png`,
       buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
       universalLink: `${URL}/connect`,
       screenshotUrls: [
-        `${URL}/api/og/nedapay-frame`
+        `${URL}/og-image.png`
       ],
       webhookUrl: `${URL}/api/webhook`,
       requiredChains: [
