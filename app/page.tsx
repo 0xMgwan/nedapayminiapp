@@ -7,7 +7,7 @@ import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
-import { executeUSDCTransaction } from './utils/wallet';
+import { executeUSDCTransaction, getUSDCBalance } from './utils/wallet';
 import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
 import Image from 'next/image';
 
@@ -99,47 +99,17 @@ export default function FarcasterMiniApp() {
     }
     
     try {
-      // Get USDC token info (Base network)
-      const usdcToken = stablecoins.find(token => token.baseToken === 'USDC');
-      if (!usdcToken) {
-        setWalletBalance('0.00');
-        return;
-      }
-
       // Try to get provider from connected wallet
       const connectedWallet = wallets.find(wallet => wallet.address === walletAddress);
-      if (!connectedWallet) {
-        setWalletBalance('0.00');
-        return;
+      let provider = undefined;
+      
+      if (connectedWallet) {
+        provider = await connectedWallet.getEthereumProvider();
       }
-
-      // Get Ethereum provider
-      const provider = await connectedWallet.getEthereumProvider();
-      if (!provider) {
-        setWalletBalance('0.00');
-        return;
-      }
-
-      const ethersProvider = new ethers.providers.Web3Provider(provider);
       
-      // USDC contract ABI (minimal for balanceOf)
-      const erc20ABI = [
-        'function balanceOf(address owner) view returns (uint256)',
-        'function decimals() view returns (uint8)'
-      ];
-      
-      // Create contract instance
-      const usdcContract = new ethers.Contract(usdcToken.address, erc20ABI, ethersProvider);
-      
-      // Fetch balance and decimals
-      const [balance, decimals] = await Promise.all([
-        usdcContract.balanceOf(walletAddress),
-        usdcContract.decimals()
-      ]);
-      
-      // Convert from wei to human readable
-      const formattedBalance = ethers.utils.formatUnits(balance, decimals);
-      setWalletBalance(parseFloat(formattedBalance).toFixed(2));
+      // Use our utility function to get balance
+      const balance = await getUSDCBalance(walletAddress, provider);
+      setWalletBalance(parseFloat(balance).toFixed(2));
       
     } catch (error) {
       console.error('Failed to fetch USDC balance:', error);
@@ -702,8 +672,13 @@ export default function FarcasterMiniApp() {
               {walletBalance}
               <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
               USDC
-            </span>
-            <button className="ml-2 text-blue-500 text-xs hover:text-blue-400 transition-colors">Max</button>
+             </span>
+            <button 
+              onClick={() => setAmount(walletBalance)}
+              className="ml-2 text-blue-500 text-xs hover:text-blue-400 transition-colors"
+            >
+              {walletBalance} USDC
+            </button>
           </div>
         </div>
 
@@ -1240,7 +1215,12 @@ export default function FarcasterMiniApp() {
                 <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
                 USDC
               </span>
-              <button className="ml-2 text-blue-500 text-xs hover:text-blue-400 transition-colors">Max</button>
+              <button 
+                onClick={() => setAmount(walletBalance)}
+                className="ml-2 text-blue-500 text-xs hover:text-blue-400 transition-colors"
+              >
+                {walletBalance} USDC
+              </button>
             </div>
           </div>
 
