@@ -38,12 +38,21 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [`${URL}/api/og/nedapay-frame`],
     },
     other: {
+      // Farcaster Frame Meta Tags
       'fc:frame': 'vNext',
       'fc:frame:image': `${URL}/api/og/nedapay-frame`,
       'fc:frame:button:1': `Open ${PROJECT_NAME}`,
       'fc:frame:button:1:action': 'link',
       'fc:frame:button:1:target': URL,
       'fc:frame:button:1:post_url': `${URL}/api/webhook`,
+      
+      // Critical Farcaster MiniApp Embed Detection
+      'farcaster:frame': 'vNext',
+      'farcaster:frame:miniapp': 'true',
+      'farcaster:frame:miniapp:url': URL,
+      'farcaster:frame:miniapp:manifest': `${URL}/.well-known/farcaster.json`,
+      
+      // OpenFrames
       'of:version': 'vNext',
       'of:accepts:xmtp': '2024-02-01',
       'of:accepts:lens': '1.1',
@@ -67,6 +76,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="farcaster:frame" content="vNext" />
+        <meta name="farcaster:frame:miniapp" content="true" />
+        <meta name="farcaster:frame:miniapp:url" content="https://nedapayminiapp.vercel.app" />
+        <meta name="farcaster:frame:miniapp:manifest" content="https://nedapayminiapp.vercel.app/.well-known/farcaster.json" />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
           rel="stylesheet"
