@@ -13,24 +13,24 @@ const USDC_ABI = [
 export async function executeUSDCTransaction(
   toAddress: string, 
   amount: number, 
+  walletProvider?: any,
   description?: string
 ): Promise<{ success: boolean; hash: string }> {
   try {
-    // Get the provider and signer from the connected wallet
-    if (typeof window === 'undefined' || !window.ethereum) {
+    // Get the provider from Privy wallet or fallback to window.ethereum
+    let provider;
+    
+    if (walletProvider) {
+      // Use Privy wallet provider
+      provider = new ethers.providers.Web3Provider(walletProvider);
+    } else if (typeof window !== 'undefined' && window.ethereum) {
+      // Fallback to window.ethereum for MetaMask
+      await (window.ethereum as any).request({ method: 'eth_requestAccounts' });
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+    } else {
       throw new Error('No wallet provider found');
     }
 
-    // Check if ethereum provider is available
-    if (!window.ethereum.request) {
-      throw new Error('Invalid wallet provider');
-    }
-
-    // Request account access if needed
-    await (window.ethereum as any).request({ method: 'eth_requestAccounts' });
-
-    // Use ethers v5 syntax
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     
     // Get the connected address
@@ -86,14 +86,21 @@ export async function executeUSDCTransaction(
   }
 }
 
-export async function getUSDCBalance(walletAddress: string): Promise<string> {
+export async function getUSDCBalance(walletAddress: string, walletProvider?: any): Promise<string> {
   try {
-    if (typeof window === 'undefined' || !window.ethereum) {
+    // Get the provider from Privy wallet or fallback to window.ethereum
+    let provider;
+    
+    if (walletProvider) {
+      // Use Privy wallet provider
+      provider = new ethers.providers.Web3Provider(walletProvider);
+    } else if (typeof window !== 'undefined' && window.ethereum) {
+      // Fallback to window.ethereum
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+    } else {
       return '0';
     }
 
-    // Use ethers v5 syntax
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
     const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, provider);
     
     const balance = await usdcContract.balanceOf(walletAddress);

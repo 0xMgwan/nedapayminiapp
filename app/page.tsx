@@ -330,8 +330,9 @@ export default function FarcasterMiniApp() {
       // Calculate USDC amount (always in USDC for blockchain)
       const usdcAmount = currency === 'local' ? (paymentAmount / rate).toFixed(6) : paymentAmount.toFixed(6);
       
-      // Execute the blockchain transaction
-      const blockchainResult = await executeUSDCTransaction(paymentOrder.data.receiveAddress, parseFloat(usdcAmount));
+      // Execute the blockchain transaction with Privy wallet provider
+      const walletProvider = connectedWallet ? await connectedWallet.getEthereumProvider() : undefined;
+      const blockchainResult = await executeUSDCTransaction(paymentOrder.data.receiveAddress, parseFloat(usdcAmount), walletProvider);
       
       if (!blockchainResult.success) {
         throw new Error('Blockchain transaction failed');
