@@ -12,22 +12,12 @@ export async function GET() {
     miniapp: {
       version: "1",
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
-      subtitle: 'Crypto Payments Made Simple',
-      description: 'Seamless crypto payments on Base network with USDC integration',
       iconUrl: `${URL}/icon.png`,
       homeUrl: URL,
       imageUrl: `${URL}/api/og/nedapay-frame`,
       buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
-      webhookUrl: `${URL}/api/webhook`,
-      screenshotUrls: [
-        `${URL}/api/og/nedapay-frame`
-      ],
-      primaryCategory: 'finance',
-      tags: ['payments', 'crypto', 'usdc', 'base'],
-      heroImageUrl: `${URL}/api/og/nedapay-frame`,
-      tagline: 'Send, Accept Crypto with ease',
       requiredChains: [
         'eip155:8453' // Base mainnet
       ],
