@@ -27,7 +27,7 @@ export async function GET() {
       primaryCategory: 'finance',
       tags: ['payments', 'crypto', 'usdc', 'base'],
       heroImageUrl: `${URL}/api/og/nedapay-frame`,
-      tagline: 'Send, Pay, Deposit with USDC on Base',
+      tagline: 'Send, Accept Crypto with ease',
       requiredChains: [
         'eip155:8453' // Base mainnet
       ],
