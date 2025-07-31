@@ -15,7 +15,7 @@ export async function GET() {
       subtitle: 'Crypto Payments Made Simple',
       description: 'Seamless crypto payments on Base network with USDC integration',
       iconUrl: `${URL}/icon.png`,
-      homeUrl: URL,
+      homeUrl: `${URL}/embed`,
       imageUrl: `${URL}/api/og/nedapay-frame`,
       buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
