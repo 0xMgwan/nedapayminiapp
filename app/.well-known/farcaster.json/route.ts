@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-function withValidProperties(
-  properties: Record<string, undefined | string | string[]>,
-) {
-  return Object.fromEntries(
-    Object.entries(properties).filter(([key, value]) => {
-      if (Array.isArray(value)) {
-        return value.length > 0;
-      }
-      return !!value;
-    }),
-  );
-}
-
 export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
@@ -22,25 +9,24 @@ export async function GET() {
       payload: process.env.FARCASTER_PAYLOAD,
       signature: process.env.FARCASTER_SIGNATURE,
     },
-    frame: withValidProperties({
+    miniapp: {
       version: "1",
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
-      subtitle: 'Crypto Payments Made Simple',
-      description: 'Seamless crypto payments on Base network with USDC integration',
-      screenshotUrls: [],
       iconUrl: `${URL}/icon.png`,
+      homeUrl: URL,
+      imageUrl: `${URL}/api/og/nedapay-frame`,
+      buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
-      homeUrl: URL,
-      webhookUrl: `${URL}/api/webhook`,
-      primaryCategory: 'finance',
-      tags: [],
-      heroImageUrl: `${URL}/api/og/nedapay-frame`,
-      tagline: 'Send, Pay, Deposit with USDC on Base',
-      ogTitle: 'NedaPay MiniApp',
-      ogDescription: 'Seamless crypto payments on Base network with USDC integration',
-      ogImageUrl: `${URL}/api/og/nedapay-frame`,
-    }),
+      requiredChains: [
+        'eip155:8453' // Base mainnet
+      ],
+      requiredCapabilities: [
+        'actions.signIn',
+        'wallet.getEthereumProvider',
+        'actions.sendTransaction'
+      ]
+    },
   });
 }
 
