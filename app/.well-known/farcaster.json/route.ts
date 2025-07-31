@@ -18,6 +18,7 @@ export async function GET() {
       buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
+      universalLink: `${URL}/connect`,
       requiredChains: [
         'eip155:8453' // Base mainnet
       ],
