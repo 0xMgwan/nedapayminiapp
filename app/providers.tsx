@@ -16,12 +16,6 @@ const queryClient = new QueryClient();
 // Configure wagmi with all supported wallet connectors
 const wagmiConfig = createPrivyConfig({
   chains: [base],
-  // connectors: [
-  //   coinbaseWallet({
-  //     appName: "NEDA Pay Merchant",
-  //   }),
-  //   metaMask(),
-  // ],
   ssr: true,
   transports: {
     [base.id]: fallback([
@@ -51,6 +45,8 @@ export function Providers(props: { children: ReactNode }) {
             },
           },
           defaultChain: base,
+          // WalletConnect configuration for Reown
+          walletConnectCloudProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
           // Allow framing in iframe contexts like Farcaster
           loginMethods: ['wallet', 'email', 'sms', 'google', 'twitter', 'discord', 'github', 'farcaster'],
         }}
