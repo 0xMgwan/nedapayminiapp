@@ -67,7 +67,7 @@ export default function FarcasterMiniApp() {
   const [linkDescription, setLinkDescription] = useState('');
   const [selectedStablecoin, setSelectedStablecoin] = useState(stablecoins[0]);
   const [generatedLink, setGeneratedLink] = useState('');
-  const [paymentType, setPaymentType] = useState<'goods' | 'bill' | 'send'>('goods');
+  const [paymentType, setPaymentType] = useState<'goods' | 'bill'>('goods');
 
   const [isLoadingRate, setIsLoadingRate] = useState(false);
   const [currentRate, setCurrentRate] = useState('2547');
@@ -1286,38 +1286,6 @@ export default function FarcasterMiniApp() {
             <div className="absolute top-2 right-2 w-2 h-2 bg-blue-300 rounded-full animate-ping" />
           )}
         </button>
-        
-        <button
-          onClick={() => setPaymentType('send')}
-          className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
-            paymentType === 'send' 
-              ? 'bg-gradient-to-br from-purple-500 via-pink-600 to-rose-700 text-white border-purple-400/60 shadow-2xl shadow-purple-500/40 transform scale-105' 
-              : 'bg-slate-800/80 text-white hover:bg-slate-700/90 border-slate-600/50 hover:border-purple-500/30 hover:scale-102 hover:shadow-xl hover:shadow-purple-500/10 active:scale-95'
-          }`}
-        >
-          {/* Animated background */}
-          {paymentType === 'send' && (
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 animate-pulse" />
-          )}
-          
-          {/* Hover glow */}
-          <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
-            paymentType === 'send' 
-              ? 'opacity-100 bg-purple-400/10' 
-              : 'opacity-0 group-hover:opacity-100 bg-purple-400/5'
-          }`} />
-          
-          <span className={`relative z-10 transition-all duration-300 ${
-            paymentType === 'send' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
-          }`}>
-            💸 Send Money
-          </span>
-          
-          {/* Active pulse indicator */}
-          {paymentType === 'send' && (
-            <div className="absolute top-2 right-2 w-2 h-2 bg-purple-300 rounded-full animate-ping" />
-          )}
-        </button>
       </div>
 
       {/* Payment Type Specific Fields */}
@@ -1753,8 +1721,8 @@ export default function FarcasterMiniApp() {
           }`}></span>
           <span className="text-xs font-medium">
             {authenticated 
-              ? `✅ Wallet Connected - Ready to Generate Links` 
-              : `⚠️ Connect Wallet to Generate Links`
+              ? `✅ Wallet Connected - Ready to Generate Payment Links` 
+              : `⚠️ Connect Wallet to Generate Payment Links`
             }
           </span>
         </div>
@@ -1817,10 +1785,10 @@ export default function FarcasterMiniApp() {
       <button 
         onClick={authenticated ? handleGeneratePaymentLink : login}
         disabled={!authenticated || !linkAmount}
-        className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
+        className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm border-2 ${
           authenticated && linkAmount
-            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 shadow-lg' 
-            : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-blue-400/50 hover:border-blue-300/70 transform hover:scale-105 shadow-lg' 
+            : 'bg-gray-600/50 text-white border-gray-400/50 hover:border-gray-300/70 cursor-not-allowed'
         }`}
       >
         {authenticated ? (
