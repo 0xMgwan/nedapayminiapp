@@ -204,56 +204,109 @@ export default function FarcasterMiniApp() {
     console.log('===================');
   }, [connectedWallet, wallets, user]);
   
-  // WALLET DISCONNECTION DETECTION: Listen to wallet events and notify user
+  // WALLET DISCONNECTION DETECTION: Track wallet count changes
+  const [previousWalletCount, setPreviousWalletCount] = useState(0);
+  
+  useEffect(() => {
+    // Log wallet changes for debugging
+    console.log('🔍 WALLET CHANGE DETECTED:');
+    console.log('- Wallet count:', wallets.length);
+    console.log('- Previous count:', previousWalletCount);
+    console.log('- Authenticated:', authenticated);
+    console.log('- Connected wallet:', !!connectedWallet);
+    
+    // Update previous wallet count
+    setPreviousWalletCount(wallets.length);
+  }, [wallets.length]);
+  
+  useEffect(() => {
+    // If we had wallets before but now have none, it's a disconnection
+    if (previousWalletCount > 0 && wallets.length === 0 && authenticated) {
+      console.log('🚫 Wallet disconnection detected via Privy wallets array');
+      console.log('Previous wallet count:', previousWalletCount, 'Current:', wallets.length);
+      setShowDisconnectionNotice(true);
+      
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => {
+        setShowDisconnectionNotice(false);
+      }, 5000);
+      
+      // Trigger logout to clean up state
+      setTimeout(() => {
+        logout();
+      }, 2000);
+    }
+  }, [wallets.length, previousWalletCount, authenticated, logout]);
+  
+  // CONNECTED WALLET MONITORING: Detect when connected wallet becomes null
+  const [previousConnectedWallet, setPreviousConnectedWallet] = useState<any>(null);
+  
+  useEffect(() => {
+    // If we had a connected wallet before but now it's null, it's a disconnection
+    if (previousConnectedWallet && !connectedWallet && authenticated) {
+      console.log('🚫 Connected wallet became null - disconnection detected');
+      console.log('Previous wallet:', previousConnectedWallet.address?.substring(0, 10) + '...');
+      setShowDisconnectionNotice(true);
+      
+      setTimeout(() => {
+        setShowDisconnectionNotice(false);
+      }, 5000);
+      
+      setTimeout(() => {
+        logout();
+      }, 2000);
+    }
+    
+    // Update previous connected wallet
+    setPreviousConnectedWallet(connectedWallet);
+  }, [connectedWallet, previousConnectedWallet, authenticated, logout]);
+  
+  // ADDITIONAL: Listen to window.ethereum events for external wallets
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ethereum) {
-      // Type-safe ethereum provider
       const ethereum = window.ethereum as any;
       
-      // Listen for account changes (when user switches wallets or disconnects)
       const handleAccountsChanged = (newAccounts: string[]) => {
-        console.log('🔄 ACCOUNTS CHANGED:', newAccounts);
-        if (newAccounts.length === 0) {
-          // User disconnected their wallet
-          console.log('🚫 Wallet disconnected from provider');
-          
-          // Show notification to user
+        console.log('🔄 Ethereum accounts changed:', newAccounts);
+        if (newAccounts.length === 0 && authenticated) {
+          console.log('🚫 Wallet disconnected via ethereum provider');
           setShowDisconnectionNotice(true);
           
-          // Auto-hide notification after 5 seconds
           setTimeout(() => {
             setShowDisconnectionNotice(false);
           }, 5000);
           
-          // Optionally trigger Privy logout to clean up state
-          if (authenticated) {
-            console.log('🔄 Logging out due to wallet disconnection');
-            setTimeout(() => {
-              logout();
-            }, 2000); // Give user time to see the notification
-          }
-        } else {
-          // User switched accounts - this will trigger a re-render
-          console.log('🔄 User switched to account:', newAccounts[0].substring(0, 8) + '...');
+          setTimeout(() => {
+            logout();
+          }, 2000);
         }
       };
       
-      // Listen for chain changes
-      const handleChainChanged = (chainId: string) => {
-        console.log('🔗 Chain changed to:', chainId);
+      const handleDisconnect = () => {
+        console.log('🚫 Wallet disconnect event triggered');
+        if (authenticated) {
+          setShowDisconnectionNotice(true);
+          
+          setTimeout(() => {
+            setShowDisconnectionNotice(false);
+          }, 5000);
+          
+          setTimeout(() => {
+            logout();
+          }, 2000);
+        }
       };
       
-      // Add event listeners with type safety
+      // Add multiple event listeners for better coverage
       if (ethereum.on) {
         ethereum.on('accountsChanged', handleAccountsChanged);
-        ethereum.on('chainChanged', handleChainChanged);
+        ethereum.on('disconnect', handleDisconnect);
       }
       
-      // Cleanup function to remove event listeners
       return () => {
         if (ethereum.removeListener) {
           ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          ethereum.removeListener('chainChanged', handleChainChanged);
+          ethereum.removeListener('disconnect', handleDisconnect);
         }
       };
     }
@@ -262,7 +315,6 @@ export default function FarcasterMiniApp() {
   // PRIVY DISCONNECTION DETECTION: Listen to Privy authentication changes
   useEffect(() => {
     if (!authenticated && wallets.length === 0) {
-      console.log('🚫 Privy session ended - user logged out');
       // Clear any cached data when user logs out
       setWalletBalance('0.00');
     }
@@ -747,12 +799,12 @@ export default function FarcasterMiniApp() {
 
       {/* Phone Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Enter Telephone Number</label>
+        <label className="block text-xs text-gray-400 mb-1">Enter Mobile/ Account Number</label>
         <input
           type="text"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
-          placeholder="089999"
+          placeholder="+255"
           className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -1083,11 +1135,23 @@ export default function FarcasterMiniApp() {
                 if (successData.hash) {
                   navigator.clipboard.writeText(successData.hash);
                 }
-                // Could add a toast here
               }}
               className="bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-4 rounded-xl transition-colors"
             >
               📋
+            </button>
+            {/* Test Disconnection Button */}
+            <button
+              onClick={() => {
+                console.log('🧪 MANUAL TEST: Triggering disconnection notification');
+                setShowDisconnectionNotice(true);
+                setTimeout(() => {
+                  setShowDisconnectionNotice(false);
+                }, 5000);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-3 rounded-lg transition-colors text-xs mr-2"
+            >
+              🧪 Test
             </button>
           </div>
 
@@ -1811,12 +1875,14 @@ export default function FarcasterMiniApp() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-2">
       {/* Wallet Disconnection Notification */}
       {showDisconnectionNotice && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-600/90 backdrop-blur-sm border border-red-500/50 rounded-lg px-4 py-3 shadow-xl animate-bounce">
-          <div className="flex items-center gap-2 text-white">
-            <span className="text-lg">🚫</span>
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-blue-600/90 to-purple-600/90 backdrop-blur-sm border border-blue-400/50 rounded-xl px-4 py-3 shadow-xl animate-pulse">
+          <div className="flex items-center gap-3 text-white">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <span className="text-lg">🚫</span>
+            </div>
             <div>
-              <p className="font-medium text-sm">Wallet Disconnected</p>
-              <p className="text-xs text-red-200">Please reconnect to continue</p>
+              <p className="font-semibold text-sm">Wallet Disconnected</p>
+              <p className="text-xs text-blue-100">Please reconnect to continue using NedaPay</p>
             </div>
           </div>
         </div>
