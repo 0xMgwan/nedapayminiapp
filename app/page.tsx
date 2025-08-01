@@ -410,8 +410,9 @@ export default function FarcasterMiniApp() {
     const amountNum = parseFloat(amount) || 0;
     const rate = parseFloat(currentRate) || 1;
     
-    // Determine if we're working with local currency or USDC
-    const isLocalCurrency = sendCurrency === 'local' || payCurrency === 'local';
+    // Determine current currency based on active tab
+    const currentCurrency = activeTab === 'send' ? sendCurrency : payCurrency;
+    const isLocalCurrency = currentCurrency === 'local';
     
     if (isLocalCurrency) {
       // Amount is in local currency (TZS, KES, etc.)
@@ -427,21 +428,21 @@ export default function FarcasterMiniApp() {
         usdcAmount: usdcAmount.toFixed(6)
       };
     } else {
-      // Amount is in USDC
+      // Amount is in USDC - convert to local currency equivalent
       const usdcAmount = amountNum;
-      const localEquivalent = usdcAmount * rate;
-      const percentageFee = localEquivalent * 0.005;
-      const fixedFee = 0.36;
+      const localEquivalent = usdcAmount * rate; // Convert USDC to local currency
+      const percentageFee = localEquivalent * 0.005; // 0.5% fee on local equivalent
+      const fixedFee = 0.36; // Fixed fee in local currency
       const totalFee = percentageFee + fixedFee;
-      const totalLocal = localEquivalent + totalFee;
+      const totalLocal = localEquivalent + totalFee; // Total in local currency
       
       return {
-        totalLocal: totalLocal.toFixed(2),
+        totalLocal: totalLocal.toFixed(2), // This should show the TZS equivalent
         fee: totalFee.toFixed(2),
         usdcAmount: usdcAmount.toFixed(6)
       };
     }
-  }, [amount, currentRate, sendCurrency, payCurrency]);
+  }, [amount, currentRate, sendCurrency, payCurrency, activeTab]);
 
   // Load supported currencies and institutions
   useEffect(() => {
@@ -1222,7 +1223,7 @@ export default function FarcasterMiniApp() {
       </div>
 
       {/* Payment Type Buttons */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         <button
           onClick={() => setPaymentType('goods')}
           className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
