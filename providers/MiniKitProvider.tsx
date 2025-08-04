@@ -3,6 +3,22 @@
 import { ReactNode, useEffect } from 'react';
 import { MiniKitProvider as OnchainKitMiniKitProvider } from '@coinbase/onchainkit/minikit';
 import { base } from 'wagmi/chains';
+import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create wagmi config with Farcaster MiniApp connector
+const config = createConfig({
+  chains: [base],
+  transports: {
+    [base.id]: http(),
+  },
+  connectors: [
+    miniAppConnector()
+  ]
+});
+
+const queryClient = new QueryClient();
 
 export function MiniKitProvider({ children }: { children: ReactNode }) {
   // Enhanced MiniKit initialization for smart wallet environments
@@ -116,24 +132,28 @@ export function MiniKitProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <OnchainKitMiniKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY!}
-      chain={base}
-      config={{
-        appearance: {
-          mode: 'auto',
-          theme: 'default',
-          name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
-          logo: `${process.env.NEXT_PUBLIC_URL}/icon.png`,
-        },
-        wallet: {
-          display: 'modal',
-          termsUrl: '',
-          privacyUrl: '',
-        },
-      }}
-    >
-      {children}
-    </OnchainKitMiniKitProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <OnchainKitMiniKitProvider
+          apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY!}
+          chain={base}
+          config={{
+            appearance: {
+              mode: 'auto',
+              theme: 'default',
+              name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
+              logo: `${process.env.NEXT_PUBLIC_URL}/icon.png`,
+            },
+            wallet: {
+              display: 'modal',
+              termsUrl: '',
+              privacyUrl: '',
+            },
+          }}
+        >
+          {children}
+        </OnchainKitMiniKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
