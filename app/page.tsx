@@ -101,7 +101,6 @@ export default function FarcasterMiniApp() {
   // Track user's preferred wallet selection
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
   const [addressCopied, setAddressCopied] = useState(false);
-  const [showWalletSelector, setShowWalletSelector] = useState(false);
 
   // MiniKit and Wagmi hooks for smart wallet (Farcaster/Coinbase)
   const { address, isConnected } = useAccount();
@@ -1831,64 +1830,38 @@ export default function FarcasterMiniApp() {
           {/* Wallet Button */}
           {!isConnected ? (
             isSmartWalletEnvironment ? (
-              // Farcaster environment - show custom in-frame wallet selector
-              <div className="relative">
-                <button
-                  onClick={() => setShowWalletSelector(true)}
-                  className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
-                >
-                  {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Pulse effect */}
-                  <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
-                  
-                  <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
-                </button>
+              // Farcaster environment - trigger native wallet selection
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('Connecting wallet in Farcaster environment...');
+                    
+                    // In Farcaster, try to connect with available connectors
+                    if (connectors && connectors.length > 0) {
+                      // Try to find the best connector for Farcaster
+                      const preferredConnector = connectors.find(c => 
+                        c.name.toLowerCase().includes('coinbase') || 
+                        c.name.toLowerCase().includes('smart')
+                      ) || connectors[0];
+                      
+                      await connect({ connector: preferredConnector });
+                    } else {
+                      console.error('No connectors available');
+                    }
+                  } catch (error) {
+                    console.error('Failed to connect wallet:', error);
+                  }
+                }}
+                className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
+              >
+                {/* Animated background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
-                {/* Custom In-Frame Wallet Selector */}
-                {showWalletSelector && (
-                  <div className="absolute top-16 right-0 w-80 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 shadow-2xl z-50">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-white font-semibold text-lg">Connect Wallet</h3>
-                      <button
-                        onClick={() => setShowWalletSelector(false)}
-                        className="text-gray-400 hover:text-white transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {connectors.map((connector) => (
-                        <button
-                          key={connector.id}
-                          onClick={async () => {
-                            try {
-                              await connect({ connector });
-                              setShowWalletSelector(false);
-                            } catch (error) {
-                              console.error('Failed to connect:', error);
-                            }
-                          }}
-                          className="w-full flex items-center gap-3 p-3 bg-slate-800/50 hover:bg-slate-700/50 rounded-xl transition-colors border border-slate-600/30 hover:border-slate-500/50"
-                        >
-                          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                            <WalletIcon className="w-4 h-4 text-white" />
-                          </div>
-                          <span className="text-white font-medium">{connector.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <p className="text-xs text-gray-400 mt-4 text-center">
-                      By connecting a wallet, you agree to our Terms of Service and Privacy Policy.
-                    </p>
-                  </div>
-                )}
-              </div>
+                {/* Pulse effect */}
+                <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
+                
+                <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+              </button>
             ) : (
               // Website environment - show OnchainKit wallet modal
               <Wallet>
