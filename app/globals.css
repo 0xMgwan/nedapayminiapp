@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Mobile Farcaster popup suppression */
+@media (max-width: 768px) {
+  [data-testid*="popup"],
+  [class*="popup"],
+  [class*="notification"],
+  [class*="toast"],
+  [class*="alert"],
+  [role="alert"],
+  [role="dialog"] {
+    display: none !important;
+  }
+}
+
 :root {
   /* Radix UI theme colors */
   --muted: #f4f4f5; /* Light gray background */
