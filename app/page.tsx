@@ -155,39 +155,25 @@ export default function FarcasterMiniApp() {
     }
     
     try {
-      const isEmbedded = connectedWallet?.connectorType === 'embedded';
-      console.log('Fetching balance for:', {
-        address: walletAddress?.substring(0, 10) + '...',
-        type: connectedWallet?.connectorType,
-        isEmbedded: isEmbedded,
-        method: isEmbedded ? 'Social/Embedded Wallet' : 'External Wallet'
-      });
-      
-      // Use the already-selected connectedWallet directly
-      let provider = undefined;
-      
-      if (connectedWallet) {
-        provider = await connectedWallet.getEthereumProvider();
-        console.log('Provider obtained for', isEmbedded ? 'embedded' : 'external', 'wallet');
-      }
-      
-      // Use our utility function to get balance
-      const balance = await getUSDCBalance(walletAddress, provider);
+      const balance = await getUSDCBalance(walletAddress);
       const formattedBalance = parseFloat(balance).toFixed(2);
-      
-      console.log('Balance fetched successfully:', formattedBalance, 'for', isEmbedded ? 'embedded' : 'external', 'wallet');
       setWalletBalance(formattedBalance);
-      
     } catch (error) {
-      console.error('Failed to fetch USDC balance:', error);
-      // Fallback to mock balance for demo
-      const mockBalance = (Math.random() * 100 + 50).toFixed(2);
-      setWalletBalance(mockBalance);
+      setWalletBalance('0.00');
     }
-  }, [walletAddress, isConnected, connectedWallet]);
+  }, [walletAddress, isConnected]);
   
-  // Fetch balance when wallet connects
+  // Fetch balance when wallet connects or address changes
   useEffect(() => {
+    if (isConnected && walletAddress) {
+      console.log('🔄 Wallet connected, fetching balance for:', walletAddress);
+      fetchWalletBalance();
+    }
+  }, [fetchWalletBalance, isConnected, walletAddress]);
+  
+  // Manual balance refresh function
+  const refreshBalance = useCallback(() => {
+    console.log('🔄 Manual balance refresh triggered');
     fetchWalletBalance();
   }, [fetchWalletBalance]);
 
@@ -195,10 +181,24 @@ export default function FarcasterMiniApp() {
   const fetchRate = useCallback(async (currency: string) => {
     if (!currency || currency === 'USDC') return;
     
+    // Define fallback rates for common currencies
+    const fallbackRates: { [key: string]: string } = {
+      'NGN': '1650.0',  // Nigeria Naira
+      'KES': '155.0',   // Kenya Shilling
+      'GHS': '15.8',    // Ghana Cedi
+      'TZS': '2585.5',  // Tanzania Shilling
+      'UGX': '3700.0',  // Uganda Shilling
+      'RWF': '1350.0'   // Rwanda Franc
+    };
+    
     try {
       setIsLoadingRate(true);
+      console.log(`💱 Fetching rate for ${currency}...`);
+      
       const rate = await fetchTokenRate('USDC', 1, currency);
       setCurrentRate(rate);
+      
+      console.log(`✅ Rate fetched successfully for ${currency}: ${rate}`);
       
       // Update floating rates
       setFloatingRates(prev => ({
@@ -208,10 +208,23 @@ export default function FarcasterMiniApp() {
           timestamp: Date.now()
         }
       }));
-    } catch (error) {
-      console.error('Failed to fetch rate:', error);
-      // Fallback to static rate
-      setCurrentRate('2585.5');
+    } catch (error: any) {
+      console.warn(`⚠️ Failed to fetch rate for ${currency}:`, error?.message || error);
+      
+      // Use fallback rate if available
+      const fallbackRate = fallbackRates[currency] || '1000.0';
+      console.log(`🔄 Using fallback rate for ${currency}: ${fallbackRate}`);
+      
+      setCurrentRate(fallbackRate);
+      
+      // Update floating rates with fallback
+      setFloatingRates(prev => ({
+        ...prev,
+        [currency]: {
+          rate: fallbackRate,
+          timestamp: Date.now()
+        }
+      }));
     } finally {
       setIsLoadingRate(false);
     }
@@ -272,10 +285,21 @@ export default function FarcasterMiniApp() {
           setSelectedInstitution(supportedInstitutions[0].code);
         }
         
-        // Load initial floating rates for top currencies
-        const topCurrencies = supportedCurrencies.slice(0, 6);
-        for (const currency of topCurrencies) {
+        // Load initial floating rates for supported currencies (limit to prevent API spam)
+        const priorityCurrencies = ['NGN', 'KES', 'TZS', 'UGX']; // Focus on main supported currencies
+        const currenciesToLoad = supportedCurrencies
+          .filter(currency => priorityCurrencies.includes(currency.code))
+          .slice(0, 4); // Limit to 4 to avoid API rate limits
+        
+        console.log(`💱 Loading rates for ${currenciesToLoad.length} priority currencies...`);
+        
+        for (const currency of currenciesToLoad) {
           try {
+            // Add small delay between requests to avoid rate limiting
+            if (currenciesToLoad.indexOf(currency) > 0) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
             const rate = await fetchTokenRate('USDC', 1, currency.code);
             setFloatingRates(prev => ({
               ...prev,
@@ -284,8 +308,10 @@ export default function FarcasterMiniApp() {
                 timestamp: Date.now()
               }
             }));
-          } catch (error) {
-            console.error(`Failed to load rate for ${currency.code}:`, error);
+            console.log(`✅ Loaded rate for ${currency.code}: ${rate}`);
+          } catch (error: any) {
+            console.warn(`⚠️ Failed to load rate for ${currency.code}:`, error?.message || 'API Error');
+            // Don't spam the console with full error objects
           }
         }
       } catch (error) {
@@ -741,13 +767,22 @@ export default function FarcasterMiniApp() {
         
         <div className="text-right mb-3">
           <div className="text-xs text-gray-400">
-            Balance: <button 
-              onClick={() => setAmount(walletBalance)}
-              className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
-            >
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-              USDC {walletBalance}
-            </button>
+            Balance: <div className="inline-flex items-center gap-2">
+              <button 
+                onClick={() => setAmount(walletBalance)}
+                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+              >
+                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                USDC {walletBalance}
+              </button>
+              <button
+                onClick={refreshBalance}
+                className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
+                title="Refresh balance"
+              >
+                🔄
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1277,13 +1312,22 @@ export default function FarcasterMiniApp() {
           
           <div className="text-right mb-2">
             <div className="text-sm text-gray-400">
-              Balance: <button 
-                onClick={() => setAmount(walletBalance)}
-                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
-              >
-                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                USDC {walletBalance}
-              </button>
+              Balance: <div className="inline-flex items-center gap-2">
+                <button 
+                  onClick={() => setAmount(walletBalance)}
+                  className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                  USDC {walletBalance}
+                </button>
+                <button
+                  onClick={refreshBalance}
+                  className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
+                  title="Refresh balance"
+                >
+                  🔄
+                </button>
+              </div>
             </div>
           </div>
 

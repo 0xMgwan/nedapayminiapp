@@ -88,19 +88,13 @@ export async function executeUSDCTransaction(
 
 export async function getUSDCBalance(walletAddress: string, walletProvider?: any): Promise<string> {
   try {
-    // Get the provider from Privy wallet or fallback to window.ethereum
-    let provider;
-    
-    if (walletProvider) {
-      // Use Privy wallet provider
-      provider = new ethers.providers.Web3Provider(walletProvider);
-    } else if (typeof window !== 'undefined' && window.ethereum) {
-      // Fallback to window.ethereum
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-    } else {
+    // Validate wallet address format
+    if (!walletAddress || !walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
       return '0';
     }
 
+    // Use a simple, reliable provider
+    const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
     const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, provider);
     
     const balance = await usdcContract.balanceOf(walletAddress);
@@ -108,7 +102,7 @@ export async function getUSDCBalance(walletAddress: string, walletProvider?: any
     
     return formattedBalance;
   } catch (error) {
-    console.error('Failed to fetch USDC balance:', error);
+    // Return 0 instead of throwing to prevent UI crashes
     return '0';
   }
 }
