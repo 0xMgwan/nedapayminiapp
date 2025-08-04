@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useConnectorClient } from 'wagmi';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon } from '@heroicons/react/24/outline';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
@@ -93,104 +94,45 @@ export default function FarcasterMiniApp() {
   // Track user's preferred wallet selection
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
 
-  // Farcaster MiniApp SDK initialization
-  const { authenticated, user, login, logout, connectWallet } = usePrivy();
-  const { wallets } = useWallets();
+  // MiniKit and Wagmi hooks for Farcaster smart wallet auto-connection
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { data: walletClient } = useConnectorClient();
+  const { setFrameReady, isFrameReady } = useMiniKit();
 
-  // SIMPLIFIED MINIAPP WALLET SELECTION: Only Coinbase Wallet and Embedded
+  // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
-    if (!authenticated || wallets.length === 0) return null;
+    if (!isConnected || !address) return null;
     
-    // If user has social login (Farcaster, Email), use embedded wallet
-    const hasSocialLogin = !!(user?.email || user?.farcaster);
-    if (hasSocialLogin) {
-      const embeddedWallet = wallets.find(w => w.connectorType === 'embedded');
-      if (embeddedWallet) {
-        console.log('📱 Using embedded wallet for social login');
-        return embeddedWallet;
-      }
-    }
-    
-    // Otherwise, use Coinbase Wallet (the only external wallet option)
-    const coinbaseWallet = wallets.find(w => w.connectorType === 'coinbase_wallet');
-    if (coinbaseWallet) {
-      console.log('🔵 Using Coinbase Wallet');
-      return coinbaseWallet;
-    }
-    
-    // Fallback: use first available wallet
-    return wallets[0];
+    // MiniKit automatically connects to Farcaster smart wallet when available
+    // Return a simplified wallet object for compatibility with existing code
+    return {
+      address: address,
+      connectorType: 'farcaster_minikit',
+      walletClientType: 'farcaster',
+      getEthereumProvider: () => walletClient
+    };
   })();
   
   const walletAddress = connectedWallet?.address;
   
-  // Debug wallet info and handle wallet changes
+  // Debug MiniKit wallet info
   useEffect(() => {
-    console.log('=== WALLET DEBUG ===');
-    console.log('Authenticated:', authenticated);
-    console.log('User info:', {
-      hasEmail: !!user?.email,
-      hasFarcaster: !!user?.farcaster,
-      hasGoogle: !!user?.google,
-      hasTwitter: !!user?.twitter,
-      email: user?.email?.address,
-      farcaster: user?.farcaster?.username,
-      google: user?.google?.email
-    });
-    console.log('Total wallets:', wallets.length);
-    console.log('All wallets (detailed):', wallets.map((w, i) => ({
-      index: i,
-      address: w.address?.substring(0, 6) + '...' + w.address?.substring(-4),
-      type: w.connectorType,
-      client: w.walletClientType,
-      isLast: i === wallets.length - 1,
-      fullAddress: w.address
-    })));
-    
-    // Show specific wallet types found (MiniApp: only Coinbase and Embedded)
-    const coinbaseWallet = wallets.find(w => w.connectorType === 'coinbase_wallet');
-    const embeddedWallet = wallets.find(w => w.connectorType === 'embedded');
-    
-    console.log('MiniApp wallet types found:', {
-      hasCoinbase: !!coinbaseWallet,
-      hasEmbedded: !!embeddedWallet,
-      coinbaseAddress: coinbaseWallet?.address?.substring(0, 10) + '...',
-      embeddedAddress: embeddedWallet?.address?.substring(0, 10) + '...'
-    });
+    console.log('=== MINIKIT WALLET DEBUG ===');
+    console.log('Is Connected:', isConnected);
+    console.log('Address:', address);
+    console.log('Connectors Available:', connectors.length);
+    console.log('Wallet Client:', !!walletClient);
     
     if (connectedWallet) {
-      const isEmbedded = connectedWallet.connectorType === 'embedded';
-      const hasSocialLogin = !!(user?.email || user?.farcaster || user?.google || user?.twitter);
-      
-      console.log('🔍 SELECTED WALLET:', {
+      console.log('🔍 CONNECTED WALLET:', {
         address: connectedWallet.address,
         shortAddress: connectedWallet.address?.substring(0, 6) + '...' + connectedWallet.address?.substring(-4),
         connectorType: connectedWallet.connectorType,
-        walletClientType: connectedWallet.walletClientType,
-        isEmbedded: isEmbedded,
-        loginMethod: isEmbedded ? 'Social/Embedded' : 'External Wallet',
-        selectionReason: hasSocialLogin && isEmbedded ? 'Social login → embedded wallet' : 'Last wallet in array',
-        arrayIndex: wallets.findIndex(w => w.address === connectedWallet.address)
+        walletClientType: connectedWallet.walletClientType
       });
-      
-      // CRITICAL: Show if this matches what user expects (MiniApp: Coinbase or Embedded only)
-      if (connectedWallet.connectorType === 'coinbase_wallet') {
-        console.log('🔵 USER SHOULD SEE: Coinbase Wallet info');
-      } else if (connectedWallet.connectorType === 'embedded') {
-        console.log('📱 USER SHOULD SEE: Embedded/Social wallet info (Farcaster or Email)');
-      } else {
-        console.log('❓ UNEXPECTED WALLET TYPE:', connectedWallet.connectorType, connectedWallet.walletClientType);
-      }
-      
-      // Show user info for embedded wallets
-      if (isEmbedded && user) {
-        console.log('User Info (for embedded wallet):', {
-          email: user.email?.address,
-          farcaster: user.farcaster?.username,
-          google: user.google?.email,
-          twitter: user.twitter?.username
-        });
-      }
+      console.log('🎆 USER SHOULD SEE: Farcaster Smart Wallet (MiniKit auto-connected)');
       
       // Clear balance immediately when wallet changes
       setWalletBalance('0.00');
@@ -199,26 +141,15 @@ export default function FarcasterMiniApp() {
       setWalletBalance('0.00');
     }
     console.log('===================');
-  }, [connectedWallet, wallets, user]);
+  }, [connectedWallet, isConnected, address, connectors.length, walletClient]);
   
-  // Track wallet connections and set preferred wallet
-  useEffect(() => {
-    if (wallets.length > 0 && authenticated) {
-      const latestWallet = wallets[wallets.length - 1];
-      
-      // If this is a new external wallet connection, set it as preferred
-      if (latestWallet.connectorType !== 'embedded') {
-        console.log('Setting preferred wallet:', latestWallet.connectorType);
-        setPreferredWalletType(latestWallet.connectorType);
-      }
-    }
-  }, [wallets.length, authenticated]);
+  // MiniKit handles wallet connections automatically - no manual tracking needed
   
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
   
   // Fetch real USDC wallet balance
   const fetchWalletBalance = useCallback(async () => {
-    if (!walletAddress || !authenticated) {
+    if (!walletAddress || !isConnected) {
       setWalletBalance('0.00');
       return;
     }
@@ -253,7 +184,7 @@ export default function FarcasterMiniApp() {
       const mockBalance = (Math.random() * 100 + 50).toFixed(2);
       setWalletBalance(mockBalance);
     }
-  }, [walletAddress, authenticated, connectedWallet]);
+  }, [walletAddress, isConnected, connectedWallet]);
   
   // Fetch balance when wallet connects
   useEffect(() => {
@@ -370,8 +301,7 @@ export default function FarcasterMiniApp() {
     fetchRate(selectedCountry.currency);
   }, [selectedCountry, fetchRate]);
 
-  // Initialize OnchainKit MiniKit (REQUIRED for proper Farcaster embedding)
-  const { setFrameReady, isFrameReady } = useMiniKit();
+  // MiniKit initialization (already declared above)
   
   useEffect(() => {
     if (!isFrameReady) {
@@ -379,12 +309,20 @@ export default function FarcasterMiniApp() {
     }
   }, [setFrameReady, isFrameReady]);
 
+  // Auto-connect to Farcaster wallet when MiniKit is ready
+  useEffect(() => {
+    if (isFrameReady && !isConnected && connectors.length > 0) {
+      console.log('🔗 Auto-connecting to Farcaster smart wallet...');
+      connect({ connector: connectors[0] });
+    }
+  }, [isFrameReady, isConnected, connectors, connect]);
+
   const paymentDetails = calculatePaymentDetails();
 
   // Using imported executeUSDCTransaction from utils/wallet.ts
 
   const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any) => {
-    if (!walletAddress || !authenticated) {
+    if (!walletAddress || !isConnected) {
       throw new Error('Wallet not connected');
     }
 
@@ -457,10 +395,10 @@ export default function FarcasterMiniApp() {
       console.error('Paycrest transaction failed:', error);
       throw error;
     }
-  }, [walletAddress, authenticated, currentRate]);
+  }, [walletAddress, isConnected, currentRate]);
 
   const handleGeneratePaymentLink = useCallback(async () => {
-    if (!linkAmount || !authenticated || !walletAddress) {
+    if (!linkAmount || !isConnected || !walletAddress) {
       alert('Please connect wallet and enter amount');
       return;
     }
@@ -497,7 +435,7 @@ export default function FarcasterMiniApp() {
       console.error('Failed to generate payment link:', error);
       alert('❌ Failed to generate payment link');
     }
-  }, [linkAmount, authenticated, walletAddress, selectedStablecoin, linkDescription]);
+  }, [linkAmount, isConnected, walletAddress, selectedStablecoin, linkDescription]);
 
   const handleSendTransaction = useCallback(async () => {
     if (!amount || !phoneNumber) {
@@ -505,7 +443,7 @@ export default function FarcasterMiniApp() {
       return;
     }
 
-    if (!walletAddress || !authenticated) {
+    if (!walletAddress || !isConnected) {
       alert('Please connect your wallet first');
       return;
     }
@@ -559,7 +497,7 @@ export default function FarcasterMiniApp() {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
     }
-  }, [amount, phoneNumber, walletAddress, authenticated, sendCurrency, selectedCountry.currency, selectedCountry.code, selectedInstitution, executePaycrestTransaction, fetchWalletBalance]);
+  }, [amount, phoneNumber, walletAddress, isConnected, sendCurrency, selectedCountry.currency, selectedCountry.code, selectedInstitution, executePaycrestTransaction, fetchWalletBalance]);
 
   const handlePayTransaction = useCallback(async () => {
     if (!amount || !tillNumber) {
@@ -573,7 +511,7 @@ export default function FarcasterMiniApp() {
       return;
     }
 
-    if (!walletAddress || !authenticated) {
+    if (!walletAddress || !isConnected) {
       alert('Please connect your wallet first');
       return;
     }
@@ -621,7 +559,7 @@ export default function FarcasterMiniApp() {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
     }
-  }, [amount, tillNumber, businessNumber, paymentType, walletAddress, authenticated, payCurrency, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
+  }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
 
   const renderSendTab = () => (
     <div className="space-y-2">
@@ -1610,24 +1548,24 @@ export default function FarcasterMiniApp() {
     <div className="space-y-3">
       {/* Wallet Connection Status */}
       <div className={`border rounded-lg p-2 ${
-        authenticated 
+        isConnected 
           ? 'bg-green-600/20 border-green-600/30' 
           : 'bg-yellow-600/20 border-yellow-600/30'
       }`}>
         <div className={`flex items-center gap-2 ${
-          authenticated ? 'text-green-400' : 'text-yellow-400'
+          isConnected ? 'text-green-400' : 'text-yellow-400'
         }`}>
           <span className={`w-1.5 h-1.5 rounded-full ${
-            authenticated ? 'bg-green-400' : 'bg-yellow-400'
+            isConnected ? 'bg-green-400' : 'bg-yellow-400'
           }`}></span>
           <span className="text-xs font-medium">
-            {authenticated 
+            {isConnected 
               ? `✅ Wallet Connected - Ready to Generate Links` 
               : `⚠️ Connect Wallet to Generate Links`
             }
           </span>
         </div>
-        {authenticated && walletAddress && (
+        {isConnected && walletAddress && (
           <div className="text-xs text-gray-400 mt-1 font-mono">
             {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
           </div>
@@ -1684,15 +1622,15 @@ export default function FarcasterMiniApp() {
 
       {/* Generate Link Button */}
       <button 
-        onClick={authenticated ? handleGeneratePaymentLink : login}
-        disabled={!authenticated || !linkAmount}
+        onClick={isConnected ? handleGeneratePaymentLink : () => connect({ connector: connectors[0] })}
+        disabled={!isConnected || !linkAmount}
         className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
-          authenticated && linkAmount
+          isConnected && linkAmount
             ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 shadow-lg' 
             : 'bg-gray-600 text-gray-300 cursor-not-allowed'
         }`}
       >
-        {authenticated ? (
+        {isConnected ? (
           <>
             🔗 Generate Payment Link
           </>
@@ -1760,9 +1698,9 @@ export default function FarcasterMiniApp() {
           </div>
           
           {/* Wallet Button */}
-          {!authenticated ? (
+          {!isConnected ? (
             <button
-              onClick={login}
+              onClick={() => connect({ connector: connectors[0] })}
               className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
             >
               {/* Animated background */}
@@ -1786,7 +1724,7 @@ export default function FarcasterMiniApp() {
               
               {/* Wallet Menu Button */}
               <button
-                onClick={logout}
+                onClick={() => disconnect()}
                 className="relative w-12 h-12 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 hover:from-green-500 hover:via-emerald-500 hover:to-teal-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-green-400/30 hover:border-green-300/50 group overflow-hidden"
               >
                 {/* Animated background */}
