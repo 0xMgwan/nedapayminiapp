@@ -115,7 +115,8 @@ export default function FarcasterMiniApp() {
     window.location.href.includes('base.org') ||
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   );
-  const { setFrameReady, isFrameReady } = useMiniKit();
+  const minikit = useMiniKit();
+  const { setFrameReady, isFrameReady } = minikit;
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
@@ -1833,15 +1834,20 @@ export default function FarcasterMiniApp() {
               <button
                 onClick={async () => {
                   try {
-                    if (minikit?.isConnected) {
-                      console.log('MiniKit already connected');
-                      return;
-                    }
+                    console.log('Attempting MiniKit connection...');
                     
                     // Use MiniKit to connect wallet in Farcaster
-                    await minikit?.connectWallet();
+                    if (minikit && typeof minikit.connectWallet === 'function') {
+                      await minikit.connectWallet();
+                    } else {
+                      console.log('MiniKit not available, trying wagmi fallback');
+                      // Fallback to wagmi if MiniKit not available
+                      if (connectors[0]) {
+                        await connect({ connector: connectors[0] });
+                      }
+                    }
                   } catch (error) {
-                    console.error('Failed to connect MiniKit wallet:', error);
+                    console.error('Failed to connect wallet:', error);
                   }
                 }}
                 className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
