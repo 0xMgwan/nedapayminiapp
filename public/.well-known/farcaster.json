@@ -1,0 +1,24 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg2OTUyNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweEY5N0NFZkRiNTIzMzFiZDk3YWUyMDY5NjQ0NjcxMTNkMGQ3QjM2MjkifQ",
+    "payload": "eyJkb21haW4iOiJuZWRhcGF5bWluaWFwcC52ZXJjZWwuYXBwIn0",
+    "signature": "MHgxMzE0YjJjM2ZlYjljNjIxYzkzZjA1MDk4OWU4M2FkYjFjNDEwM2QxMDllNWQwYjhjNWU4MmY0NmY4MWYyNWY2NjYwNGE0NzViN2Q1ZjU3MjIwZDdhNmE4YTU0ZDhjYjRiNzQyMTk0ZTJkN2MwZDRjZDUzOTVkNDI4ZGRiZjM3MTFi"
+  },
+  "frame": {
+    "version": "1",
+    "name": "NedaPay",
+    "subtitle": "Seamless crypto payments across Africa",
+    "description": "Send money instantly across Africa using USDC on Base. Convert crypto to local currencies in Kenya, Nigeria, Tanzania and more.",
+    "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+    "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
+    "splashBackgroundColor": "#1e293b",
+    "homeUrl": "https://nedapayminiapp.vercel.app",
+    "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook",
+    "primaryCategory": "finance",
+    "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
+    "tagline": "Cross-border payments made simple",
+    "ogTitle": "NedaPay",
+    "ogDescription": "Send money instantly across Africa using USDC on Base",
+    "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
+  }
+}
