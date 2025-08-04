@@ -40,13 +40,18 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
 
       // Primary frame metadata for Farcaster MiniApp
-      'fc:frame': JSON.stringify({
-        version: 'next',
+      'fc:frame': 'vNext',
+      'fc:frame:image': `${URL}/og-image.png`,
+      'fc:frame:button:1': `Open ${PROJECT_NAME}`,
+      'fc:frame:button:1:action': 'link',
+      'fc:frame:button:1:target': URL,
+      'fc:miniapp': JSON.stringify({
+        version: '1',
         imageUrl: `${URL}/og-image.png`,
         button: {
           title: `Open ${PROJECT_NAME}`,
           action: {
-            type: 'launch_frame',
+            type: 'launch_miniapp',
             name: PROJECT_NAME,
             url: URL,
             splashImageUrl: `${URL}/splash.png`,
@@ -80,10 +85,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="farcaster:frame" content="vNext" />
-        <meta name="farcaster:frame:miniapp" content="true" />
-        <meta name="farcaster:frame:miniapp:url" content="https://nedapayminiapp.vercel.app" />
-        <meta name="farcaster:frame:miniapp:manifest" content="https://nedapayminiapp.vercel.app/.well-known/farcaster.json" />
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="https://nedapayminiapp.vercel.app/og-image.png" />
+        <meta property="fc:frame:button:1" content="Open NedaPay" />
+        <meta property="fc:frame:button:1:action" content="link" />
+        <meta property="fc:frame:button:1:target" content="https://nedapayminiapp.vercel.app" />
+        <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Open NedaPay","action":{"type":"launch_miniapp","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
           rel="stylesheet"
