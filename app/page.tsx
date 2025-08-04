@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
+import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon } from '@heroicons/react/24/outline';
@@ -1825,49 +1827,78 @@ export default function FarcasterMiniApp() {
           
           {/* Wallet Button */}
           {!isConnected ? (
-            <button
-              onClick={() => {
-                if (isSmartWalletEnvironment) {
-                  console.log('⚠️ Smart wallet environment - connection should happen automatically');
-                } else {
-                  console.log('💻 Desktop environment - attempting manual connection');
-                  if (connectors.length > 0) {
-                    connect({ connector: connectors[0] });
-                  }
-                }
-              }}
-              className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
-            >
-              {/* Animated background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              {/* Pulse effect */}
-              <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
-              
-              <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
-            </button>
-          ) : (
-            <div className="flex items-center gap-3">
-              {/* Wallet Status Indicator */}
-              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-green-400 text-xs font-medium">Connected</span>
-                <span className="text-gray-400 text-xs font-mono">
-                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
-                </span>
-              </div>
-              
-              {/* Wallet Menu Button */}
+            isSmartWalletEnvironment ? (
+              // Farcaster environment - show simple connecting state
               <button
-                onClick={() => disconnect()}
-                className="relative w-12 h-12 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 hover:from-green-500 hover:via-emerald-500 hover:to-teal-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-green-400/30 hover:border-green-300/50 group overflow-hidden"
+                onClick={() => {
+                  console.log('⚠️ Smart wallet environment - connection should happen automatically');
+                }}
+                className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
               >
                 {/* Animated background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Pulse effect */}
+                <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
                 
                 <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
               </button>
-            </div>
+            ) : (
+              // Website environment - show OnchainKit wallet modal
+              <Wallet>
+                <ConnectWallet className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden">
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Pulse effect */}
+                  <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
+                  
+                  <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+                </ConnectWallet>
+              </Wallet>
+            )
+          ) : (
+            isSmartWalletEnvironment ? (
+              // Farcaster environment - show simple connected state
+              <div className="flex items-center gap-3">
+                {/* Wallet Status Indicator */}
+                <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className="text-green-400 text-xs font-medium">Connected</span>
+                  <span className="text-gray-400 text-xs font-mono">
+                    {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
+                  </span>
+                </div>
+                
+                {/* Wallet Menu Button */}
+                <button
+                  onClick={() => disconnect()}
+                  className="relative w-12 h-12 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 hover:from-green-500 hover:via-emerald-500 hover:to-teal-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-green-400/30 hover:border-green-300/50 group overflow-hidden"
+                >
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+                </button>
+              </div>
+            ) : (
+              // Website environment - show OnchainKit wallet dropdown
+              <Wallet>
+                <ConnectWallet>
+                  <Avatar className="h-6 w-6" />
+                  <Name />
+                </ConnectWallet>
+                <WalletDropdown>
+                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                    <Avatar />
+                    <Name />
+                    <Address />
+                    <EthBalance />
+                  </Identity>
+                  <WalletDropdownDisconnect />
+                </WalletDropdown>
+              </Wallet>
+            )
           )}
         </div>
 
