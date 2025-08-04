@@ -40,18 +40,13 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
 
       // Primary frame metadata for Farcaster MiniApp
-      'fc:frame': 'vNext',
-      'fc:frame:image': `${URL}/og-image.png`,
-      'fc:frame:button:1': `Open ${PROJECT_NAME}`,
-      'fc:frame:button:1:action': 'link',
-      'fc:frame:button:1:target': URL,
-      'fc:miniapp': JSON.stringify({
-        version: '1',
+      'fc:frame': JSON.stringify({
+        version: 'next',
         imageUrl: `${URL}/og-image.png`,
         button: {
-          title: `Open ${PROJECT_NAME}`,
+          title: `Launch ${PROJECT_NAME}`,
           action: {
-            type: 'launch_miniapp',
+            type: 'launch_frame',
             name: PROJECT_NAME,
             url: URL,
             splashImageUrl: `${URL}/splash.png`,
@@ -85,12 +80,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="https://nedapayminiapp.vercel.app/og-image.png" />
-        <meta property="fc:frame:button:1" content="Open NedaPay" />
-        <meta property="fc:frame:button:1:action" content="link" />
-        <meta property="fc:frame:button:1:target" content="https://nedapayminiapp.vercel.app" />
-        <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Open NedaPay","action":{"type":"launch_miniapp","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
+        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Launch NedaPay","action":{"type":"launch_frame","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
           rel="stylesheet"
