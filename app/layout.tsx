@@ -39,27 +39,12 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     other: {
 
-      // Critical Farcaster MiniApp Embed Detection (WORKING FORMAT)
-      'fc:miniapp': JSON.stringify({
-        version: '1',
-        imageUrl: `${URL}/og-image.png`,
-        button: {
-          title: `Open ${PROJECT_NAME}`,
-          action: {
-            type: 'launch_miniapp',
-            url: URL,
-            name: PROJECT_NAME,
-            splashImageUrl: `${URL}/splash.png`,
-            splashBackgroundColor: '#1e293b'
-          }
-        }
-      }),
-      // Critical frame metadata for MiniApp discovery
+      // Primary frame metadata for Farcaster MiniApp
       'fc:frame': JSON.stringify({
         version: 'next',
         imageUrl: `${URL}/og-image.png`,
         button: {
-          title: `Launch ${PROJECT_NAME}`,
+          title: `Open ${PROJECT_NAME}`,
           action: {
             type: 'launch_frame',
             name: PROJECT_NAME,
@@ -95,7 +80,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Launch NedaPay","action":{"type":"launch_frame","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
         <meta name="farcaster:frame" content="vNext" />
         <meta name="farcaster:frame:miniapp" content="true" />
         <meta name="farcaster:frame:miniapp:url" content="https://nedapayminiapp.vercel.app" />
