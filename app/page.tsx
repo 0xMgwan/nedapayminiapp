@@ -1750,10 +1750,10 @@ export default function FarcasterMiniApp() {
           }
         }}
         disabled={!isConnected || !linkAmount}
-        className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
+        className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm border-2 ${
           isConnected && linkAmount
-            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 shadow-lg' 
-            : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 shadow-lg border-blue-400/30 hover:border-blue-300/50' 
+            : 'bg-gray-600 text-gray-300 cursor-not-allowed border-gray-600/30'
         }`}
       >
         {isConnected ? (
