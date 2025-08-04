@@ -19,15 +19,20 @@ interface Country {
   code: string;
   flag: string;
   currency: string;
+  countryCode?: string;
+  comingSoon?: boolean;
 }
 
 const countries: Country[] = [
-  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN' },
-  { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES' },
-  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS' },
-  { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS' },
-  { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX' },
-  { name: 'Rwanda', code: 'RW', flag: '🇷🇼', currency: 'RWF' },
+  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234' },
+  { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES', countryCode: '+254' },
+  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233' },
+  { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS', countryCode: '+255' },
+  { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX', countryCode: '+256' },
+  { name: 'Rwanda', code: 'RW', flag: '🇷🇼', currency: 'RWF', countryCode: '+250' },
+  { name: 'China', code: 'CN', flag: '🇨🇳', currency: 'CNY', countryCode: '+86', comingSoon: true },
+  { name: 'Indonesia', code: 'ID', flag: '🇮🇩', currency: 'IDR', countryCode: '+62', comingSoon: true },
+  { name: 'UAE', code: 'AE', flag: '🇦🇪', currency: 'AED', countryCode: '+971', comingSoon: true },
 ];
 
 interface Currency {
@@ -606,12 +611,17 @@ export default function FarcasterMiniApp() {
       <div className="relative">
         <select 
           value={selectedCountry.code}
-          onChange={(e) => setSelectedCountry(countries.find(c => c.code === e.target.value) || countries[0])}
+          onChange={(e) => {
+            const country = countries.find(c => c.code === e.target.value);
+            if (country && !country.comingSoon) {
+              setSelectedCountry(country);
+            }
+          }}
           className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {countries.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.flag} {country.name}
+            <option key={country.code} value={country.code} disabled={country.comingSoon}>
+              {country.flag} {country.name} {country.comingSoon ? '(Coming soon)' : ''}
             </option>
           ))}
         </select>
@@ -657,12 +667,12 @@ export default function FarcasterMiniApp() {
 
       {/* Phone Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Enter Telephone Number</label>
+        <label className="block text-xs text-gray-400 mb-1">Enter Mobile or Account Number (Start with country code)</label>
         <input
           type="text"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
-          placeholder="089999"
+          placeholder={`${selectedCountry.countryCode || '+255'}789123456`}
           className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -1058,15 +1068,27 @@ export default function FarcasterMiniApp() {
               <button
                 key={country.code}
                 onClick={() => {
-                  setSelectedCountry(country);
-                  setIsCountryDropdownOpen(false);
+                  if (!country.comingSoon) {
+                    setSelectedCountry(country);
+                    setIsCountryDropdownOpen(false);
+                  }
                 }}
-                className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-slate-700 transition-colors ${
+                disabled={country.comingSoon}
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                  country.comingSoon 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:bg-slate-700'
+                } ${
                   selectedCountry.code === country.code ? 'bg-blue-600/20' : ''
                 }`}
               >
                 <span className="text-2xl">{country.flag}</span>
-                <span className="text-white font-medium">{country.name}</span>
+                <div className="flex flex-col">
+                  <span className="text-white font-medium">{country.name}</span>
+                  {country.comingSoon && (
+                    <span className="text-gray-400 text-xs">Coming soon</span>
+                  )}
+                </div>
                 {selectedCountry.code === country.code && (
                   <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
                 )}
