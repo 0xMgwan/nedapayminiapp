@@ -54,16 +54,16 @@ export async function generateMetadata(): Promise<Metadata> {
           }
         }
       }),
-      // Backward compatibility
+      // Critical frame metadata for MiniApp discovery
       'fc:frame': JSON.stringify({
-        version: '1',
+        version: 'next',
         imageUrl: `${URL}/og-image.png`,
         button: {
-          title: `Open ${PROJECT_NAME}`,
+          title: `Launch ${PROJECT_NAME}`,
           action: {
             type: 'launch_frame',
-            url: URL,
             name: PROJECT_NAME,
+            url: URL,
             splashImageUrl: `${URL}/splash.png`,
             splashBackgroundColor: '#1e293b'
           }
