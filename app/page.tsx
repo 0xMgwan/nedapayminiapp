@@ -99,11 +99,19 @@ export default function FarcasterMiniApp() {
   // Track user's preferred wallet selection
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
 
-  // MiniKit and Wagmi hooks for Farcaster smart wallet auto-connection
+  // MiniKit and Wagmi hooks for smart wallet (Farcaster/Coinbase)
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connect, connectors, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useConnectorClient();
+  
+  // Detect if we're in a smart wallet environment
+  const isSmartWalletEnvironment = typeof window !== 'undefined' && (
+    window.location.href.includes('farcaster') ||
+    window.location.href.includes('warpcast') ||
+    window.location.href.includes('base.org') ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
   const { setFrameReady, isFrameReady } = useMiniKit();
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
@@ -353,20 +361,42 @@ export default function FarcasterMiniApp() {
     }
   }, [setFrameReady, isFrameReady]);
 
-  // Auto-connect to Farcaster wallet when MiniKit is ready (only once)
+  // Smart wallet auto-connection for Farcaster/Coinbase environments
   useEffect(() => {
-    if (isFrameReady && !isConnected && connectors.length > 0 && !address) {
-      console.log('🔗 Auto-connecting to Farcaster smart wallet...');
-      // Only auto-connect if we don't have an address and aren't already connected
-      try {
-        connect({ connector: connectors[0] });
-      } catch (error) {
-        console.log('🚫 Auto-connect failed, but this is expected in some cases:', error);
+    console.log('🔍 Smart Wallet Environment Check:', {
+      isSmartWalletEnvironment,
+      isFrameReady,
+      isConnected,
+      hasAddress: !!address,
+      connectorsCount: connectors.length,
+      connectError: connectError?.message
+    });
+    
+    // In smart wallet environments, don't force connection attempts
+    if (isSmartWalletEnvironment) {
+      if (isConnected && address) {
+        console.log('✅ Smart wallet already connected:', address);
+        return;
       }
-    } else if (isConnected && address) {
-      console.log('✅ Wallet already connected, skipping auto-connect');
+      
+      // Only attempt auto-connection if MiniKit is ready and no connection errors
+      if (isFrameReady && !isConnected && !connectError && connectors.length > 0) {
+        console.log('🔗 Attempting smart wallet auto-connection...');
+        // Use a timeout to prevent immediate popup blocking
+        setTimeout(() => {
+          if (!isConnected) {
+            try {
+              connect({ connector: connectors[0] });
+            } catch (error) {
+              console.log('🚫 Smart wallet connection attempt failed (this is normal):', error);
+            }
+          }
+        }, 1000);
+      }
+    } else {
+      console.log('💻 Desktop environment - wallet connection handled normally');
     }
-  }, [isFrameReady, isConnected, connectors, connect, address]);
+  }, [isFrameReady, isConnected, connectors, connect, address, isSmartWalletEnvironment, connectError]);
 
   const paymentDetails = calculatePaymentDetails();
 
@@ -1709,7 +1739,15 @@ export default function FarcasterMiniApp() {
       {/* Generate Link Button */}
       <button 
         onClick={isConnected ? handleGeneratePaymentLink : () => {
-          console.log('⚠️ Wallet connection needed but preventing popup - MiniKit should auto-connect');
+          if (isSmartWalletEnvironment) {
+            console.log('⚠️ Smart wallet environment - connection should happen automatically');
+          } else {
+            console.log('💻 Desktop environment - manual connection may be needed');
+            // Only attempt connection on desktop
+            if (connectors.length > 0) {
+              connect({ connector: connectors[0] });
+            }
+          }
         }}
         disabled={!isConnected || !linkAmount}
         className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
@@ -1789,7 +1827,14 @@ export default function FarcasterMiniApp() {
           {!isConnected ? (
             <button
               onClick={() => {
-                console.log('⚠️ Header wallet connect clicked but preventing popup - MiniKit should auto-connect');
+                if (isSmartWalletEnvironment) {
+                  console.log('⚠️ Smart wallet environment - connection should happen automatically');
+                } else {
+                  console.log('💻 Desktop environment - attempting manual connection');
+                  if (connectors.length > 0) {
+                    connect({ connector: connectors[0] });
+                  }
+                }
               }}
               className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
             >

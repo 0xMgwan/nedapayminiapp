@@ -5,50 +5,57 @@ import { MiniKitProvider as OnchainKitMiniKitProvider } from '@coinbase/onchaink
 import { base } from 'wagmi/chains';
 
 export function MiniKitProvider({ children }: { children: ReactNode }) {
-  // Debug MiniKit loading context and implement comprehensive popup blocking fix
+  // Enhanced MiniKit initialization for smart wallet environments
   useEffect(() => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isFarcaster = window.location.href.includes('farcaster') || window.location.href.includes('warpcast');
+    const isBaseApp = window.location.href.includes('base.org');
+    const isSmartWalletEnv = isMobile || isFarcaster || isBaseApp;
     
-    console.log('MiniKit Provider Initializing:', {
+    console.log('🚀 MiniKit Provider Initializing for Smart Wallet Environment:', {
       url: window.location.href,
       referrer: document.referrer,
       userAgent: navigator.userAgent,
       isMobile,
       isFarcaster,
+      isBaseApp,
+      isSmartWalletEnv,
       hasOnchainKit: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
       projectName: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME
     });
     
-    // Comprehensive popup blocking fix for mobile Farcaster
+    // Smart wallet environment popup prevention
     const originalConsoleError = console.error;
     const originalConsoleWarn = console.warn;
     const originalWindowOpen = window.open;
     
-    // Suppress popup-related console errors and warnings
-    console.error = function(...args) {
-      const message = args.join(' ').toLowerCase();
-      if (message.includes('popup') || message.includes('blocked') || 
-          message.includes('window.open') || message.includes('minikit')) {
-        console.log('🔇 Suppressed popup/MiniKit error:', args[0]);
-        return;
-      }
-      originalConsoleError.apply(console, args);
-    };
-    
-    console.warn = function(...args) {
-      const message = args.join(' ').toLowerCase();
-      if (message.includes('popup') || message.includes('blocked')) {
-        console.log('🔇 Suppressed popup warning:', args[0]);
-        return;
-      }
-      originalConsoleWarn.apply(console, args);
-    };
-    
-    // Override window.open to prevent popup blocking errors on mobile
-    if (isMobile || isFarcaster) {
+    // Only apply aggressive popup blocking in smart wallet environments
+    if (isSmartWalletEnv) {
+      console.log('🚫 Applying smart wallet popup prevention measures');
+      
+      // Suppress popup-related console errors and warnings
+      console.error = function(...args) {
+        const message = args.join(' ').toLowerCase();
+        if (message.includes('popup') || message.includes('blocked') || 
+            message.includes('window.open') || message.includes('minikit')) {
+          console.log('🔇 [Smart Wallet] Suppressed popup error:', args[0]);
+          return;
+        }
+        originalConsoleError.apply(console, args);
+      };
+      
+      console.warn = function(...args) {
+        const message = args.join(' ').toLowerCase();
+        if (message.includes('popup') || message.includes('blocked')) {
+          console.log('🔇 [Smart Wallet] Suppressed popup warning:', args[0]);
+          return;
+        }
+        originalConsoleWarn.apply(console, args);
+      };
+      
+      // Override window.open to prevent popup blocking errors in smart wallet environments
       window.open = function(url, target, features) {
-        console.log('🚫 Intercepted window.open call on mobile/Farcaster - preventing popup');
+        console.log('🚫 [Smart Wallet] Intercepted window.open call - using smart wallet instead');
         // Return a mock window object to prevent errors
         return {
           closed: false,
@@ -58,6 +65,8 @@ export function MiniKitProvider({ children }: { children: ReactNode }) {
           postMessage: () => {}
         } as any;
       };
+    } else {
+      console.log('💻 Desktop environment - allowing normal popup behavior');
     }
     
     // Hide any popup notification elements that might appear
