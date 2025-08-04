@@ -4,34 +4,23 @@ export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
   const response = Response.json({
-    accountAssociation: {
-      header: process.env.FARCASTER_HEADER,
-      payload: process.env.FARCASTER_PAYLOAD,
-      signature: process.env.FARCASTER_SIGNATURE,
-    },
-    miniapp: {
+    frame: {
       version: "1",
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
       iconUrl: `${URL}/icon.png`,
       homeUrl: URL,
       imageUrl: `${URL}/og-image.png`,
-      buttonTitle: `Open ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay'}`,
       splashImageUrl: `${URL}/splash.png`,
       splashBackgroundColor: '#1e293b',
-      universalLink: `${URL}/connect`,
-      screenshotUrls: [
-        `${URL}/og-image.png`
-      ],
       webhookUrl: `${URL}/api/webhook`,
-      requiredChains: [
-        'eip155:8453' // Base mainnet
-      ],
-      requiredCapabilities: [
-        'actions.signIn',
-        'wallet.getEthereumProvider',
-        'actions.sendTransaction'
-      ],
-      _lastUpdated: new Date().toISOString()
+      subtitle: "Seamless crypto payments across Africa",
+      primaryCategory: "finance",
+      description: "Send money instantly across Africa using USDC on Base. Convert crypto to local currencies in Kenya, Nigeria, Tanzania and more."
+    },
+    accountAssociation: {
+      header: process.env.FARCASTER_HEADER,
+      payload: process.env.FARCASTER_PAYLOAD,
+      signature: process.env.FARCASTER_SIGNATURE,
     },
   });
 
