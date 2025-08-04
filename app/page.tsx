@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
-import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
+import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
@@ -100,6 +100,7 @@ export default function FarcasterMiniApp() {
   
   // Track user's preferred wallet selection
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
+  const [addressCopied, setAddressCopied] = useState(false);
 
   // MiniKit and Wagmi hooks for smart wallet (Farcaster/Coinbase)
   const { address, isConnected } = useAccount();
@@ -1859,45 +1860,93 @@ export default function FarcasterMiniApp() {
             )
           ) : (
             isSmartWalletEnvironment ? (
-              // Farcaster environment - show simple connected state
-              <div className="flex items-center gap-3">
-                {/* Wallet Status Indicator */}
-                <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
+              // Farcaster environment - show same clean connected state
+              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-green-400 text-xs font-medium">Connected</span>
+                <span className="text-gray-400 text-xs font-mono">
+                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
+                </span>
+                <button
+                  onClick={async () => {
+                    if (walletAddress) {
+                      try {
+                        await navigator.clipboard.writeText(walletAddress);
+                        setAddressCopied(true);
+                        setTimeout(() => setAddressCopied(false), 2000);
+                      } catch (err) {
+                        console.error('Failed to copy address:', err);
+                      }
+                    }
+                  }}
+                  className="text-white hover:text-blue-400 transition-colors ml-1"
+                  title={addressCopied ? "Copied!" : "Copy address"}
+                >
+                  {addressCopied ? (
+                    <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+                {/* Disconnect button */}
+                <button
+                  onClick={() => disconnect()}
+                  className="text-white hover:text-red-400 transition-colors ml-2"
+                  title="Disconnect wallet"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              // Website environment - show same clean connected state
+              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                   <span className="text-green-400 text-xs font-medium">Connected</span>
                   <span className="text-gray-400 text-xs font-mono">
                     {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
                   </span>
-                </div>
-                
-                {/* Wallet Menu Button */}
-                <button
-                  onClick={() => disconnect()}
-                  className="relative w-12 h-12 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 hover:from-green-500 hover:via-emerald-500 hover:to-teal-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-green-400/30 hover:border-green-300/50 group overflow-hidden"
-                >
-                  {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
-                </button>
+                  <button
+                    onClick={async () => {
+                      if (walletAddress) {
+                        try {
+                          await navigator.clipboard.writeText(walletAddress);
+                          setAddressCopied(true);
+                          setTimeout(() => setAddressCopied(false), 2000);
+                        } catch (err) {
+                          console.error('Failed to copy address:', err);
+                        }
+                      }
+                    }}
+                    className="text-white hover:text-blue-400 transition-colors ml-1"
+                    title={addressCopied ? "Copied!" : "Copy address"}
+                  >
+                    {addressCopied ? (
+                      <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    )}
+                  </button>
+                  {/* Disconnect button */}
+                  <button
+                    onClick={() => disconnect()}
+                    className="text-white hover:text-red-400 transition-colors ml-2"
+                    title="Disconnect wallet"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
               </div>
-            ) : (
-              // Website environment - show OnchainKit wallet dropdown
-              <Wallet>
-                <ConnectWallet>
-                  <Avatar className="h-6 w-6" />
-                  <Name />
-                </ConnectWallet>
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                    <EthBalance />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
             )
           )}
         </div>
