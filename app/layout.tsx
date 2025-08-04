@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
       // Primary frame metadata for Farcaster MiniApp
       'fc:frame': JSON.stringify({
-        version: 'next',
+        version: '1',
         imageUrl: `${URL}/og-image.png`,
         button: {
           title: `Launch ${PROJECT_NAME}`,
@@ -80,7 +80,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Launch NedaPay","action":{"type":"launch_frame","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
+        <meta name="fc:frame" content='{"version":"1","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Launch NedaPay","action":{"type":"launch_frame","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
           rel="stylesheet"
@@ -88,7 +88,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" href="/favicon.png" />
         <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js" defer></script>
       </head>
-      <body className="bg-white text-black dark:text-white">
+      <body className="bg-slate-900 text-white">
         <div className="flex flex-col min-h-screen">
           <Providers>
             <AppToaster />

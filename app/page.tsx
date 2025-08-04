@@ -52,6 +52,7 @@ interface RateData {
 }
 
 export default function FarcasterMiniApp() {
+  console.log('🚀 NedaPay MiniApp Loading...');
   const [activeTab, setActiveTab] = useState<Tab>('send');
   const [selectedToken, setSelectedToken] = useState(stablecoins[0]);
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
@@ -161,7 +162,13 @@ export default function FarcasterMiniApp() {
   useEffect(() => {
     if (isSmartWalletEnvironment && setFrameReady) {
       console.log('Setting MiniKit frame ready...');
-      setFrameReady();
+      // Add a small delay to ensure everything is loaded
+      const timer = setTimeout(() => {
+        setFrameReady();
+        console.log('MiniKit frame ready signal sent!');
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
   }, [isSmartWalletEnvironment, setFrameReady]);
   
