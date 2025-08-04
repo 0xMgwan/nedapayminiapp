@@ -1829,22 +1829,19 @@ export default function FarcasterMiniApp() {
           {/* Wallet Button */}
           {!isConnected ? (
             isSmartWalletEnvironment ? (
-              // Farcaster environment - direct wallet connection without modal
+              // Farcaster environment - use MiniKit connection
               <button
                 onClick={async () => {
                   try {
-                    // Try to connect with the first available connector (usually injected)
-                    const injectedConnector = connectors.find(c => c.type === 'injected');
-                    if (injectedConnector) {
-                      await connect({ connector: injectedConnector });
-                    } else {
-                      // Fallback to first available connector
-                      if (connectors[0]) {
-                        await connect({ connector: connectors[0] });
-                      }
+                    if (minikit?.isConnected) {
+                      console.log('MiniKit already connected');
+                      return;
                     }
+                    
+                    // Use MiniKit to connect wallet in Farcaster
+                    await minikit?.connectWallet();
                   } catch (error) {
-                    console.error('Failed to connect wallet:', error);
+                    console.error('Failed to connect MiniKit wallet:', error);
                   }
                 }}
                 className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
