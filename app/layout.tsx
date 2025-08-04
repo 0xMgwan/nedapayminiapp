@@ -95,6 +95,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://nedapayminiapp.vercel.app/og-image.png","button":{"title":"Launch NedaPay","action":{"type":"launch_frame","name":"NedaPay","url":"https://nedapayminiapp.vercel.app","splashImageUrl":"https://nedapayminiapp.vercel.app/splash.png","splashBackgroundColor":"#1e293b"}}}' />
         <meta name="farcaster:frame" content="vNext" />
         <meta name="farcaster:frame:miniapp" content="true" />
         <meta name="farcaster:frame:miniapp:url" content="https://nedapayminiapp.vercel.app" />
