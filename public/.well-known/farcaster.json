@@ -4,7 +4,7 @@
     "payload": "eyJkb21haW4iOiJuZWRhcGF5bWluaWFwcC52ZXJjZWwuYXBwIn0",
     "signature": "MHgxMzE0YjJjM2ZlYjljNjIxYzkzZjA1MDk4OWU4M2FkYjFjNDEwM2QxMDllNWQwYjhjNWU4MmY0NmY4MWYyNWY2NjYwNGE0NzViN2Q1ZjU3MjIwZDdhNmE4YTU0ZDhjYjRiNzQyMTk0ZTJkN2MwZDRjZDUzOTVkNDI4ZGRiZjM3MTFi"
   },
-  "frame": {
+  "miniapp": {
     "version": "1",
     "name": "NedaPay",
     "subtitle": "Crypto payments across Africa",
