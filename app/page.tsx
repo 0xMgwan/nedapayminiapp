@@ -353,13 +353,20 @@ export default function FarcasterMiniApp() {
     }
   }, [setFrameReady, isFrameReady]);
 
-  // Auto-connect to Farcaster wallet when MiniKit is ready
+  // Auto-connect to Farcaster wallet when MiniKit is ready (only once)
   useEffect(() => {
-    if (isFrameReady && !isConnected && connectors.length > 0) {
+    if (isFrameReady && !isConnected && connectors.length > 0 && !address) {
       console.log('🔗 Auto-connecting to Farcaster smart wallet...');
-      connect({ connector: connectors[0] });
+      // Only auto-connect if we don't have an address and aren't already connected
+      try {
+        connect({ connector: connectors[0] });
+      } catch (error) {
+        console.log('🚫 Auto-connect failed, but this is expected in some cases:', error);
+      }
+    } else if (isConnected && address) {
+      console.log('✅ Wallet already connected, skipping auto-connect');
     }
-  }, [isFrameReady, isConnected, connectors, connect]);
+  }, [isFrameReady, isConnected, connectors, connect, address]);
 
   const paymentDetails = calculatePaymentDetails();
 
@@ -1701,7 +1708,9 @@ export default function FarcasterMiniApp() {
 
       {/* Generate Link Button */}
       <button 
-        onClick={isConnected ? handleGeneratePaymentLink : () => connect({ connector: connectors[0] })}
+        onClick={isConnected ? handleGeneratePaymentLink : () => {
+          console.log('⚠️ Wallet connection needed but preventing popup - MiniKit should auto-connect');
+        }}
         disabled={!isConnected || !linkAmount}
         className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
           isConnected && linkAmount
@@ -1779,7 +1788,9 @@ export default function FarcasterMiniApp() {
           {/* Wallet Button */}
           {!isConnected ? (
             <button
-              onClick={() => connect({ connector: connectors[0] })}
+              onClick={() => {
+                console.log('⚠️ Header wallet connect clicked but preventing popup - MiniKit should auto-connect');
+              }}
               className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
             >
               {/* Animated background */}
