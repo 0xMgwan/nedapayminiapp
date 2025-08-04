@@ -86,6 +86,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <link rel="icon" type="image/png" href="/favicon.png" />
+        <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js" defer></script>
       </head>
       <body className="bg-white text-black dark:text-white">
         <div className="flex flex-col min-h-screen">

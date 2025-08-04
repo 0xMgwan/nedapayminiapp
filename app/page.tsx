@@ -157,6 +157,14 @@ export default function FarcasterMiniApp() {
     console.log('===================');
   }, [connectedWallet, isConnected, address, connectors.length, walletClient]);
   
+  // MiniKit initialization - signal when app is ready
+  useEffect(() => {
+    if (isSmartWalletEnvironment && setFrameReady) {
+      console.log('Setting MiniKit frame ready...');
+      setFrameReady();
+    }
+  }, [isSmartWalletEnvironment, setFrameReady]);
+  
   // MiniKit handles wallet connections automatically - no manual tracking needed
   
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
