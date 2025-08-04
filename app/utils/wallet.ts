@@ -87,21 +87,30 @@ export async function executeUSDCTransaction(
 }
 
 export async function getUSDCBalance(walletAddress: string, walletProvider?: any): Promise<string> {
+  console.log('🔍 getUSDCBalance called with:', walletAddress);
+  
   try {
     // Validate wallet address format
     if (!walletAddress || !walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      console.log('⚠️ Invalid address format');
       return '0';
     }
 
-    // Use a simple, reliable provider
+    console.log('🌐 Creating provider for Base network...');
+    // Use the official Base mainnet RPC URL
     const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
     const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, provider);
     
+    console.log('💰 Calling balanceOf...');
     const balance = await usdcContract.balanceOf(walletAddress);
+    console.log('💰 Raw balance:', balance.toString());
+    
     const formattedBalance = ethers.utils.formatUnits(balance, 6);
+    console.log('✅ Formatted balance:', formattedBalance);
     
     return formattedBalance;
   } catch (error) {
+    console.error('❌ getUSDCBalance error:', error);
     // Return 0 instead of throwing to prevent UI crashes
     return '0';
   }

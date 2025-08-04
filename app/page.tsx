@@ -133,9 +133,6 @@ export default function FarcasterMiniApp() {
         walletClientType: connectedWallet.walletClientType
       });
       console.log('🎆 USER SHOULD SEE: Farcaster Smart Wallet (MiniKit auto-connected)');
-      
-      // Clear balance immediately when wallet changes
-      setWalletBalance('0.00');
     } else {
       console.log('No wallet connected');
       setWalletBalance('0.00');
@@ -150,24 +147,35 @@ export default function FarcasterMiniApp() {
   // Fetch real USDC wallet balance
   const fetchWalletBalance = useCallback(async () => {
     if (!walletAddress || !isConnected) {
+      console.log('⚠️ No wallet address or not connected');
       setWalletBalance('0.00');
       return;
     }
     
+    console.log('💰 Fetching balance for:', walletAddress);
+    
     try {
       const balance = await getUSDCBalance(walletAddress);
       const formattedBalance = parseFloat(balance).toFixed(2);
+      console.log('✅ Balance fetched:', formattedBalance, 'USDC');
+      console.log('🔄 Setting wallet balance state to:', formattedBalance);
       setWalletBalance(formattedBalance);
+      console.log('✅ Wallet balance state updated');
     } catch (error) {
+      console.error('❌ Balance fetch failed:', error);
+      console.log('🔄 Setting wallet balance state to: 0.00');
       setWalletBalance('0.00');
     }
   }, [walletAddress, isConnected]);
   
   // Fetch balance when wallet connects or address changes
   useEffect(() => {
+    console.log('🔄 Balance useEffect triggered:', { isConnected, walletAddress });
     if (isConnected && walletAddress) {
-      console.log('🔄 Wallet connected, fetching balance for:', walletAddress);
+      console.log('🔄 Conditions met, fetching balance for:', walletAddress);
       fetchWalletBalance();
+    } else {
+      console.log('⚠️ Balance fetch skipped - not connected or no address');
     }
   }, [fetchWalletBalance, isConnected, walletAddress]);
   
@@ -176,6 +184,11 @@ export default function FarcasterMiniApp() {
     console.log('🔄 Manual balance refresh triggered');
     fetchWalletBalance();
   }, [fetchWalletBalance]);
+  
+  // Monitor wallet balance state changes
+  useEffect(() => {
+    console.log('💰 Wallet balance state changed to:', walletBalance);
+  }, [walletBalance]);
 
   // Fetch real-time rate from Paycrest
   const fetchRate = useCallback(async (currency: string) => {
