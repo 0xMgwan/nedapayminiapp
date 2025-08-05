@@ -474,8 +474,32 @@ export default function FarcasterMiniApp() {
       // Calculate USDC amount (always in USDC for blockchain)
       const usdcAmount = currency === 'local' ? (paymentAmount / rate).toFixed(6) : paymentAmount.toFixed(6);
       
-      // Execute the blockchain transaction with Privy wallet provider
-      const walletProvider = connectedWallet ? await connectedWallet.getEthereumProvider() : undefined;
+      // Execute the blockchain transaction with wagmi wallet provider
+      if (!walletClient) {
+        throw new Error('No wallet provider found');
+      }
+      
+      console.log('Using wallet client for transaction:', {
+        account: walletClient.account?.address,
+        chain: walletClient.chain?.name
+      });
+      
+      // For wagmi v2, we need to use the wallet client directly with viem
+      // Let's try to get the ethereum provider from the wallet client
+      let walletProvider;
+      
+      // Try different methods to get the provider
+      if ((walletClient as any).transport?.request) {
+        // Use the transport directly if it has request method
+        walletProvider = (walletClient as any).transport;
+      } else if ((window as any).ethereum) {
+        // Fallback to window.ethereum
+        walletProvider = (window as any).ethereum;
+      } else {
+        throw new Error('No compatible wallet provider found');
+      }
+      
+      console.log('Using wallet provider:', walletProvider);
       const blockchainResult = await executeUSDCTransaction(paymentOrder.data.receiveAddress, parseFloat(usdcAmount), walletProvider);
       
       if (!blockchainResult.success) {
