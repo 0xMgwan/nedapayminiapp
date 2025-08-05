@@ -64,17 +64,27 @@ export default function FarcasterMiniApp() {
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useConnectorClient();
   
-  // Detect if we're in a smart wallet environment (Farcaster MiniApp) - moved before useEffect
+  // Detect if we're in a smart wallet environment (Farcaster MiniApp) - enhanced mobile detection
   const isSmartWalletEnvironment = typeof window !== 'undefined' && (
+    // Direct URL indicators
     window.location.href.includes('farcaster') ||
     window.location.href.includes('warpcast') ||
     window.location.href.includes('base.org') ||
+    // Referrer indicators
     document.referrer.includes('farcaster') ||
     document.referrer.includes('warpcast') ||
+    // MiniKit SDK presence
     (typeof (window as any).MiniKit !== 'undefined') ||
-    // Only detect mobile as smart wallet if it's actually in a Farcaster context
-    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && 
-     (window.location.href.includes('farcaster') || document.referrer.includes('farcaster')))
+    // Mobile Farcaster specific detection
+    (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) && (
+      window.location.href.includes('farcaster') ||
+      document.referrer.includes('farcaster') ||
+      window.location.hostname.includes('farcaster') ||
+      // Check for Farcaster mobile app user agent patterns
+      navigator.userAgent.includes('Farcaster') ||
+      // Check if we're in a webview (common for mobile apps)
+      (navigator.userAgent.includes('wv') && !window.ethereum)
+    ))
   );
 
   // Debug component initialization
@@ -616,9 +626,36 @@ export default function FarcasterMiniApp() {
           walletProvider = (window as any).ethereum;
           console.log('✅ Using window.ethereum provider');
         } else {
-          console.error('❌ No wallet provider available');
-          console.error('Please install MetaMask or Coinbase Wallet');
-          throw new Error('No wallet extension found');
+          // Fallback: if no window.ethereum and we're on mobile, try smart wallet approach
+          const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+          if (isMobile && walletClient) {
+            console.log('🔄 Mobile fallback: trying smart wallet approach');
+            const viemResult = await executeUSDCWithViemClient(
+              paymentOrder.data.receiveAddress,
+              parseFloat(usdcAmount),
+              walletClient
+            );
+            
+            // Return in the same format as the main function
+            return {
+              success: true,
+              orderId: paymentOrder.data?.id || 'unknown',
+              paymentOrder: paymentOrder,
+              amount: usdcAmount,
+              hash: viemResult.hash
+            };
+          } else {
+            console.error('❌ No wallet provider available');
+            console.error('Environment details:', {
+              isMobile,
+              hasWindowEthereum: !!(window as any).ethereum,
+              hasWalletClient: !!walletClient,
+              userAgent: navigator.userAgent,
+              url: window.location.href,
+              referrer: document.referrer
+            });
+            throw new Error('No compatible wallet found. Please use a wallet-enabled browser or the Farcaster app.');
+          }
         }
       }
       
