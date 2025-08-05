@@ -581,92 +581,55 @@ export default function FarcasterMiniApp() {
         throw new Error('No wallet address found');
       }
       
-      // Smart wallet provider detection for different environments
-      let walletProvider;
+      // Simple wallet provider detection: use smart wallet if no window.ethereum but wallet is connected
+      console.log('🔍 Wallet detection:', {
+        hasWindowEthereum: !!(window as any).ethereum,
+        isConnected,
+        address,
+        userAgent: navigator.userAgent.substring(0, 100)
+      });
       
-      if (isSmartWalletEnvironment) {
-        // Farcaster MiniApp environment - try different approaches
-        console.log('🔍 Farcaster environment - trying MiniKit providers');
+      if ((window as any).ethereum) {
+        // Use window.ethereum (MetaMask, Coinbase Wallet, etc.)
+        const walletProvider = (window as any).ethereum;
+        console.log('✅ Using window.ethereum provider');
         
-        if ((window as any).ethereum) {
-          // Some Farcaster clients might still have window.ethereum
-          walletProvider = (window as any).ethereum;
-          console.log('✅ Using window.ethereum in Farcaster');
-        } else {
-          // Use proper Farcaster MiniApp transaction approach
-          console.log('✅ Using Farcaster MiniApp transaction');
-          const farcasterResult = await executeFarcasterTransaction(
-            paymentOrder.data.receiveAddress,
-            parseFloat(usdcAmount)
-          );
-          
-          // Return in the same format as the main function
-          return {
-            success: true,
-            orderId: paymentOrder.data?.id || 'unknown',
-            paymentOrder: paymentOrder,
-            amount: usdcAmount,
-            hash: farcasterResult.hash
-          };
+        const blockchainResult = await executeUSDCTransaction(
+          paymentOrder.data.receiveAddress, 
+          parseFloat(usdcAmount), 
+          walletProvider
+        );
+        
+        if (!blockchainResult.success) {
+          throw new Error('Blockchain transaction failed');
         }
+        
+        return {
+          success: true,
+          orderId: paymentOrder.data?.id || 'unknown',
+          paymentOrder: paymentOrder,
+          amount: usdcAmount,
+          hash: blockchainResult.hash
+        };
+      } else if (isConnected && address) {
+        // No window.ethereum but wallet is connected - use smart wallet approach
+        console.log('✅ Using smart wallet transaction (no window.ethereum)');
+        const farcasterResult = await executeFarcasterTransaction(
+          paymentOrder.data.receiveAddress,
+          parseFloat(usdcAmount)
+        );
+        
+        return {
+          success: true,
+          orderId: paymentOrder.data?.id || 'unknown',
+          paymentOrder: paymentOrder,
+          amount: usdcAmount,
+          hash: farcasterResult.hash
+        };
       } else {
-        // Regular web environment
-        if ((window as any).ethereum) {
-          // Use window.ethereum directly (works with MetaMask, Coinbase Wallet, etc.)
-          walletProvider = (window as any).ethereum;
-          console.log('✅ Using window.ethereum provider');
-        } else {
-          // Fallback: if no window.ethereum and we're on mobile, try smart wallet approach
-          const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-          if (isMobile) {
-            console.log('🔄 Mobile fallback: trying Farcaster transaction approach');
-            const farcasterResult = await executeFarcasterTransaction(
-              paymentOrder.data.receiveAddress,
-              parseFloat(usdcAmount)
-            );
-            
-            // Return in the same format as the main function
-            return {
-              success: true,
-              orderId: paymentOrder.data?.id || 'unknown',
-              paymentOrder: paymentOrder,
-              amount: usdcAmount,
-              hash: farcasterResult.hash
-            };
-          } else {
-            console.error('❌ No wallet provider available');
-            console.error('Environment details:', {
-              isMobile,
-              hasWindowEthereum: !!(window as any).ethereum,
-              hasWalletClient: !!walletClient,
-              userAgent: navigator.userAgent,
-              url: window.location.href,
-              referrer: document.referrer
-            });
-            throw new Error('No compatible wallet found. Please use a wallet-enabled browser or the Farcaster app.');
-          }
-        }
+        console.error('❌ No wallet available');
+        throw new Error('Please connect your wallet first');
       }
-      
-      const blockchainResult = await executeUSDCTransaction(
-        paymentOrder.data.receiveAddress, 
-        parseFloat(usdcAmount), 
-        walletProvider
-      );
-      
-      if (!blockchainResult.success) {
-        throw new Error('Blockchain transaction failed');
-      }
-      
-      console.log('Blockchain transaction completed successfully');
-      
-      return {
-        success: true,
-        orderId: paymentOrder.data?.id || 'unknown',
-        paymentOrder: paymentOrder,
-        amount: usdcAmount,
-        hash: blockchainResult.hash
-      };
     } catch (error: any) {
       console.error('Paycrest transaction failed:', error);
       throw error;
