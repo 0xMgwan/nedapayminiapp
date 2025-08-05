@@ -1842,55 +1842,56 @@ export default function FarcasterMiniApp() {
             </div>
           </div>
           
-          {/* Wallet Button */}
+          {/* Wallet Button - Always show wallet icon */}
           {!isConnected ? (
-            isSmartWalletEnvironment ? (
-              // Farcaster environment - trigger native wallet selection
-              <button
-                onClick={async () => {
-                  try {
-                    console.log('Connecting wallet in Farcaster environment...');
+            <button
+              onClick={async () => {
+                try {
+                  console.log('🔗 Wallet button clicked!');
+                  console.log('Environment:', isSmartWalletEnvironment ? 'Farcaster/MiniApp' : 'Website');
+                  console.log('Available connectors:', connectors?.map(c => c.name));
+                  
+                  if (connectors && connectors.length > 0) {
+                    // Smart connector selection based on environment
+                    let preferredConnector;
                     
-                    // In Farcaster, try to connect with available connectors
-                    if (connectors && connectors.length > 0) {
-                      // Try to find the best connector for Farcaster
-                      const preferredConnector = connectors.find(c => 
+                    if (isSmartWalletEnvironment) {
+                      // Farcaster environment - prefer MiniApp or Coinbase connectors
+                      preferredConnector = connectors.find(c => 
                         c.name.toLowerCase().includes('coinbase') || 
-                        c.name.toLowerCase().includes('smart')
+                        c.name.toLowerCase().includes('smart') ||
+                        c.name.toLowerCase().includes('miniapp')
                       ) || connectors[0];
-                      
-                      await connect({ connector: preferredConnector });
                     } else {
-                      console.error('No connectors available');
+                      // Website environment - prefer MetaMask, Coinbase, or WalletConnect
+                      preferredConnector = connectors.find(c => 
+                        c.name.toLowerCase().includes('metamask') ||
+                        c.name.toLowerCase().includes('coinbase') ||
+                        c.name.toLowerCase().includes('walletconnect')
+                      ) || connectors[0];
                     }
-                  } catch (error) {
-                    console.error('Failed to connect wallet:', error);
+                    
+                    console.log('Using connector:', preferredConnector.name);
+                    await connect({ connector: preferredConnector });
+                  } else {
+                    console.error('❌ No connectors available');
+                    alert('Please install a wallet extension like MetaMask or Coinbase Wallet');
                   }
-                }}
-                className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
-              >
-                {/* Animated background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                {/* Pulse effect */}
-                <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
-                
-                <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
-              </button>
-            ) : (
-              // Website environment - show OnchainKit wallet modal
-              <Wallet>
-                <ConnectWallet className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden">
-                  {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Pulse effect */}
-                  <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
-                  
-                  <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
-                </ConnectWallet>
-              </Wallet>
-            )
+                } catch (error) {
+                  console.error('❌ Failed to connect wallet:', error);
+                  alert('Failed to connect wallet. Please try again.');
+                }
+              }}
+              className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
+            >
+              {/* Animated background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* Pulse effect */}
+              <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
+              
+              <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+            </button>
           ) : (
             isSmartWalletEnvironment ? (
               // Farcaster environment - show same clean connected state
