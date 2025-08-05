@@ -421,6 +421,79 @@ export default function FarcasterMiniApp() {
 
   // Using imported executeUSDCTransaction from utils/wallet.ts
 
+  // Viem-based USDC transaction for Farcaster smart wallets
+  const executeUSDCWithViemClient = useCallback(async (
+    toAddress: string,
+    amount: number,
+    walletClient: any
+  ): Promise<{ success: boolean; hash: string }> => {
+    try {
+      console.log('🔄 Executing USDC with viem client:', {
+        to: toAddress,
+        amount,
+        client: !!walletClient,
+        account: walletClient?.account?.address
+      });
+
+      // USDC contract on Base
+      const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      
+      // Convert amount to USDC decimals (6 decimals)
+      const amountInUnits = BigInt(Math.floor(amount * 1000000));
+      
+      // Try different viem client methods
+      let hash;
+      
+      if (walletClient.writeContract) {
+        // Method 1: writeContract (standard viem)
+        hash = await walletClient.writeContract({
+          address: USDC_CONTRACT as `0x${string}`,
+          abi: [
+            {
+              name: 'transfer',
+              type: 'function',
+              inputs: [
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'uint256' }
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+              stateMutability: 'nonpayable'
+            }
+          ],
+          functionName: 'transfer',
+          args: [toAddress as `0x${string}`, amountInUnits]
+        });
+      } else if (walletClient.sendTransaction) {
+        // Method 2: sendTransaction with encoded data
+        const transferData = `0xa9059cbb${toAddress.slice(2).padStart(64, '0')}${amountInUnits.toString(16).padStart(64, '0')}`;
+        hash = await walletClient.sendTransaction({
+          to: USDC_CONTRACT as `0x${string}`,
+          data: transferData as `0x${string}`,
+          value: BigInt(0)
+        });
+      } else {
+        throw new Error('Wallet client does not support writeContract or sendTransaction');
+      }
+      
+      console.log('✅ Viem transaction sent:', hash);
+      
+      return {
+        success: true,
+        hash: hash
+      };
+    } catch (error: any) {
+      console.error('❌ Viem USDC transaction failed:', error);
+      
+      if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
+        throw new Error('Transaction was rejected by user');
+      } else if (error?.message?.includes('insufficient funds')) {
+        throw new Error('Insufficient USDC balance');
+      } else {
+        throw new Error(`Smart wallet transaction failed: ${error?.message || 'Unknown error'}`);
+      }
+    }
+  }, []);
+
   const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any) => {
     if (!walletAddress || !isConnected) {
       throw new Error('Wallet not connected');
@@ -493,22 +566,40 @@ export default function FarcasterMiniApp() {
         throw new Error('No wallet address found');
       }
       
-      // Use window.ethereum directly since it's more reliable
+      // Smart wallet provider detection for different environments
       let walletProvider;
       
-      if ((window as any).ethereum) {
-        // Use window.ethereum directly (works with MetaMask, Coinbase Wallet, etc.)
-        walletProvider = (window as any).ethereum;
-        console.log('✅ Using window.ethereum provider');
-      } else if (walletClient && (walletClient as any).transport) {
-        // Fallback to wagmi transport if available
-        walletProvider = (walletClient as any).transport;
-        console.log('✅ Using walletClient.transport');
+      if (isSmartWalletEnvironment) {
+        // Farcaster MiniApp environment - try different approaches
+        console.log('🔍 Farcaster environment - trying MiniKit providers');
+        
+        if ((window as any).ethereum) {
+          // Some Farcaster clients might still have window.ethereum
+          walletProvider = (window as any).ethereum;
+          console.log('✅ Using window.ethereum in Farcaster');
+        } else if (walletClient) {
+          // Try to use walletClient directly for viem-based transactions
+          console.log('✅ Using walletClient for Farcaster smart wallet');
+          return await executeUSDCWithViemClient(
+            paymentOrder.data.receiveAddress,
+            parseFloat(usdcAmount),
+            walletClient
+          );
+        } else {
+          console.error('❌ No Farcaster wallet provider available');
+          throw new Error('Farcaster smart wallet not properly connected');
+        }
       } else {
-        console.error('❌ No wallet provider available');
-        console.error('walletClient:', walletClient);
-        console.error('window.ethereum:', (window as any).ethereum);
-        throw new Error('No compatible wallet provider found');
+        // Regular web environment
+        if ((window as any).ethereum) {
+          // Use window.ethereum directly (works with MetaMask, Coinbase Wallet, etc.)
+          walletProvider = (window as any).ethereum;
+          console.log('✅ Using window.ethereum provider');
+        } else {
+          console.error('❌ No wallet provider available');
+          console.error('Please install MetaMask or Coinbase Wallet');
+          throw new Error('No wallet extension found');
+        }
       }
       
       const blockchainResult = await executeUSDCTransaction(
