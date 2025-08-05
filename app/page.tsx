@@ -63,9 +63,13 @@ export default function FarcasterMiniApp() {
     console.log('FarcasterMiniApp component initializing:', {
       url: window.location.href,
       userAgent: navigator.userAgent,
+      referrer: document.referrer,
+      isSmartWalletEnvironment,
+      hasMiniKit: typeof (window as any).MiniKit !== 'undefined',
+      hasWindowEthereum: typeof (window as any).ethereum !== 'undefined',
       timestamp: new Date().toISOString()
     });
-  }, []);
+  }, [isSmartWalletEnvironment]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [tillNumber, setTillNumber] = useState('');
@@ -109,12 +113,17 @@ export default function FarcasterMiniApp() {
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useConnectorClient();
   
-  // Detect if we're in a smart wallet environment
+  // Detect if we're in a smart wallet environment (Farcaster MiniApp)
   const isSmartWalletEnvironment = typeof window !== 'undefined' && (
     window.location.href.includes('farcaster') ||
     window.location.href.includes('warpcast') ||
     window.location.href.includes('base.org') ||
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    document.referrer.includes('farcaster') ||
+    document.referrer.includes('warpcast') ||
+    (typeof (window as any).MiniKit !== 'undefined') ||
+    // Only detect mobile as smart wallet if it's actually in a Farcaster context
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && 
+     (window.location.href.includes('farcaster') || document.referrer.includes('farcaster')))
   );
   const minikit = useMiniKit();
   const { setFrameReady, isFrameReady } = minikit;
