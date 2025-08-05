@@ -58,6 +58,25 @@ export default function FarcasterMiniApp() {
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
   const [amount, setAmount] = useState('');
 
+  // MiniKit and Wagmi hooks for smart wallet (Farcaster/Coinbase) - moved up
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, error: connectError } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { data: walletClient } = useConnectorClient();
+  
+  // Detect if we're in a smart wallet environment (Farcaster MiniApp) - moved before useEffect
+  const isSmartWalletEnvironment = typeof window !== 'undefined' && (
+    window.location.href.includes('farcaster') ||
+    window.location.href.includes('warpcast') ||
+    window.location.href.includes('base.org') ||
+    document.referrer.includes('farcaster') ||
+    document.referrer.includes('warpcast') ||
+    (typeof (window as any).MiniKit !== 'undefined') ||
+    // Only detect mobile as smart wallet if it's actually in a Farcaster context
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && 
+     (window.location.href.includes('farcaster') || document.referrer.includes('farcaster')))
+  );
+
   // Debug component initialization
   useEffect(() => {
     console.log('FarcasterMiniApp component initializing:', {
@@ -107,24 +126,7 @@ export default function FarcasterMiniApp() {
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
   const [addressCopied, setAddressCopied] = useState(false);
 
-  // MiniKit and Wagmi hooks for smart wallet (Farcaster/Coinbase)
-  const { address, isConnected } = useAccount();
-  const { connect, connectors, error: connectError } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { data: walletClient } = useConnectorClient();
-  
-  // Detect if we're in a smart wallet environment (Farcaster MiniApp)
-  const isSmartWalletEnvironment = typeof window !== 'undefined' && (
-    window.location.href.includes('farcaster') ||
-    window.location.href.includes('warpcast') ||
-    window.location.href.includes('base.org') ||
-    document.referrer.includes('farcaster') ||
-    document.referrer.includes('warpcast') ||
-    (typeof (window as any).MiniKit !== 'undefined') ||
-    // Only detect mobile as smart wallet if it's actually in a Farcaster context
-    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && 
-     (window.location.href.includes('farcaster') || document.referrer.includes('farcaster')))
-  );
+  // Removed duplicate declarations - moved up before useEffect
   const minikit = useMiniKit();
   const { setFrameReady, isFrameReady } = minikit;
 
@@ -589,11 +591,20 @@ export default function FarcasterMiniApp() {
         } else if (walletClient) {
           // Try to use walletClient directly for viem-based transactions
           console.log('✅ Using walletClient for Farcaster smart wallet');
-          return await executeUSDCWithViemClient(
+          const viemResult = await executeUSDCWithViemClient(
             paymentOrder.data.receiveAddress,
             parseFloat(usdcAmount),
             walletClient
           );
+          
+          // Return in the same format as the main function
+          return {
+            success: true,
+            orderId: paymentOrder.data?.id || 'unknown',
+            paymentOrder: paymentOrder,
+            amount: usdcAmount,
+            hash: viemResult.hash
+          };
         } else {
           console.error('❌ No Farcaster wallet provider available');
           throw new Error('Farcaster smart wallet not properly connected');
