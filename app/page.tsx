@@ -421,6 +421,56 @@ export default function FarcasterMiniApp() {
 
   // Using imported executeUSDCTransaction from utils/wallet.ts
 
+  // Wagmi-based USDC transaction function
+  const executeUSDCTransactionWithWagmi = useCallback(async (
+    toAddress: string, 
+    amount: number, 
+    walletClient: any
+  ): Promise<{ success: boolean; hash: string }> => {
+    try {
+      console.log('Executing USDC transaction with wagmi:', {
+        to: toAddress,
+        amount,
+        from: walletClient.account?.address
+      });
+
+      // USDC contract on Base
+      const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      
+      // Convert amount to USDC decimals (6 decimals)
+      const amountInUnits = BigInt(Math.floor(amount * 1000000)); // 6 decimals
+      
+      // Prepare transaction data for USDC transfer
+      const txData = {
+        to: USDC_CONTRACT as `0x${string}`,
+        data: `0xa9059cbb${toAddress.slice(2).padStart(64, '0')}${amountInUnits.toString(16).padStart(64, '0')}` as `0x${string}`,
+        value: BigInt(0)
+      };
+      
+      console.log('Transaction data:', txData);
+      
+      // Send transaction using wagmi walletClient
+      const hash = await walletClient.sendTransaction(txData);
+      
+      console.log('Transaction sent:', hash);
+      
+      return {
+        success: true,
+        hash: hash
+      };
+    } catch (error: any) {
+      console.error('Wagmi USDC transaction failed:', error);
+      
+      if (error?.message?.includes('user rejected')) {
+        throw new Error('Transaction was rejected by user');
+      } else if (error?.message?.includes('insufficient funds')) {
+        throw new Error('Insufficient USDC balance');
+      } else {
+        throw new Error(`Blockchain transaction failed: ${error?.message || 'Unknown error'}`);
+      }
+    }
+  }, []);
+
   const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any) => {
     if (!walletAddress || !isConnected) {
       throw new Error('Wallet not connected');
@@ -474,7 +524,7 @@ export default function FarcasterMiniApp() {
       // Calculate USDC amount (always in USDC for blockchain)
       const usdcAmount = currency === 'local' ? (paymentAmount / rate).toFixed(6) : paymentAmount.toFixed(6);
       
-      // Execute the blockchain transaction with wagmi wallet provider
+      // Execute the blockchain transaction with wagmi wallet client
       if (!walletClient) {
         throw new Error('No wallet provider found');
       }
@@ -484,23 +534,12 @@ export default function FarcasterMiniApp() {
         chain: walletClient.chain?.name
       });
       
-      // For wagmi v2, we need to use the wallet client directly with viem
-      // Let's try to get the ethereum provider from the wallet client
-      let walletProvider;
-      
-      // Try different methods to get the provider
-      if ((walletClient as any).transport?.request) {
-        // Use the transport directly if it has request method
-        walletProvider = (walletClient as any).transport;
-      } else if ((window as any).ethereum) {
-        // Fallback to window.ethereum
-        walletProvider = (window as any).ethereum;
-      } else {
-        throw new Error('No compatible wallet provider found');
-      }
-      
-      console.log('Using wallet provider:', walletProvider);
-      const blockchainResult = await executeUSDCTransaction(paymentOrder.data.receiveAddress, parseFloat(usdcAmount), walletProvider);
+      // Use wagmi walletClient directly for viem-based transaction
+      const blockchainResult = await executeUSDCTransactionWithWagmi(
+        paymentOrder.data.receiveAddress, 
+        parseFloat(usdcAmount), 
+        walletClient
+      );
       
       if (!blockchainResult.success) {
         throw new Error('Blockchain transaction failed');
