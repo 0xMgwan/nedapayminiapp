@@ -148,7 +148,7 @@ export default function FarcasterMiniApp() {
   const [swapIsLoading, setSwapIsLoading] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
   const [swapSuccess, setSwapSuccess] = useState<string | null>(null);
-  const [showSwapModal, setShowSwapModal] = useState(false);
+
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
@@ -787,6 +787,8 @@ export default function FarcasterMiniApp() {
     setSwapSuccess(null);
 
     try {
+      console.log('🔄 Starting swap execution:', { swapFromToken, swapToToken, swapAmount, swapQuote });
+      
       // Get token data
       const fromTokenData = stablecoins.find(token => token.baseToken === swapFromToken);
       const toTokenData = stablecoins.find(token => token.baseToken === swapToToken);
@@ -794,6 +796,11 @@ export default function FarcasterMiniApp() {
       if (!fromTokenData || !toTokenData) {
         throw new Error('Token not supported');
       }
+      
+      console.log('📊 Token addresses:', {
+        from: { token: fromTokenData.baseToken, address: fromTokenData.address },
+        to: { token: toTokenData.baseToken, address: toTokenData.address }
+      });
 
       // Create signer
       if (!walletClient) {
@@ -811,6 +818,23 @@ export default function FarcasterMiniApp() {
       const slippageAmount = Number(swapQuote) * 0.995; // 0.5% slippage
       const minAmountOutFormatted = slippageAmount.toFixed(toDecimals);
       const minAmountOut = ethers.utils.parseUnits(minAmountOutFormatted, toDecimals);
+      
+      // Verify pool exists before attempting swap
+      try {
+        console.log('🔍 Verifying pool exists...');
+        const testQuote = await getAerodromeQuote({
+          provider,
+          amountIn: amountInUnits.toString(),
+          fromToken: fromTokenData.address,
+          toToken: toTokenData.address,
+          stable: false,
+          factory: AERODROME_FACTORY_ADDRESS
+        });
+        console.log('✅ Pool exists, quote verified:', ethers.utils.formatUnits(testQuote[1], toDecimals));
+      } catch (poolError) {
+        console.error('❌ Pool verification failed:', poolError);
+        throw new Error(`No liquidity pool exists for ${swapFromToken}/${swapToToken} pair on Aerodrome DEX`);
+      }
 
       // Set deadline (20 minutes from now)
       const deadline = Math.floor(Date.now() / 1000) + 1200;
@@ -826,19 +850,36 @@ export default function FarcasterMiniApp() {
       );
 
       // Check current allowance
+      console.log('🔍 Checking token allowance...');
       const currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
+      console.log('💰 Current allowance:', ethers.utils.formatUnits(currentAllowance, fromDecimals));
+      console.log('💰 Required amount:', ethers.utils.formatUnits(amountInUnits, fromDecimals));
       
       if (currentAllowance.lt(amountInUnits)) {
-        console.log('Approving token spend...');
+        console.log('⚙️ Approving token spend...');
         const approveTx = await fromTokenContract.approve(
           '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
           amountInUnits
         );
+        console.log('⏳ Waiting for approval transaction...');
         await approveTx.wait();
+        console.log('✅ Approval successful!');
+      } else {
+        console.log('✅ Sufficient allowance already exists');
       }
 
       // Execute the swap
-      console.log('Executing swap...');
+      console.log('🔄 Executing swap with parameters:', {
+        amountIn: ethers.utils.formatUnits(amountInUnits, fromDecimals),
+        amountOutMin: ethers.utils.formatUnits(minAmountOut, toDecimals),
+        fromToken: fromTokenData.address,
+        toToken: toTokenData.address,
+        stable: false,
+        factory: AERODROME_FACTORY_ADDRESS,
+        userAddress: address,
+        deadline: new Date(deadline * 1000).toISOString()
+      });
+      
       const swapTx = await swapAerodrome({
         signer,
         amountIn: amountInUnits.toString(),
@@ -867,7 +908,6 @@ export default function FarcasterMiniApp() {
       setSwapError(error.message || 'Swap failed');
     } finally {
       setSwapIsLoading(false);
-      setShowSwapModal(false);
     }
   }, [swapAmount, swapFromToken, swapToToken, swapQuote, isConnected, address, walletClient]);
 
@@ -1569,130 +1609,6 @@ export default function FarcasterMiniApp() {
           <div className="absolute -top-1 -left-2 text-xl animate-bounce delay-500">
             ✨
           </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Swap Modal
-  const SwapModal = () => {
-    if (!showSwapModal) return null;
-
-    const fromTokenData = stablecoins.find(token => token.baseToken === swapFromToken);
-    const toTokenData = stablecoins.find(token => token.baseToken === swapToToken);
-
-    return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-700/30 shadow-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Swap</h2>
-            <button
-              onClick={() => setShowSwapModal(false)}
-              className="text-gray-400 hover:text-white transition-colors p-1"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* From Token */}
-          <div className="bg-slate-800/50 rounded-2xl p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm font-medium">From</span>
-              <span className="text-gray-400 text-sm">Balance: {swapFromBalance}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{fromTokenData?.flag || '🇺🇸'}</span>
-                <span className="text-white font-bold text-lg">{swapFromToken}</span>
-              </div>
-              <div className="text-right">
-                <div className="text-white font-bold text-2xl">{swapAmount}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Swap Direction */}
-          <div className="flex justify-center my-4">
-            <div className="bg-slate-800 rounded-full p-3 border-4 border-slate-900">
-              <ArrowsRightLeftIcon className="w-5 h-5 text-white transform rotate-90" />
-            </div>
-          </div>
-
-          {/* To Token */}
-          <div className="bg-slate-800/50 rounded-2xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-sm font-medium">To</span>
-              <span className="text-gray-400 text-sm">Balance: {swapToBalance}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{toTokenData?.flag || '🇲🇽'}</span>
-                <span className="text-white font-bold text-lg">{swapToToken}</span>
-              </div>
-              <div className="text-right">
-                <div className="text-white font-bold text-2xl">{swapQuote || '0'}</div>
-                {swapQuote && swapAmount && (
-                  <div className="text-gray-400 text-sm">
-                    1 {swapFromToken} = {(Number(swapQuote) / Number(swapAmount)).toFixed(6)} {swapToToken}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Advanced Settings */}
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-4">
-              <span>Advanced</span>
-              <ChevronDownIcon className="w-4 h-4" />
-            </div>
-            
-            <div className="space-y-3">
-              {/* Pool Type */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Pool Type</span>
-                <div className="flex gap-2">
-                  <button className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full">
-                    Volatile (Recommended)
-                  </button>
-                  <button className="bg-slate-700 text-gray-300 text-xs px-3 py-1 rounded-full">
-                    Stable
-                  </button>
-                </div>
-              </div>
-              
-              {/* Minimum Received */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Minimum received</span>
-                <span className="text-white text-sm font-medium">
-                  {swapQuote ? (Number(swapQuote) * 0.995).toFixed(4) : '0'} {swapToToken}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Swap Button */}
-          <button
-            onClick={executeSwap}
-            disabled={swapIsLoading}
-            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
-              swapIsLoading
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-500 text-white transform hover:scale-[1.02]'
-            }`}
-          >
-            {swapIsLoading ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Swapping...
-              </div>
-            ) : (
-              'Swap'
-            )}
-          </button>
         </div>
       </div>
     );
@@ -2925,14 +2841,34 @@ export default function FarcasterMiniApp() {
 
         {/* Success Display */}
         {swapSuccess && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
-            <p className="text-green-400 text-xs">{swapSuccess}</p>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <p className="text-green-400 text-sm font-medium">Swap Successful!</p>
+              </div>
+              {swapSuccess.includes('Transaction:') && (
+                <a 
+                  href={`https://basescan.org/tx/${swapSuccess.split('Transaction: ')[1]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-xs underline"
+                >
+                  View
+                </a>
+              )}
+            </div>
+            {swapSuccess.includes('Transaction:') && (
+              <p className="text-green-300 text-xs mt-1 font-mono">
+                {swapSuccess.split('Transaction: ')[1].slice(0, 8)}...{swapSuccess.split('Transaction: ')[1].slice(-6)}
+              </p>
+            )}
           </div>
         )}
 
         {/* Swap Button */}
         <button
-          onClick={() => setShowSwapModal(true)}
+          onClick={executeSwap}
           disabled={!isConnected || !swapAmount || !swapToToken || swapIsLoading}
           className={`w-full py-3 rounded-2xl font-bold text-base transition-all border-2 ${
             isConnected && swapAmount && swapToToken && !swapIsLoading
@@ -3322,8 +3258,7 @@ export default function FarcasterMiniApp() {
       {/* Success Modal */}
       <SuccessModal />
       
-      {/* Swap Modal */}
-      <SwapModal />
+
     </div>
   );
 }
