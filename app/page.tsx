@@ -1472,7 +1472,7 @@ export default function FarcasterMiniApp() {
                 value={tillNumber}
                 onChange={(e) => setTillNumber(e.target.value)}
                 placeholder="Enter paybill number"
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -1486,7 +1486,7 @@ export default function FarcasterMiniApp() {
                 value={businessNumber}
                 onChange={(e) => setBusinessNumber(e.target.value)}
                 placeholder="Enter account number"
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -2092,17 +2092,17 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2">
           {/* Client Information */}
-          <div className="bg-slate-800/30 rounded-lg p-3">
-            <h3 className="text-white font-medium mb-2 text-sm">Client Information</h3>
+          <div className="bg-slate-800/30 rounded-lg p-2">
+            <h3 className="text-white font-medium mb-1.5 text-xs">Client Information</h3>
             <div className="space-y-2">
               <input
                 type="text"
                 placeholder="Client name or company"
                 value={invoiceRecipient}
                 onChange={(e) => setInvoiceRecipient(e.target.value)}
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               <input
@@ -2110,15 +2110,15 @@ export default function FarcasterMiniApp() {
                 placeholder="client@example.com"
                 value={invoiceEmail}
                 onChange={(e) => setInvoiceEmail(e.target.value)}
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
           </div>
           
           {/* Sender Information */}
-          <div className="bg-slate-800/30 rounded-lg p-3">
-            <h3 className="text-white font-medium mb-2 text-sm">Your Information</h3>
+          <div className="bg-slate-800/30 rounded-lg p-2">
+            <h3 className="text-white font-medium mb-1.5 text-xs">Your Information</h3>
             <input
               type="text"
               placeholder="Your name or business"
@@ -2130,8 +2130,8 @@ export default function FarcasterMiniApp() {
           </div>
           
           {/* Currency Selection */}
-          <div className="bg-slate-800/30 rounded-lg p-3">
-            <h3 className="text-white font-medium mb-2 text-sm">Payment Currency</h3>
+          <div className="bg-slate-800/30 rounded-lg p-2">
+            <h3 className="text-white font-medium mb-1.5 text-xs">Payment Currency</h3>
             <select
               value={invoiceCurrency}
               onChange={(e) => setInvoiceCurrency(e.target.value)}
@@ -2146,9 +2146,9 @@ export default function FarcasterMiniApp() {
           </div>
           
           {/* Payment Link Selection */}
-          <div className="bg-slate-800/30 rounded-lg p-3">
-            <h3 className="text-white font-medium mb-2 text-sm">Payment Link</h3>
-            <p className="text-gray-400 text-xs mb-2">
+          <div className="bg-slate-800/30 rounded-lg p-2">
+            <h3 className="text-white font-medium mb-1.5 text-xs">Payment Link</h3>
+            <p className="text-gray-400 text-xs mb-1.5">
               Select from recent links or paste a payment link
             </p>
             <input
