@@ -6,7 +6,7 @@ import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
-import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
@@ -14,7 +14,7 @@ import { executeUSDCTransaction, getUSDCBalance } from './utils/wallet';
 import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
 import Image from 'next/image';
 
-type Tab = 'send' | 'pay' | 'deposit' | 'link';
+type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'invoice';
 
 interface Country {
   name: string;
@@ -125,6 +125,13 @@ export default function FarcasterMiniApp() {
   const [selectedInstitution, setSelectedInstitution] = useState('');
   const [orderedCountries, setOrderedCountries] = useState<Country[]>(countries);
   const [userLocation, setUserLocation] = useState<string | null>(null);
+  const [invoiceView, setInvoiceView] = useState<'main' | 'create' | 'list'>('main');
+  const [invoiceRecipient, setInvoiceRecipient] = useState('');
+  const [invoiceEmail, setInvoiceEmail] = useState('');
+  const [invoiceSender, setInvoiceSender] = useState('');
+  const [invoiceCurrency, setInvoiceCurrency] = useState('USDC');
+  const [invoiceLineItems, setInvoiceLineItems] = useState([{ description: '', amount: '' }]);
+  const [invoiceStatus, setInvoiceStatus] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
     orderId: string;
@@ -2007,6 +2014,357 @@ export default function FarcasterMiniApp() {
     </div>
   );
 
+  const renderCreateInvoice = () => {
+    const handleLineItemChange = (idx: number, field: string, value: string) => {
+      setInvoiceLineItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+    };
+    
+    const addLineItem = () => {
+      setInvoiceLineItems([...invoiceLineItems, { description: '', amount: '' }]);
+    };
+    
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setInvoiceStatus('loading');
+      
+      try {
+        const res = await fetch('/api/send-invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            merchantId: walletAddress,
+            recipient: invoiceRecipient,
+            sender: invoiceSender,
+            email: invoiceEmail,
+            paymentCollection: 'one-time',
+            dueDate: new Date().toISOString().split('T')[0],
+            currency: invoiceCurrency,
+            lineItems: invoiceLineItems,
+          }),
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          setInvoiceStatus(errorData.error || 'Failed to create invoice');
+          return;
+        }
+        
+        setInvoiceStatus('success');
+        setTimeout(() => {
+          setInvoiceView('main');
+          setInvoiceStatus(null);
+          // Reset form
+          setInvoiceRecipient('');
+          setInvoiceEmail('');
+          setInvoiceSender('');
+          setInvoiceLineItems([{ description: '', amount: '' }]);
+        }, 2000);
+      } catch (err: any) {
+        setInvoiceStatus(err.message || 'Unknown error');
+      }
+    };
+    
+    const totalAmount = invoiceLineItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    
+    return (
+      <div className="space-y-4">
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setInvoiceView('main')}
+            className="p-2 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+          >
+            ←
+          </button>
+          <div>
+            <h2 className="text-lg font-bold text-white">Create Invoice</h2>
+            <p className="text-gray-400 text-xs">Fill in the details below</p>
+          </div>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Client Information */}
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <h3 className="text-white font-medium mb-2 text-sm">Client Information</h3>
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="Client name or company"
+                value={invoiceRecipient}
+                onChange={(e) => setInvoiceRecipient(e.target.value)}
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <input
+                type="email"
+                placeholder="client@example.com"
+                value={invoiceEmail}
+                onChange={(e) => setInvoiceEmail(e.target.value)}
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          </div>
+          
+          {/* Sender Information */}
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <h3 className="text-white font-medium mb-2 text-sm">Your Information</h3>
+            <input
+              type="text"
+              placeholder="Your name or business"
+              value={invoiceSender}
+              onChange={(e) => setInvoiceSender(e.target.value)}
+              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          {/* Currency Selection */}
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <h3 className="text-white font-medium mb-2 text-sm">Payment Currency</h3>
+            <select
+              value={invoiceCurrency}
+              onChange={(e) => setInvoiceCurrency(e.target.value)}
+              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {stablecoins.map((token) => (
+                <option key={token.baseToken} value={token.baseToken}>
+                  {token.flag} {token.baseToken} - {token.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Line Items */}
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-white font-medium text-sm">Invoice Items</h3>
+              <button
+                type="button"
+                onClick={addLineItem}
+                className="text-blue-400 hover:text-blue-300 text-sm"
+              >
+                + Add Item
+              </button>
+            </div>
+            <div className="space-y-2">
+              {invoiceLineItems.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Description"
+                    value={item.description}
+                    onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)}
+                    className="col-span-2 bg-slate-700 text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    required
+                  />
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={item.amount}
+                    onChange={(e) => handleLineItemChange(idx, 'amount', e.target.value)}
+                    className="bg-slate-700 text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              ))}
+            </div>
+            
+            {/* Total */}
+            <div className="mt-3 pt-2 border-t border-slate-600">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Total Amount</span>
+                <span className="text-white font-bold">
+                  {totalAmount.toFixed(2)} {invoiceCurrency}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={invoiceStatus === 'loading'}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {invoiceStatus === 'loading' ? 'Creating Invoice...' : 'Send Invoice'}
+          </button>
+          
+          {/* Status Messages */}
+          {invoiceStatus === 'success' && (
+            <div className="bg-green-600/20 border border-green-600/30 text-green-400 p-3 rounded-lg text-sm">
+              ✅ Invoice sent successfully!
+            </div>
+          )}
+          
+          {invoiceStatus && invoiceStatus !== 'loading' && invoiceStatus !== 'success' && (
+            <div className="bg-red-600/20 border border-red-600/30 text-red-400 p-3 rounded-lg text-sm">
+              ❌ {invoiceStatus}
+            </div>
+          )}
+        </form>
+      </div>
+    );
+  };
+  
+  const renderInvoiceList = () => {
+    return (
+      <div className="space-y-4">
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setInvoiceView('main')}
+            className="p-2 rounded-lg bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+          >
+            ←
+          </button>
+          <div>
+            <h2 className="text-lg font-bold text-white">Your Invoices</h2>
+            <p className="text-gray-400 text-xs">Manage your sent invoices</p>
+          </div>
+        </div>
+        
+        {/* Coming Soon */}
+        <div className="bg-slate-800/30 rounded-lg p-6 text-center">
+          <DocumentTextIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+          <h3 className="text-white font-medium mb-2">Invoice List Coming Soon</h3>
+          <p className="text-gray-400 text-sm mb-4">
+            We're working on the invoice management interface. For now, you can create invoices and they'll be sent directly to your clients.
+          </p>
+          <button
+            onClick={() => setInvoiceView('create')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            Create New Invoice
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderInvoiceTab = () => {
+    if (invoiceView === 'create') {
+      return renderCreateInvoice();
+    } else if (invoiceView === 'list') {
+      return renderInvoiceList();
+    }
+    
+    return (
+      <div className="space-y-4">
+        {/* Invoice Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-white">Invoices</h2>
+            <p className="text-gray-400 text-sm">Create and manage your invoices</p>
+          </div>
+          <DocumentTextIcon className="w-8 h-8 text-blue-400" />
+        </div>
+
+        {/* Wallet Connection Status */}
+        <div className={`border rounded-lg p-3 ${
+          isConnected 
+            ? 'bg-green-600/20 border-green-600/30' 
+            : 'bg-yellow-600/20 border-yellow-600/30'
+        }`}>
+          <div className={`flex items-center gap-2 ${
+            isConnected ? 'text-green-400' : 'text-yellow-400'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              isConnected ? 'bg-green-400' : 'bg-yellow-400'
+            }`}></span>
+            <span className="text-sm font-medium">
+              {isConnected 
+                ? `✅ Wallet Connected - Ready to Create Invoices` 
+                : `⚠️ Connect Wallet to Create Invoices`
+              }
+            </span>
+          </div>
+          {isConnected && walletAddress && (
+            <div className="text-xs text-gray-400 mt-1 font-mono">
+              {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button 
+            onClick={() => {
+              if (isConnected) {
+                setInvoiceView('create');
+              } else {
+                alert('Please connect your wallet first');
+              }
+            }}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+              isConnected
+                ? 'bg-blue-600/20 border-blue-600/30 hover:bg-blue-600/30 text-blue-400'
+                : 'bg-gray-600/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <DocumentTextIcon className="w-6 h-6" />
+              <span className="text-sm font-medium">Create Invoice</span>
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (isConnected) {
+                setInvoiceView('list');
+              } else {
+                alert('Please connect your wallet first');
+              }
+            }}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+              isConnected
+                ? 'bg-purple-600/20 border-purple-600/30 hover:bg-purple-600/30 text-purple-400'
+                : 'bg-gray-600/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <ArrowPathIcon className="w-6 h-6" />
+              <span className="text-sm font-medium">View Invoices</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Features List */}
+        <div className="bg-slate-800/30 rounded-xl p-4">
+          <h3 className="text-white font-semibold mb-3">Invoice Features</h3>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>Create professional invoices</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>Multiple cryptocurrency support</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>Email delivery to clients</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>Payment tracking & status</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>PDF download & sharing</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Help Text */}
+        <div className="text-center text-xs text-gray-400 bg-slate-800/20 rounded-lg p-3">
+          💡 Create professional invoices and get paid in cryptocurrency. Your clients can pay directly through the generated payment links.
+        </div>
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'send':
@@ -2017,6 +2375,8 @@ export default function FarcasterMiniApp() {
         return renderDepositTab();
       case 'link':
         return renderLinkTab();
+      case 'invoice':
+        return renderInvoiceTab();
       default:
         return null;
     }
@@ -2312,7 +2672,8 @@ export default function FarcasterMiniApp() {
               { key: 'send' as Tab, label: 'Send', icon: ArrowUpIcon },
               { key: 'pay' as Tab, label: 'Pay', icon: CurrencyDollarIcon },
               { key: 'deposit' as Tab, label: 'Deposit', icon: ArrowDownIcon },
-              { key: 'link' as Tab, label: 'Link', icon: LinkIcon }
+              { key: 'link' as Tab, label: 'Link', icon: LinkIcon },
+              { key: 'invoice' as Tab, label: 'Invoice', icon: DocumentTextIcon }
             ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
