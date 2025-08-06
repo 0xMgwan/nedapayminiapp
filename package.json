@@ -24,14 +24,7 @@
     "start": "next start",
     "lint": "next lint",
     "force-build": "bash ./force-build.sh",
-    "postinstall": "prisma generate",
-    "contract:compile": "hardhat compile",
-    "contract:deploy:base": "hardhat run contracts/deployUpgradeable.js --network base",
-    "contract:deploy:testnet": "hardhat run contracts/deployUpgradeable.js --network base-sepolia",
-    "contract:upgrade:base": "hardhat run contracts/upgrade.js --network base",
-    "contract:upgrade:testnet": "hardhat run contracts/upgrade.js --network base-sepolia",
-    "contract:update-fees:base": "hardhat run contracts/updateFeeTiers.js --network base",
-    "contract:update-fees:testnet": "hardhat run contracts/updateFeeTiers.js --network base-sepolia"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@biconomy/abstractjs": "^1.0.18",
@@ -44,11 +37,8 @@
     "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.1.1",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-etherscan": "^3.1.8",
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0",
-    "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "@permissionless/wagmi": "^0.1.4",
     "@prisma/client": "^6.8.2",
     "@privy-io/react-auth": "^2.16.0",

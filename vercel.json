@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm install --omit=dev && npm run build",
+  "devCommand": "next dev",
+  "installCommand": "npm install --omit=dev",
+  "framework": "nextjs",
+  "outputDirectory": ".next"
+}

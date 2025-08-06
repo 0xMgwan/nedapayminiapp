@@ -2,6 +2,7 @@
   "name": "nedapay-contracts",
   "version": "1.0.0",
   "description": "NedaPay Protocol Smart Contracts",
+  "private": true,
   "scripts": {
     "compile": "hardhat compile",
     "deploy:testnet": "hardhat run scripts/deployUpgradeable.js --network base-sepolia",
