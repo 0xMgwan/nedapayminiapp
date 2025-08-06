@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useConnectorClient } from 'wagmi';
 import { stablecoins } from "../data/stablecoins";
 import { ethers } from 'ethers';
 import QRCode from 'qrcode';
@@ -19,8 +20,9 @@ interface PaymentData {
 
 function PaymentRequestPageContent() {
   const searchParams = useSearchParams();
-  const { authenticated, login, user } = usePrivy();
-  const { wallets } = useWallets();
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { data: walletClient } = useConnectorClient();
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,8 +31,7 @@ function PaymentRequestPageContent() {
   const [transactionHash, setTransactionHash] = useState("");
   const [isFrameReady, setIsFrameReady] = useState(false);
 
-  const connectedWallet = wallets.find(wallet => wallet.connectorType !== 'embedded') || wallets[0];
-  const walletAddress = connectedWallet?.address;
+  const walletAddress = address;
 
   // Initialize frame detection
   useEffect(() => {
@@ -118,18 +119,14 @@ function PaymentRequestPageContent() {
   };
 
   const executeUSDCTransaction = async (toAddress: string, amount: number, description?: string): Promise<boolean> => {
-    if (!walletAddress || !authenticated || !connectedWallet) {
+    if (!walletAddress || !isConnected || !walletClient) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const provider = await connectedWallet.getEthereumProvider();
-      if (!provider) {
-        throw new Error('No provider available');
-      }
-
-      const ethersProvider = new ethers.providers.Web3Provider(provider);
-      const signer = ethersProvider.getSigner();
+      // Use wagmi walletClient directly
+      const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
+      const signer = provider.getSigner();
 
       const erc20ABI = [
         'function transfer(address to, uint256 amount) returns (bool)',
@@ -164,8 +161,10 @@ function PaymentRequestPageContent() {
   };
 
   const handlePayment = async () => {
-    if (!authenticated) {
-      login();
+    if (!isConnected) {
+      if (connectors && connectors.length > 0) {
+        await connect({ connector: connectors[0] });
+      }
       return;
     }
 
@@ -413,12 +412,12 @@ function PaymentRequestPageContent() {
         <button
           onClick={handlePayment}
           disabled={isProcessing || paymentData.status === 'completed'}
-          className={`w-full py-3 rounded-lg font-medium transition-all duration-200 text-sm ${
+          className={`w-full py-3 rounded-lg font-medium transition-all duration-200 text-sm border-2 ${
             isProcessing 
-              ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+              ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' 
               : paymentData.status === 'completed'
-              ? 'bg-green-600 text-white'
-              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 shadow-lg'
+              ? 'bg-green-600 text-white border-green-500'
+              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-blue-500 hover:border-blue-400 transform hover:scale-105 shadow-lg'
           }`}
         >
           {isProcessing ? (
@@ -428,14 +427,14 @@ function PaymentRequestPageContent() {
             </div>
           ) : paymentData.status === 'completed' ? (
             '✅ Payment Completed'
-          ) : authenticated ? (
+          ) : isConnected ? (
             'Pay with Wallet'
           ) : (
             'Connect Wallet to Pay'
           )}
         </button>
 
-        {authenticated && paymentData.status === 'pending' && (
+        {isConnected && paymentData.status === 'pending' && (
           <div className="mt-4 p-3 bg-blue-600/20 border border-blue-600/30 rounded-lg">
             <p className="text-xs text-blue-300 text-center">
               Send exactly <strong className="text-white">{paymentData.amount} {paymentData.token}</strong> to complete payment.
