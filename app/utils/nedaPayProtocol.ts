@@ -244,3 +244,50 @@ export async function isTokenSupported(
 
   return await contract.isTokenSupported(tokenAddress);
 }
+
+/**
+ * Calculate dynamic fee and return formatted info
+ * @param usdAmount The amount in USD
+ * @returns Fee information object
+ */
+export function calculateDynamicFee(usdAmount: number) {
+  const feeRate = calculateDynamicFeeRate(usdAmount);
+  const feeAmount = (usdAmount * feeRate) / BASIS_POINTS;
+  
+  // Determine tier description
+  let tier = 'Tier 5: $5,000+';
+  for (let i = 0; i < FEE_TIERS.length; i++) {
+    const tierInfo = FEE_TIERS[i];
+    if (usdAmount >= tierInfo.min && usdAmount <= tierInfo.max) {
+      if (i === 0) tier = 'Tier 1: $0-$100';
+      else if (i === 1) tier = 'Tier 2: $100-$500';
+      else if (i === 2) tier = 'Tier 3: $500-$2,000';
+      else if (i === 3) tier = 'Tier 4: $2,000-$5,000';
+      else tier = 'Tier 5: $5,000+';
+      break;
+    }
+  }
+  
+  return {
+    feeAmount,
+    feeRate: (feeRate / 100).toFixed(1), // Convert to percentage string
+    tier
+  };
+}
+
+/**
+ * Format fee information for display
+ * @param feeInfo Fee information object
+ * @returns Formatted fee string
+ */
+export function formatFeeInfo(feeInfo: any): string {
+  return `${feeInfo.feeRate}% (${feeInfo.tier})`;
+}
+
+/**
+ * Check if protocol is enabled via environment variable
+ * @returns True if protocol is enabled
+ */
+export function isProtocolEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_PROTOCOL === 'true';
+}
