@@ -131,6 +131,7 @@ export default function FarcasterMiniApp() {
   const [invoiceSender, setInvoiceSender] = useState('');
   const [invoiceCurrency, setInvoiceCurrency] = useState('USDC');
   const [invoiceLineItems, setInvoiceLineItems] = useState([{ description: '', amount: '' }]);
+  const [invoicePaymentLink, setInvoicePaymentLink] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
@@ -2028,24 +2029,32 @@ export default function FarcasterMiniApp() {
       setInvoiceStatus('loading');
       
       try {
+        const requestData = {
+          merchantId: walletAddress,
+          recipient: invoiceRecipient,
+          sender: invoiceSender,
+          email: invoiceEmail,
+          paymentCollection: 'one-time',
+          dueDate: new Date().toISOString().split('T')[0],
+          currency: invoiceCurrency,
+          lineItems: invoiceLineItems,
+          paymentLink: invoicePaymentLink,
+        };
+        
+        console.log('📤 Sending invoice data:', requestData);
+        
         const res = await fetch('/api/send-invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            merchantId: walletAddress,
-            recipient: invoiceRecipient,
-            sender: invoiceSender,
-            email: invoiceEmail,
-            paymentCollection: 'one-time',
-            dueDate: new Date().toISOString().split('T')[0],
-            currency: invoiceCurrency,
-            lineItems: invoiceLineItems,
-          }),
+          body: JSON.stringify(requestData),
         });
+        
+        console.log('📥 Response status:', res.status, res.statusText);
         
         if (!res.ok) {
           const errorData = await res.json();
-          setInvoiceStatus(errorData.error || 'Failed to create invoice');
+          console.error('❌ API Error:', errorData);
+          setInvoiceStatus(errorData.error || `Failed to create invoice (${res.status})`);
           return;
         }
         
@@ -2057,10 +2066,12 @@ export default function FarcasterMiniApp() {
           setInvoiceRecipient('');
           setInvoiceEmail('');
           setInvoiceSender('');
+          setInvoicePaymentLink('');
           setInvoiceLineItems([{ description: '', amount: '' }]);
         }, 2000);
       } catch (err: any) {
-        setInvoiceStatus(err.message || 'Unknown error');
+        console.error('❌ Network/Parse Error:', err);
+        setInvoiceStatus(err.message || 'Network error occurred');
       }
     };
     
@@ -2078,7 +2089,6 @@ export default function FarcasterMiniApp() {
           </button>
           <div>
             <h2 className="text-lg font-bold text-white">Create Invoice</h2>
-            <p className="text-gray-400 text-xs">Fill in the details below</p>
           </div>
         </div>
         
@@ -2135,6 +2145,22 @@ export default function FarcasterMiniApp() {
             </select>
           </div>
           
+          {/* Payment Link Selection */}
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <h3 className="text-white font-medium mb-2 text-sm">Payment Link</h3>
+            <p className="text-gray-400 text-xs mb-2">
+              Select from recent links or paste a payment link
+            </p>
+            <input
+              type="text"
+              placeholder="Paste your payment link here"
+              value={invoicePaymentLink}
+              onChange={(e) => setInvoicePaymentLink(e.target.value)}
+              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
           {/* Line Items */}
           <div className="bg-slate-800/30 rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
@@ -2175,9 +2201,25 @@ export default function FarcasterMiniApp() {
             <div className="mt-3 pt-2 border-t border-slate-600">
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Total Amount</span>
-                <span className="text-white font-bold">
-                  {totalAmount.toFixed(2)} {invoiceCurrency}
-                </span>
+                <div className="flex items-center gap-2">
+                  {/* Currency Icon */}
+                  {invoiceCurrency === 'USDC' ? (
+                    <Image 
+                      src="/assets/logos/usdc-logo.png" 
+                      alt="USDC" 
+                      width={20} 
+                      height={20} 
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text-lg">
+                      {stablecoins.find(s => s.baseToken === invoiceCurrency)?.flag || '💰'}
+                    </span>
+                  )}
+                  <span className="text-white font-bold">
+                    {totalAmount.toFixed(2)} {invoiceCurrency}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -2186,7 +2228,7 @@ export default function FarcasterMiniApp() {
           <button
             type="submit"
             disabled={invoiceStatus === 'loading'}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 border-2 border-blue-500 hover:border-blue-400"
           >
             {invoiceStatus === 'loading' ? 'Creating Invoice...' : 'Send Invoice'}
           </button>
