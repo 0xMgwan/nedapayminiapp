@@ -975,17 +975,59 @@ export default function FarcasterMiniApp() {
         deadline: new Date(deadline * 1000).toISOString()
       });
       
-      const swapTx = await swapAerodrome({
-        signer,
-        amountIn: amountInUnits.toString(),
-        amountOutMin: minAmountOut.toString(),
-        fromToken: fromTokenData.address,
-        toToken: toTokenData.address,
-        stable: false, // Use volatile pools
-        factory: AERODROME_FACTORY_ADDRESS,
-        userAddress: address,
-        deadline
-      });
+      // Execute swap with Farcaster compatibility
+      let swapTx;
+      try {
+        console.log('🔄 Attempting swap with standard method...');
+        swapTx = await swapAerodrome({
+          signer,
+          amountIn: amountInUnits.toString(),
+          amountOutMin: minAmountOut.toString(),
+          fromToken: fromTokenData.address,
+          toToken: toTokenData.address,
+          stable: false, // Use volatile pools
+          factory: AERODROME_FACTORY_ADDRESS,
+          userAddress: address,
+          deadline
+        });
+        console.log('✅ Standard swap method successful');
+      } catch (swapError) {
+        console.error('❌ Standard swap failed:', swapError);
+        console.log('🔄 Trying direct contract interaction...');
+        
+        // Fallback: Direct contract interaction with basic parameters
+        const routerContract = new ethers.Contract(
+          '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
+          [
+            'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, tuple(address from, address to, bool stable, address factory)[] routes, address to, uint deadline) external returns (uint[] amounts)'
+          ],
+          signer
+        );
+        
+        const routes = [{
+          from: fromTokenData.address,
+          to: toTokenData.address,
+          stable: false,
+          factory: AERODROME_FACTORY_ADDRESS
+        }];
+        
+        try {
+          swapTx = await routerContract.swapExactTokensForTokens(
+            amountInUnits,
+            minAmountOut,
+            routes,
+            address,
+            deadline,
+            {
+              gasLimit: ethers.utils.hexlify(800000),
+            }
+          );
+          console.log('✅ Direct contract swap successful');
+        } catch (directError) {
+          console.error('❌ Direct contract swap failed:', directError);
+          throw new Error(`Swap execution failed: ${(directError as any)?.message || 'Unknown error'}. The Farcaster environment may have limited provider support.`);
+        }
+      }
 
       const receipt = await swapTx.wait();
       
@@ -2863,7 +2905,11 @@ export default function FarcasterMiniApp() {
                 className="flex items-center gap-2 bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1 hover:border-slate-500 transition-colors w-full justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{fromTokenData?.flag || '🇺🇸'}</span>
+                  {swapFromToken === 'USDC' ? (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
+                  ) : (
+                    <span className="text-xl">{fromTokenData?.flag || '🌍'}</span>
+                  )}
                   <span>{swapFromToken}</span>
                 </div>
                 <ChevronDownIcon className="w-4 h-4 text-gray-400" />
@@ -2939,7 +2985,11 @@ export default function FarcasterMiniApp() {
                 className="flex items-center gap-2 bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1 hover:border-slate-500 transition-colors w-full justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{toTokenData?.flag || '🌍'}</span>
+                  {swapToToken === 'USDC' ? (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
+                  ) : (
+                    <span className="text-xl">{toTokenData?.flag || '🌍'}</span>
+                  )}
                   <span>{swapToToken || 'Select token'}</span>
                 </div>
                 <ChevronDownIcon className="w-4 h-4 text-gray-400" />
