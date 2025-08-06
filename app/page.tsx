@@ -2364,15 +2364,15 @@ export default function FarcasterMiniApp() {
                 alert('Please connect your wallet first');
               }
             }}
-            className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+            className={`p-3 rounded-xl border-2 transition-all duration-300 ${
               isConnected
                 ? 'bg-blue-600/20 border-blue-600/30 hover:bg-blue-600/30 text-blue-400'
                 : 'bg-gray-600/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <div className="flex flex-col items-center gap-2">
-              <DocumentTextIcon className="w-6 h-6" />
-              <span className="text-sm font-medium">Create Invoice</span>
+            <div className="flex flex-col items-center gap-1.5">
+              <DocumentTextIcon className="w-5 h-5" />
+              <span className="text-xs font-medium">Create Invoice</span>
             </div>
           </button>
           
@@ -2384,48 +2384,48 @@ export default function FarcasterMiniApp() {
                 alert('Please connect your wallet first');
               }
             }}
-            className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+            className={`p-3 rounded-xl border-2 transition-all duration-300 ${
               isConnected
                 ? 'bg-purple-600/20 border-purple-600/30 hover:bg-purple-600/30 text-purple-400'
                 : 'bg-gray-600/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <div className="flex flex-col items-center gap-2">
-              <ArrowPathIcon className="w-6 h-6" />
-              <span className="text-sm font-medium">View Invoices</span>
+            <div className="flex flex-col items-center gap-1.5">
+              <ArrowPathIcon className="w-5 h-5" />
+              <span className="text-xs font-medium">View Invoices</span>
             </div>
           </button>
         </div>
 
         {/* Features List */}
-        <div className="bg-slate-800/30 rounded-xl p-4">
-          <h3 className="text-white font-semibold mb-3">Invoice Features</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+        <div className="bg-slate-800/30 rounded-xl p-3">
+          <h3 className="text-white font-semibold mb-2 text-sm">Invoice Features</h3>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
               <span>Create professional invoices</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
               <span>Multiple cryptocurrency support</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
               <span>Email delivery to clients</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
               <span>Payment tracking & status</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
               <span>PDF download & sharing</span>
             </div>
           </div>
         </div>
 
         {/* Help Text */}
-        <div className="text-center text-xs text-gray-400 bg-slate-800/20 rounded-lg p-3">
+        <div className="text-center text-xs text-gray-400 bg-slate-800/20 rounded-lg p-2">
           💡 Create professional invoices and get paid in cryptocurrency. Your clients can pay directly through the generated payment links.
         </div>
       </div>
