@@ -16,14 +16,25 @@ export async function POST(req: Request) {
     // Validate payment link if provided
     let paymentLinkRecord = null;
     if (paymentLink) {
+      // First try to find the payment link in the database
       paymentLinkRecord = await prisma.paymentLink.findUnique({
         where: { url: paymentLink },
       });
-      if (!paymentLinkRecord) {
-        return NextResponse.json({ error: 'Invalid payment link' }, { status: 400 });
-      }
-      if (paymentLinkRecord.status !== 'Active') {
+      
+      // If found in database, validate it's active
+      if (paymentLinkRecord && paymentLinkRecord.status !== 'Active') {
         return NextResponse.json({ error: 'Payment link is not active' }, { status: 400 });
+      }
+      
+      // If not found in database, allow external payment links
+      // Just validate that it's a valid URL format
+      if (!paymentLinkRecord) {
+        try {
+          new URL(paymentLink);
+          console.log('Using external payment link:', paymentLink);
+        } catch (error) {
+          return NextResponse.json({ error: 'Invalid payment link format' }, { status: 400 });
+        }
       }
     }
 
