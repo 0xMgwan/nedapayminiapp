@@ -856,8 +856,8 @@ export default function FarcasterMiniApp() {
       const fromDecimals = fromTokenData.decimals || 6;
       const toDecimals = toTokenData.decimals || 6;
       const amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
-      // Calculate minimum amount out with proper decimal handling
-      const slippageAmount = Number(swapQuote) * 0.995; // 0.5% slippage
+      // Calculate minimum amount out with proper decimal handling (increased slippage for production)
+      const slippageAmount = Number(swapQuote) * 0.98; // 2% slippage tolerance
       const minAmountOutFormatted = slippageAmount.toFixed(toDecimals);
       const minAmountOut = ethers.utils.parseUnits(minAmountOutFormatted, toDecimals);
       

@@ -96,8 +96,8 @@ export async function swapAerodrome({
   
   // Add transaction options with manual gas limit
   const txOptions = {
-    gasLimit: ethers.utils.hexlify(500000), // 500k gas limit
-    gasPrice: ethers.utils.parseUnits('0.001', 'gwei') // Low gas price for Base
+    gasLimit: ethers.utils.hexlify(800000), // Increased to 800k gas limit
+    // Remove gasPrice to let the network determine optimal price
   };
   
   console.log('🔄 Executing swap with options:', {
@@ -106,8 +106,7 @@ export async function swapAerodrome({
     amountOutMin,
     userAddress,
     deadline,
-    gasLimit: txOptions.gasLimit,
-    gasPrice: ethers.utils.formatUnits(txOptions.gasPrice, 'gwei') + ' gwei'
+    gasLimit: txOptions.gasLimit
   });
   
   // Execute swap with manual gas settings
