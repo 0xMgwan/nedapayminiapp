@@ -123,6 +123,8 @@ export default function FarcasterMiniApp() {
   const [walletBalance, setWalletBalance] = useState('0.00');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [selectedInstitution, setSelectedInstitution] = useState('');
+  const [orderedCountries, setOrderedCountries] = useState<Country[]>(countries);
+  const [userLocation, setUserLocation] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
     orderId: string;
@@ -437,6 +439,43 @@ export default function FarcasterMiniApp() {
       console.log('💻 Desktop environment - wallet connection handled normally');
     }
   }, [isFrameReady, isConnected, connectors, connect, address, isSmartWalletEnvironment, connectError]);
+
+  // Geolocation detection to reorder countries based on user location
+  useEffect(() => {
+    const detectUserLocation = async () => {
+      try {
+        // First try to get location from IP geolocation API
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        if (data.country_code) {
+          const detectedCountry = countries.find(c => c.code === data.country_code);
+          if (detectedCountry) {
+            console.log('🌍 Detected user location:', detectedCountry.name);
+            setUserLocation(data.country_code);
+            
+            // Reorder countries to put user's country first
+            const reorderedCountries = [
+              detectedCountry,
+              ...countries.filter(c => c.code !== data.country_code)
+            ];
+            setOrderedCountries(reorderedCountries);
+            
+            // Set as default selected country if not already set
+            if (selectedCountry.code === countries[0].code) {
+              setSelectedCountry(detectedCountry);
+            }
+          }
+        }
+      } catch (error) {
+        console.log('🚫 Could not detect user location:', error);
+        // Fallback to default country order
+        setOrderedCountries(countries);
+      }
+    };
+
+    detectUserLocation();
+  }, []); // Run once on component mount
 
   const paymentDetails = calculatePaymentDetails();
 
@@ -815,14 +854,14 @@ export default function FarcasterMiniApp() {
         <select 
           value={selectedCountry.code}
           onChange={(e) => {
-            const country = countries.find(c => c.code === e.target.value);
+            const country = orderedCountries.find(c => c.code === e.target.value);
             if (country && !country.comingSoon) {
               setSelectedCountry(country);
             }
           }}
           className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {countries.map((country) => (
+          {orderedCountries.map((country) => (
             <option key={country.code} value={country.code} disabled={country.comingSoon}>
               {country.flag} {country.name} {country.comingSoon ? '(Coming soon)' : ''}
             </option>
@@ -1312,7 +1351,7 @@ export default function FarcasterMiniApp() {
         {/* Dropdown Menu */}
         {isCountryDropdownOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
-            {countries.map((country) => (
+            {orderedCountries.map((country) => (
               <button
                 key={country.code}
                 onClick={() => {
@@ -1719,10 +1758,10 @@ export default function FarcasterMiniApp() {
       <div className="relative">
         <select 
           value={selectedCountry.code}
-          onChange={(e) => setSelectedCountry(countries.find(c => c.code === e.target.value) || countries[0])}
+          onChange={(e) => setSelectedCountry(orderedCountries.find(c => c.code === e.target.value) || orderedCountries[0])}
           className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {countries.map((country) => (
+          {orderedCountries.map((country) => (
             <option key={country.code} value={country.code}>
               {country.flag} {country.name}
             </option>
@@ -1891,7 +1930,7 @@ export default function FarcasterMiniApp() {
           <select 
             value={selectedStablecoin.baseToken}
             onChange={(e) => setSelectedStablecoin(stablecoins.find(t => t.baseToken === e.target.value) || stablecoins[0])}
-            className="w-full bg-white text-gray-900 rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {stablecoins.map((token) => (
               <option key={token.baseToken} value={token.baseToken}>
@@ -1899,7 +1938,7 @@ export default function FarcasterMiniApp() {
               </option>
             ))}
           </select>
-          <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-600" />
+          <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
         </div>
       </div>
 
@@ -1911,7 +1950,7 @@ export default function FarcasterMiniApp() {
           onChange={(e) => setLinkDescription(e.target.value)}
           placeholder="vibe"
           rows={3}
-          className="w-full bg-white text-gray-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
 
