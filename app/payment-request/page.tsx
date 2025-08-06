@@ -7,6 +7,8 @@ import { useConnectorClient } from 'wagmi';
 import { stablecoins } from "../data/stablecoins";
 import { ethers } from 'ethers';
 import QRCode from 'qrcode';
+import { calculateDynamicFee, isProtocolEnabled } from '../utils/nedaPayProtocol';
+import { getNedaPayProtocolAddress } from '../config/contracts';
 
 interface PaymentData {
   id: string;
@@ -161,7 +163,12 @@ function PaymentRequestPageContent() {
       const erc20ABI = [
         'function transfer(address to, uint256 amount) returns (bool)',
         'function balanceOf(address owner) view returns (uint256)',
-        'function decimals() view returns (uint8)'
+        'function decimals() view returns (uint8)',
+        'function approve(address spender, uint256 amount) returns (bool)'
+      ];
+      
+      const protocolABI = [
+        'function processPayment(address token, uint256 amount, string calldata paymentType) external'
       ];
 
       const tokenAddress = getTokenAddress(tokenSymbol);
@@ -180,8 +187,10 @@ function PaymentRequestPageContent() {
       const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, signer);
       const amountInWei = ethers.utils.parseUnits(amount.toString(), decimals);
 
+      // Check balance
+      let balance;
       try {
-        const balance = await tokenContract.balanceOf(walletAddress);
+        balance = await tokenContract.balanceOf(walletAddress);
         console.log('💰 Current balance:', ethers.utils.formatUnits(balance, decimals));
         
         if (balance.lt(amountInWei)) {
@@ -192,7 +201,60 @@ function PaymentRequestPageContent() {
         throw new Error('Failed to check token balance. Please ensure you have the correct token.');
       }
 
-      const tx = await tokenContract.transfer(toAddress, amountInWei);
+      // Calculate and collect protocol fee if enabled
+      let actualTransferAmount = amountInWei;
+      if (isProtocolEnabled()) {
+        // Calculate fee based on USD equivalent
+        let usdValue;
+        if (tokenSymbol === 'USDC' || tokenSymbol === 'USDT' || tokenSymbol === 'DAI') {
+          usdValue = amount; // Direct USD value for USD stablecoins
+        } else {
+          usdValue = amount; // Conservative estimate for other tokens
+        }
+        
+        const feeInfo = calculateDynamicFee(usdValue);
+        console.log('💰 Protocol fee info for payment:', feeInfo, 'USD value used:', usdValue);
+        
+        if (feeInfo.feeAmount > 0) {
+          // Calculate fee in token units
+          const feeInTokenUnits = ethers.utils.parseUnits(
+            (feeInfo.feeAmount).toFixed(decimals), 
+            decimals
+          );
+          
+          console.log('💳 Collecting protocol fee for payment:', {
+            feeRate: feeInfo.feeRate,
+            feeAmountUSD: feeInfo.feeAmount,
+            feeInTokenUnits: feeInTokenUnits.toString()
+          });
+          
+          // Get protocol contract
+          const protocolAddress = getNedaPayProtocolAddress();
+          const protocolContract = new ethers.Contract(protocolAddress, protocolABI, signer);
+          
+          // Total amount needed (transfer + fee)
+          const totalAmountNeeded = amountInWei.add(feeInTokenUnits);
+          
+          // Check if user has enough balance for transfer + fee
+          if (balance.lt(totalAmountNeeded)) {
+            throw new Error(`Insufficient ${tokenSymbol} balance for payment + protocol fee`);
+          }
+          
+          // Approve protocol contract for the fee amount
+          console.log('📝 Approving protocol contract for fee collection...');
+          const approveTx = await tokenContract.approve(protocolAddress, feeInTokenUnits);
+          await approveTx.wait();
+          
+          // Process payment with protocol fee
+          console.log('💰 Processing payment with protocol fee...');
+          const feeTx = await protocolContract.processPayment(tokenAddress, feeInTokenUnits, 'payment_link');
+          await feeTx.wait();
+          
+          console.log('✅ Protocol fee collected successfully');
+        }
+      }
+
+      const tx = await tokenContract.transfer(toAddress, actualTransferAmount);
       const receipt = await tx.wait();
       
       console.log(`${tokenSymbol} transfer successful:`, {
