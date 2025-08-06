@@ -1083,8 +1083,20 @@ export default function FarcasterMiniApp() {
       // Calculate and collect protocol fee if enabled
       let actualSwapAmount = amountInUnits;
       if (isProtocolEnabled()) {
-        const feeInfo = calculateDynamicFee(Number(swapAmount));
-        console.log('💰 Protocol fee info:', feeInfo);
+        // Calculate fee based on USD equivalent
+        let usdValue;
+        if (swapToToken === 'USDC' || swapToToken === 'USDT' || swapToToken === 'DAI') {
+          // If swapping to USD stablecoin, use the output amount as USD value
+          usdValue = Number(swapQuote) || 0;
+        } else if (swapFromToken === 'USDC' || swapFromToken === 'USDT' || swapFromToken === 'DAI') {
+          // If swapping from USD stablecoin, use the input amount as USD value
+          usdValue = Number(swapAmount) || 0;
+        } else {
+          // For other token pairs, use a conservative estimate based on output
+          usdValue = Number(swapQuote) || Number(swapAmount) || 0;
+        }
+        const feeInfo = calculateDynamicFee(usdValue);
+        console.log('💰 Protocol fee info:', feeInfo, 'USD value used:', usdValue);
         
         if (feeInfo.feeAmount > 0) {
           // Calculate fee in token units
@@ -3257,7 +3269,19 @@ export default function FarcasterMiniApp() {
                 <span className="text-blue-400 font-medium">Protocol Fee:</span>
                 <div className="text-right">
                   {(() => {
-                    const feeInfo = calculateDynamicFee(Number(swapAmount));
+                    // Calculate fee based on USD equivalent
+                    let usdValue;
+                    if (swapToToken === 'USDC' || swapToToken === 'USDT' || swapToToken === 'DAI') {
+                      // If swapping to USD stablecoin, use the output amount as USD value
+                      usdValue = Number(swapQuote) || 0;
+                    } else if (swapFromToken === 'USDC' || swapFromToken === 'USDT' || swapFromToken === 'DAI') {
+                      // If swapping from USD stablecoin, use the input amount as USD value
+                      usdValue = Number(swapAmount) || 0;
+                    } else {
+                      // For other token pairs, use a conservative estimate based on output
+                      usdValue = Number(swapQuote) || Number(swapAmount) || 0;
+                    }
+                    const feeInfo = calculateDynamicFee(usdValue);
                     return (
                       <>
                         <div className="text-blue-400 font-mono">
