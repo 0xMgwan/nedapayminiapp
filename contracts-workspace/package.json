@@ -1,0 +1,26 @@
+{
+  "name": "nedapay-contracts",
+  "version": "1.0.0",
+  "description": "NedaPay Protocol Smart Contracts",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:testnet": "hardhat run scripts/deployUpgradeable.js --network base-sepolia",
+    "deploy:mainnet": "hardhat run scripts/deployUpgradeable.js --network base",
+    "upgrade:testnet": "hardhat run scripts/upgrade.js --network base-sepolia",
+    "upgrade:mainnet": "hardhat run scripts/upgrade.js --network base",
+    "upgrade-tokens:testnet": "hardhat run scripts/upgradeWithCorrectTokens.js --network base-sepolia",
+    "init-tokens:testnet": "hardhat run scripts/initializeTokens.js --network base-sepolia",
+    "update-fees:testnet": "hardhat run scripts/updateFeeTiers.js --network base-sepolia",
+    "update-fees:mainnet": "hardhat run scripts/updateFeeTiers.js --network base"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
+    "@nomicfoundation/hardhat-verify": "^2.1.1",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "dotenv": "^17.2.1",
+    "ethers": "^6.15.0",
+    "hardhat": "^2.26.2"
+  }
+}

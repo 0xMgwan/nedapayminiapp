@@ -32,7 +32,7 @@ export const stablecoins = [
     baseToken: 'NGNC',
     decimals: 18,
     name: 'Nigerian Naira Coin',
-    address: '0xe743f13623e000261b634f0e5676f294475ec24d', // Updated NGNC address
+    address: '0xe743f13623E000261b634f0e5676F294475ec24d', // Updated NGNC address
     issuer: 'Link',
     description: 'Stablecoin pegged 1:1 to the Nigerian Naira (NGN)',
     website: 'https://stablecoins.earth',

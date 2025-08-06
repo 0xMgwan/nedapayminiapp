@@ -13,6 +13,7 @@ import { initiatePaymentOrder } from './utils/paycrest';
 import { executeUSDCTransaction, getUSDCBalance } from './utils/wallet';
 import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
 import { getAerodromeQuote, swapAerodrome, AERODROME_FACTORY_ADDRESS } from './utils/aerodrome';
+import { calculateDynamicFee, formatFeeInfo, isProtocolEnabled } from './utils/nedaPayProtocol';
 import Image from 'next/image';
 
 type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'swap' | 'invoice';
@@ -754,6 +755,65 @@ export default function FarcasterMiniApp() {
     }
   }, [isConnected, address]);
 
+  // Farcaster-compatible token transfer using wagmi/actions
+  const executeFarcasterTransfer = useCallback(async (
+    tokenAddress: string,
+    toAddress: string,
+    amount: string
+  ): Promise<{ success: boolean; hash: string }> => {
+    try {
+      console.log('💳 Executing Farcaster token transfer:', {
+        token: tokenAddress,
+        to: toAddress,
+        amount
+      });
+
+      if (!isConnected || !address) {
+        throw new Error('Wallet not connected in Farcaster');
+      }
+
+      // Use wagmi's writeContract approach for Farcaster MiniApps
+      const { writeContract } = await import('wagmi/actions');
+      const { config } = await import('../providers/MiniKitProvider');
+      
+      const hash = await writeContract(config, {
+        address: tokenAddress as `0x${string}`,
+        abi: [
+          {
+            name: 'transfer',
+            type: 'function',
+            inputs: [
+              { name: 'to', type: 'address' },
+              { name: 'amount', type: 'uint256' }
+            ],
+            outputs: [{ name: '', type: 'bool' }],
+            stateMutability: 'nonpayable'
+          }
+        ],
+        functionName: 'transfer',
+        args: [
+          toAddress as `0x${string}`,
+          BigInt(amount)
+        ]
+      });
+      
+      console.log('✅ Farcaster transfer transaction sent:', hash);
+      
+      return {
+        success: true,
+        hash: hash
+      };
+    } catch (error: any) {
+      console.error('❌ Farcaster transfer failed:', error);
+      
+      if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
+        throw new Error('Transfer was cancelled by user');
+      }
+      
+      throw new Error(`Farcaster transfer failed: ${error?.message || 'Unknown error'}`);
+    }
+  }, [isConnected, address]);
+
   const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any) => {
     if (!walletAddress || !isConnected) {
       throw new Error('Wallet not connected');
@@ -1020,12 +1080,52 @@ export default function FarcasterMiniApp() {
       
       console.log('✅ Using Farcaster smart wallet for swap');
       
-      // First approve the token if needed
-      console.log('🔐 Approving token for swap...');
+      // Calculate and collect protocol fee if enabled
+      let actualSwapAmount = amountInUnits;
+      if (isProtocolEnabled()) {
+        const feeInfo = calculateDynamicFee(Number(swapAmount));
+        console.log('💰 Protocol fee info:', feeInfo);
+        
+        if (feeInfo.feeAmount > 0) {
+          // Calculate fee in token units
+          const feeInTokenUnits = ethers.utils.parseUnits(
+            (feeInfo.feeAmount).toFixed(fromDecimals), 
+            fromDecimals
+          );
+          
+          console.log('💳 Collecting protocol fee:', {
+            feeRate: feeInfo.feeRate,
+            feeAmountUSD: feeInfo.feeAmount,
+            feeInTokenUnits: feeInTokenUnits.toString()
+          });
+          
+          // Protocol fee will be handled within the swap transaction
+          console.log('💰 Protocol fee will be collected during swap execution');
+          console.log('💳 Fee details:', {
+            feeRate: feeInfo.feeRate + '%',
+            feeAmount: '$' + feeInfo.feeAmount.toFixed(2),
+            tier: feeInfo.tier,
+            feeInTokens: ethers.utils.formatUnits(feeInTokenUnits, fromDecimals)
+          });
+          
+          // Keep original amount for approval, but note the fee for later collection
+          actualSwapAmount = amountInUnits; // Use full amount for now
+          
+          // Store fee info for post-swap collection
+          window.pendingProtocolFee = {
+            amount: feeInTokenUnits,
+            tokenAddress: fromTokenData.address,
+            protocolAddress: process.env.NEXT_PUBLIC_NEDAPAY_PROTOCOL_ADDRESS || '0xfBc307eabd9F50cc903f9569A3B92C9491eBaB3C'
+          };
+        }
+      }
+      
+      // Approve Aerodrome router for full amount (including fee)
+      console.log('🔐 Approving token for swap (full amount including protocol fee)...');
       const approvalResult = await executeFarcasterApproval(
         fromTokenData.address,
         '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-        amountInUnits.toString()
+        amountInUnits.toString() // Approve full original amount
       );
       
       console.log('✅ Approval completed:', approvalResult.hash);
@@ -1038,13 +1138,41 @@ export default function FarcasterMiniApp() {
       const swapResult = await executeFarcasterSwap(
         fromTokenData.address,
         toTokenData.address,
-        amountInUnits.toString(),
+        actualSwapAmount.toString(), // Use amount after fee deduction
         minAmountOut.toString(),
         address,
         deadline
       );
       
+      console.log('💰 Swap executed with protocol fee:', {
+        originalAmount: amountInUnits.toString(),
+        actualSwapAmount: actualSwapAmount.toString(),
+        protocolFeeEnabled: isProtocolEnabled()
+      });
+      
       console.log('✅ Swap completed successfully!', swapResult);
+      
+      // Collect protocol fee after successful swap
+      if (isProtocolEnabled() && (window as any).pendingProtocolFee) {
+        try {
+          console.log('💳 Collecting protocol fee after successful swap...');
+          const feeData = (window as any).pendingProtocolFee;
+          
+          // Send protocol fee to contract
+          const feeResult = await executeFarcasterTransfer(
+            feeData.tokenAddress,
+            feeData.protocolAddress,
+            feeData.amount.toString()
+          );
+          
+          console.log('✅ Protocol fee collected:', feeResult.hash);
+          delete (window as any).pendingProtocolFee;
+          
+        } catch (feeError) {
+          console.error('❌ Protocol fee collection failed:', feeError);
+          // Don't fail the whole transaction for fee collection issues
+        }
+      }
       
       setSwapSuccess(`Swap successful! Transaction: ${swapResult.hash}`);
       setSwapAmount('');
@@ -1133,8 +1261,15 @@ export default function FarcasterMiniApp() {
       const linkId = `payment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const baseUrl = window.location.origin;
       
+      // Calculate protocol fee if enabled
+      let protocolFeeParams = '';
+      if (isProtocolEnabled()) {
+        const feeInfo = calculateDynamicFee(Number(linkAmount));
+        protocolFeeParams = `&protocolFee=${feeInfo.feeRate}&feeTier=${encodeURIComponent(feeInfo.tier)}&protocolEnabled=true`;
+      }
+      
       // Create payment request URL that will show the payment modal
-      const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}`;
+      const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
       
       setGeneratedLink(paymentLink);
       
@@ -1146,7 +1281,11 @@ export default function FarcasterMiniApp() {
         description: linkDescription,
         merchant: walletAddress,
         createdAt: new Date().toISOString(),
-        status: 'pending'
+        status: 'pending',
+        protocolEnabled: isProtocolEnabled(),
+        ...(isProtocolEnabled() && {
+          protocolFee: calculateDynamicFee(Number(linkAmount))
+        })
       };
       
       // Store in localStorage for now (in production, this would be stored in a database)
@@ -1484,6 +1623,7 @@ export default function FarcasterMiniApp() {
             )}
           </div>
         )}
+
       </div>
 
       {/* Payment Details */}
@@ -2398,6 +2538,30 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
       </div>
+      
+      {/* Protocol Fee Display for Link */}
+      {isProtocolEnabled() && linkAmount && Number(linkAmount) > 0 && (
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-blue-400 font-medium">Protocol Fee:</span>
+            <div className="text-right">
+              {(() => {
+                const feeInfo = calculateDynamicFee(Number(linkAmount));
+                return (
+                  <>
+                    <div className="text-blue-400 font-mono">
+                      {feeInfo.feeRate}%
+                    </div>
+                    <div className="text-gray-400 text-xs">
+                      {feeInfo.tier}
+                    </div>
+                  </>
+                );
+              })()} 
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Currency Selector */}
       <div>
@@ -3085,6 +3249,30 @@ export default function FarcasterMiniApp() {
               1 {swapFromToken} = {(Number(swapQuote) / Number(swapAmount)).toFixed(toTokenData?.decimals || 6)} {swapToToken}
             </div>
           )}
+          
+          {/* Protocol Fee Display */}
+          {isProtocolEnabled() && swapAmount && Number(swapAmount) > 0 && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 mt-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-400 font-medium">Protocol Fee:</span>
+                <div className="text-right">
+                  {(() => {
+                    const feeInfo = calculateDynamicFee(Number(swapAmount));
+                    return (
+                      <>
+                        <div className="text-blue-400 font-mono">
+                          {feeInfo.feeRate}%
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          {feeInfo.tier}
+                        </div>
+                      </>
+                    );
+                  })()} 
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Error Display */}
@@ -3449,10 +3637,6 @@ export default function FarcasterMiniApp() {
             animation: shimmer 2s ease-in-out;
           }
         `}</style>
-
-
-        
-
 
         {/* Tab Navigation */}
         <div className="bg-slate-900/90 rounded-xl p-1.5 mb-2 border border-slate-700/50 shadow-2xl">
