@@ -880,7 +880,7 @@ export default function FarcasterMiniApp() {
             console.log('✅ Basic wallet client setup successful');
           } catch (basicError) {
             console.error('❌ Basic wallet client failed:', basicError);
-            throw new Error(`Wallet provider error: ${providerError.message}. Please try refreshing or reconnecting your wallet.`);
+            throw new Error(`Wallet provider error: ${(providerError as any)?.message || 'Unknown error'}. Please try refreshing or reconnecting your wallet.`);
           }
         } else {
           throw new Error('No compatible wallet provider found. Please ensure your wallet is connected and supports Base network.');
@@ -957,7 +957,7 @@ export default function FarcasterMiniApp() {
           console.log('✅ Approval successful!');
         } catch (approvalError) {
           console.error('❌ Approval failed:', approvalError);
-          throw new Error(`Token approval failed: ${approvalError.message}. Please try again or check your wallet connection.`);
+          throw new Error(`Token approval failed: ${(approvalError as any)?.message || 'Unknown error'}. Please try again or check your wallet connection.`);
         }
       } else {
         console.log('✅ Sufficient allowance already exists');
