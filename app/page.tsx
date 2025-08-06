@@ -132,6 +132,11 @@ export default function FarcasterMiniApp() {
   const [invoiceCurrency, setInvoiceCurrency] = useState('USDC');
   const [invoiceLineItems, setInvoiceLineItems] = useState([{ description: '', amount: '' }]);
   const [invoicePaymentLink, setInvoicePaymentLink] = useState('');
+  const [invoiceDueDate, setInvoiceDueDate] = useState(() => {
+    const today = new Date();
+    today.setDate(today.getDate() + 7); // Default to 7 days from now
+    return today.toISOString().split('T')[0];
+  });
   const [invoiceStatus, setInvoiceStatus] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
@@ -2035,7 +2040,7 @@ export default function FarcasterMiniApp() {
           sender: invoiceSender,
           email: invoiceEmail,
           paymentCollection: 'one-time',
-          dueDate: new Date().toISOString().split('T')[0],
+          dueDate: invoiceDueDate,
           currency: invoiceCurrency,
           lineItems: invoiceLineItems,
           paymentLink: invoicePaymentLink,
@@ -2067,6 +2072,11 @@ export default function FarcasterMiniApp() {
           setInvoiceEmail('');
           setInvoiceSender('');
           setInvoicePaymentLink('');
+          setInvoiceDueDate(() => {
+            const today = new Date();
+            today.setDate(today.getDate() + 7);
+            return today.toISOString().split('T')[0];
+          });
           setInvoiceLineItems([{ description: '', amount: '' }]);
         }, 2000);
       } catch (err: any) {
@@ -2131,18 +2141,33 @@ export default function FarcasterMiniApp() {
           
           {/* Currency Selection */}
           <div className="bg-slate-800/30 rounded-lg p-2">
-            <h3 className="text-white font-medium mb-1.5 text-xs">Payment Currency</h3>
-            <select
-              value={invoiceCurrency}
-              onChange={(e) => setInvoiceCurrency(e.target.value)}
-              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {stablecoins.map((token) => (
-                <option key={token.baseToken} value={token.baseToken}>
-                  {token.flag} {token.baseToken} - {token.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center justify-between">
+              <span className="text-white text-xs font-medium">Payment Currency</span>
+              <select
+                value={invoiceCurrency}
+                onChange={(e) => setInvoiceCurrency(e.target.value)}
+                className="bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
+              >
+                {stablecoins.map((token) => (
+                  <option key={token.baseToken} value={token.baseToken}>
+                    {token.flag} {token.baseToken} - {token.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {/* Due Date */}
+          <div className="bg-slate-800/30 rounded-lg p-2">
+            <div className="flex items-center justify-between">
+              <span className="text-white text-xs font-medium">Due Date</span>
+              <input
+                type="date"
+                value={invoiceDueDate}
+                onChange={(e) => setInvoiceDueDate(e.target.value)}
+                className="bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
+              />
+            </div>
           </div>
           
           {/* Payment Link Selection */}
