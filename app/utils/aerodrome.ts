@@ -93,13 +93,31 @@ export async function swapAerodrome({
 }) {
   const router = new ethers.Contract(AERODROME_ROUTER_ADDRESS, AERODROME_ROUTER_ABI, signer);
   const routes = [{ from: fromToken, to: toToken, stable, factory }];
-  // Approve the router to spend fromToken if needed (handled outside this util)
+  
+  // Add transaction options with manual gas limit
+  const txOptions = {
+    gasLimit: ethers.utils.hexlify(500000), // 500k gas limit
+    gasPrice: ethers.utils.parseUnits('0.001', 'gwei') // Low gas price for Base
+  };
+  
+  console.log('🔄 Executing swap with options:', {
+    routes,
+    amountIn,
+    amountOutMin,
+    userAddress,
+    deadline,
+    gasLimit: txOptions.gasLimit,
+    gasPrice: ethers.utils.formatUnits(txOptions.gasPrice, 'gwei') + ' gwei'
+  });
+  
+  // Execute swap with manual gas settings
   const tx = await router.swapExactTokensForTokens(
     amountIn,
     amountOutMin,
     routes,
     userAddress,
-    deadline
+    deadline,
+    txOptions
   );
   return tx;
 }
