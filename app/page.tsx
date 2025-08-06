@@ -833,13 +833,24 @@ export default function FarcasterMiniApp() {
         to: { token: toTokenData.baseToken, address: toTokenData.address }
       });
 
-      // Create signer
-      if (!walletClient) {
-        throw new Error('No wallet client available');
+      // Create provider and signer with fallback
+      let provider;
+      let signer;
+      
+      if (walletClient) {
+        // Use wallet client if available (preferred for transactions)
+        provider = new ethers.providers.Web3Provider(walletClient as any);
+        signer = provider.getSigner();
+        console.log('✅ Using wallet client provider');
+      } else if (typeof window !== 'undefined' && window.ethereum) {
+        // Fallback to window.ethereum
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        console.log('✅ Using window.ethereum provider');
+      } else {
+        // Final fallback - use JsonRpcProvider for read operations, but this won't work for transactions
+        throw new Error('No wallet client available. Please ensure your wallet is connected.');
       }
-
-      const provider = new ethers.providers.Web3Provider(walletClient as any);
-      const signer = provider.getSigner();
 
       // Convert amounts using proper decimals
       const fromDecimals = fromTokenData.decimals || 6;
@@ -853,8 +864,10 @@ export default function FarcasterMiniApp() {
       // Verify pool exists before attempting swap
       try {
         console.log('🔍 Verifying pool exists...');
+        // Use JsonRpcProvider for pool verification to avoid wallet issues
+        const readOnlyProvider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
         const testQuote = await getAerodromeQuote({
-          provider,
+          provider: readOnlyProvider,
           amountIn: amountInUnits.toString(),
           fromToken: fromTokenData.address,
           toToken: toTokenData.address,
