@@ -227,28 +227,57 @@ export default function FarcasterMiniApp() {
   // Removed duplicate handleGeneratePaymentLink function - using the one defined later
   
   // Fetch real USDC wallet balance
-  const fetchWalletBalance = useCallback(async () => {
+  const fetchWalletBalance = useCallback(async (tokenSymbol?: string) => {
     if (!walletAddress || !isConnected) {
       console.log('⚠️ No wallet address or not connected');
       setWalletBalance('0.00');
       return;
     }
     
-    console.log('💰 Fetching balance for:', walletAddress);
+    // Determine which token to fetch balance for
+    const currentTab = activeTab;
+    let selectedToken = tokenSymbol;
+    
+    if (!selectedToken) {
+      if (currentTab === 'send') {
+        selectedToken = sendCurrency === 'usdc' ? selectedSendToken : 'USDC';
+      } else if (currentTab === 'pay') {
+        selectedToken = payCurrency === 'usdc' ? selectedPayToken : 'USDC';
+      } else {
+        selectedToken = 'USDC'; // Default for other tabs
+      }
+    }
+    
+    console.log('💰 Fetching balance for:', walletAddress, 'Token:', selectedToken);
     
     try {
-      const balance = await getUSDCBalance(walletAddress);
-      const formattedBalance = parseFloat(balance).toFixed(2);
-      console.log('✅ Balance fetched:', formattedBalance, 'USDC');
-      console.log('🔄 Setting wallet balance state to:', formattedBalance);
-      setWalletBalance(formattedBalance);
-      console.log('✅ Wallet balance state updated');
+      // Find token data
+      const tokenData = stablecoins.find(token => token.baseToken === selectedToken);
+      if (!tokenData) {
+        console.error('❌ Token not found:', selectedToken);
+        setWalletBalance('0.00');
+        return;
+      }
+      
+      // Create provider and contract
+      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+      const tokenContract = new ethers.Contract(
+        tokenData.address,
+        ['function balanceOf(address owner) view returns (uint256)'],
+        provider
+      );
+      
+      const balance = await tokenContract.balanceOf(walletAddress);
+      const formattedBalance = ethers.utils.formatUnits(balance, tokenData.decimals || 6);
+      const displayBalance = parseFloat(formattedBalance).toFixed(tokenData.decimals === 2 ? 2 : 2);
+      
+      console.log('✅ Balance fetched:', displayBalance, selectedToken);
+      setWalletBalance(displayBalance);
     } catch (error) {
       console.error('❌ Balance fetch failed:', error);
-      console.log('🔄 Setting wallet balance state to: 0.00');
       setWalletBalance('0.00');
     }
-  }, [walletAddress, isConnected]);
+  }, [walletAddress, isConnected, activeTab, sendCurrency, selectedSendToken, payCurrency, selectedPayToken, stablecoins]);
   
   // Fetch balance when wallet connects or address changes
   useEffect(() => {
@@ -1328,8 +1357,11 @@ export default function FarcasterMiniApp() {
                 onClick={() => setAmount(walletBalance)}
                 className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
               >
-                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                USDC {walletBalance}
+                {selectedSendToken === 'USDC' && <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />}
+                {selectedSendToken === 'USDT' && <img src="/assets/logos/usdt-logo.png" alt="USDT" className="w-3 h-3" />}
+                {selectedSendToken === 'DAI' && <img src="/assets/logos/dai-logo.png" alt="DAI" className="w-3 h-3" />}
+                {selectedSendToken === 'IDRX' && <img src="/assets/logos/idrx-logo.png" alt="IDRX" className="w-3 h-3" />}
+                {selectedSendToken} {walletBalance}
               </button>
               <button
                 onClick={refreshBalance}
@@ -1385,7 +1417,7 @@ export default function FarcasterMiniApp() {
             <div className="text-white text-sm font-medium">
               {sendCurrency === 'local' 
                 ? `${amount || '0'} ${selectedCountry.currency}`
-                : `${amount || '0'} USDC`
+                : `${amount || '0'} ${selectedSendToken}`
               }
             </div>
           </div>
