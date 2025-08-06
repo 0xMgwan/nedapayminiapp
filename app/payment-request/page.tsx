@@ -62,6 +62,14 @@ function PaymentRequestPageContent() {
       const token = searchParams.get('token');
       const description = searchParams.get('description');
       const merchant = searchParams.get('merchant');
+      
+      console.log('🔍 Payment link parameters:', { id, amount, token, description, merchant });
+      
+      // Debug token resolution
+      if (token) {
+        const resolvedAddress = getTokenAddress(token);
+        console.log('🪙 Token resolution:', { token, resolvedAddress });
+      }
 
       if (id && amount && token && merchant) {
         const data: PaymentData = {
@@ -114,11 +122,25 @@ function PaymentRequestPageContent() {
   };
 
   const getTokenAddress = (token: string) => {
+    console.log('🔍 Looking for token:', token);
+    
     const stablecoin = stablecoins.find(s => s.baseToken === token);
-    return stablecoin?.address || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    console.log('🔍 Found stablecoin:', stablecoin);
+    
+    // Check if address is valid (not a placeholder)
+    if (stablecoin?.address && 
+        stablecoin.address !== '0x123456789abcdef123456789abcdef123456789a' &&
+        stablecoin.chainId === 8453) { // Only Base mainnet tokens
+      console.log('✅ Using valid token address:', stablecoin.address);
+      return stablecoin.address;
+    }
+    
+    console.log('⚠️ Token not found or invalid, defaulting to USDC');
+    // Default to USDC if token not found or invalid
+    return "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // USDC on Base
   };
 
-  const executeUSDCTransaction = async (toAddress: string, amount: number, description?: string): Promise<boolean> => {
+  const executeTokenTransaction = async (toAddress: string, amount: number, tokenSymbol: string, description?: string): Promise<boolean> => {
     if (!walletAddress || !isConnected || !walletClient) {
       throw new Error('Wallet not connected');
     }
@@ -127,6 +149,14 @@ function PaymentRequestPageContent() {
       // Use wagmi walletClient directly
       const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
       const signer = provider.getSigner();
+      
+      // Check network
+      const network = await provider.getNetwork();
+      console.log('🌐 Current network:', network);
+      
+      if (network.chainId !== 8453) {
+        throw new Error('Please switch to Base network (Chain ID: 8453)');
+      }
 
       const erc20ABI = [
         'function transfer(address to, uint256 amount) returns (bool)',
@@ -134,18 +164,38 @@ function PaymentRequestPageContent() {
         'function decimals() view returns (uint8)'
       ];
 
-      const usdcContract = new ethers.Contract(getTokenAddress('USDC'), erc20ABI, signer);
-      const amountInWei = ethers.utils.parseUnits(amount.toString(), 6);
+      const tokenAddress = getTokenAddress(tokenSymbol);
+      console.log('🪙 Using token address for', tokenSymbol, ':', tokenAddress);
+      
+      // Validate the address format
+      if (!ethers.utils.isAddress(tokenAddress)) {
+        throw new Error(`Invalid token address: ${tokenAddress}`);
+      }
+      
+      // Get token info to determine decimals
+      const tokenInfo = stablecoins.find(s => s.baseToken === tokenSymbol);
+      const decimals = tokenInfo?.decimals || 6; // Default to 6 for USDC
+      
+      console.log('🔧 Creating contract with address:', tokenAddress, 'decimals:', decimals);
+      const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, signer);
+      const amountInWei = ethers.utils.parseUnits(amount.toString(), decimals);
 
-      const balance = await usdcContract.balanceOf(walletAddress);
-      if (balance.lt(amountInWei)) {
-        throw new Error('Insufficient USDC balance');
+      try {
+        const balance = await tokenContract.balanceOf(walletAddress);
+        console.log('💰 Current balance:', ethers.utils.formatUnits(balance, decimals));
+        
+        if (balance.lt(amountInWei)) {
+          throw new Error(`Insufficient ${tokenSymbol} balance`);
+        }
+      } catch (error) {
+        console.error('❌ Balance check failed:', error);
+        throw new Error('Failed to check token balance. Please ensure you have the correct token.');
       }
 
-      const tx = await usdcContract.transfer(toAddress, amountInWei);
+      const tx = await tokenContract.transfer(toAddress, amountInWei);
       const receipt = await tx.wait();
       
-      console.log('USDC transfer successful:', {
+      console.log(`${tokenSymbol} transfer successful:`, {
         hash: receipt.transactionHash,
         to: toAddress,
         amount: amount,
@@ -176,9 +226,19 @@ function PaymentRequestPageContent() {
     setIsProcessing(true);
     try {
       const amount = parseFloat(paymentData.amount);
-      const result = await executeUSDCTransaction(
+      
+      // Force USDC for unsupported tokens on mainnet
+      let tokenToUse = paymentData.token;
+      const tokenAddress = getTokenAddress(paymentData.token);
+      if (tokenAddress === "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") {
+        console.log('⚠️ Forcing USDC for unsupported token:', paymentData.token);
+        tokenToUse = 'USDC';
+      }
+      
+      const result = await executeTokenTransaction(
         paymentData.merchant,
         amount,
+        tokenToUse,
         paymentData.description
       );
 
