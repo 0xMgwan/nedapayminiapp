@@ -121,6 +121,7 @@ export default function FarcasterMiniApp() {
   const [payCurrency, setPayCurrency] = useState<'local' | 'usdc'>('local');
   const [selectedSendToken, setSelectedSendToken] = useState('USDC');
   const [selectedPayToken, setSelectedPayToken] = useState('USDC');
+  const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
   const [isSwipeComplete, setIsSwipeComplete] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [walletBalance, setWalletBalance] = useState('0.00');
@@ -1296,27 +1297,52 @@ export default function FarcasterMiniApp() {
             </button>
             
             <div className="relative">
-              <select
-                value={selectedSendToken}
-                onChange={(e) => {
-                  setSelectedSendToken(e.target.value);
-                  setSendCurrency('usdc');
-                }}
-                onClick={() => setSendCurrency('usdc')}
-                className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group appearance-none pr-6 ${
-                  sendCurrency === 'usdc' 
-                    ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
-                    : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
-                }`}
-              >
-                {stablecoins.map((token) => (
-                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
-                    {token.baseToken}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                <ChevronDownIcon className="w-3 h-3 text-white" />
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setSendCurrency('usdc');
+                    setShowSendTokenDropdown(!showSendTokenDropdown);
+                  }}
+                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between ${
+                    sendCurrency === 'usdc' 
+                      ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
+                      : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {selectedSendToken === 'USDC' ? (
+                      <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                    ) : (
+                      <span className="text-xs">
+                        {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
+                      </span>
+                    )}
+                    <span>{selectedSendToken}</span>
+                  </div>
+                  <ChevronDownIcon className="w-3 h-3 text-white" />
+                </button>
+                
+                {showSendTokenDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-48 overflow-y-auto">
+                    {stablecoins.map((token) => (
+                      <button
+                        key={token.baseToken}
+                        onClick={() => {
+                          setSelectedSendToken(token.baseToken);
+                          setShowSendTokenDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors"
+                      >
+                        {token.baseToken === 'USDC' ? (
+                          <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                        ) : (
+                          <span className="text-xs">{token.flag || '🌍'}</span>
+                        )}
+                        <span className="text-white">{token.baseToken}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {/* Active indicator */}
               {sendCurrency === 'usdc' && (
