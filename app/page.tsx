@@ -760,7 +760,9 @@ export default function FarcasterMiniApp() {
         console.log('✅ Aerodrome quote received:', quote);
 
         // Convert quote back to readable format
-        const quoteAmount = ethers.utils.formatUnits(quote[1], toDecimals);
+        // Handle decimal precision properly to avoid "fractional component exceeds decimals" error
+        const rawQuoteAmount = ethers.utils.formatUnits(quote[1], toDecimals);
+        const quoteAmount = parseFloat(rawQuoteAmount).toFixed(toDecimals);
         console.log('💰 Formatted quote amount:', quoteAmount);
         setSwapQuote(quoteAmount);
       } catch (aerodromeError) {
@@ -805,10 +807,10 @@ export default function FarcasterMiniApp() {
       const fromDecimals = fromTokenData.decimals || 6;
       const toDecimals = toTokenData.decimals || 6;
       const amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
-      const minAmountOut = ethers.utils.parseUnits(
-        (Number(swapQuote) * 0.995).toString(), // 0.5% slippage
-        toDecimals
-      );
+      // Calculate minimum amount out with proper decimal handling
+      const slippageAmount = Number(swapQuote) * 0.995; // 0.5% slippage
+      const minAmountOutFormatted = slippageAmount.toFixed(toDecimals);
+      const minAmountOut = ethers.utils.parseUnits(minAmountOutFormatted, toDecimals);
 
       // Set deadline (20 minutes from now)
       const deadline = Math.floor(Date.now() / 1000) + 1200;
@@ -2900,16 +2902,16 @@ export default function FarcasterMiniApp() {
                 <span>Getting quote...</span>
               </div>
             ) : swapQuote ? (
-              swapQuote
+              Number(swapQuote).toFixed(toTokenData?.decimals || 6)
             ) : swapToToken ? (
-              '0.0'
+              (0).toFixed(toTokenData?.decimals || 6)
             ) : (
               '0.0'
             )}
           </div>
           {swapQuote && swapAmount && Number(swapAmount) > 0 && (
             <div className="text-gray-400 text-xs mt-1">
-              1 {swapFromToken} = {(Number(swapQuote) / Number(swapAmount)).toFixed(6)} {swapToToken}
+              1 {swapFromToken} = {(Number(swapQuote) / Number(swapAmount)).toFixed(toTokenData?.decimals || 6)} {swapToToken}
             </div>
           )}
         </div>
