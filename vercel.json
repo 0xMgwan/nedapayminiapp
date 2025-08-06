@@ -1,7 +1,16 @@
 {
-  "buildCommand": "npm install --omit=dev && npm run build",
+  "buildCommand": "cd .. && npm install --omit=dev && npm run build",
   "devCommand": "next dev",
-  "installCommand": "npm install --omit=dev",
+  "installCommand": "cd .. && npm install --omit=dev",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "workspaces": [
+    "."
+  ],
+  "ignoreBuildScripts": true,
+  "regions": ["iad1"],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
 }
