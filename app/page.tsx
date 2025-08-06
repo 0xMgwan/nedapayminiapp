@@ -607,6 +607,152 @@ export default function FarcasterMiniApp() {
     }
   }, [isConnected, address]);
 
+  // Farcaster-compatible swap execution using wagmi/actions
+  const executeFarcasterSwap = useCallback(async (
+    fromTokenAddress: string,
+    toTokenAddress: string,
+    amountIn: string,
+    amountOutMin: string,
+    userAddress: string,
+    deadline: number
+  ): Promise<{ success: boolean; hash: string }> => {
+    try {
+      console.log('🎆 Executing Farcaster MiniApp swap:', {
+        fromToken: fromTokenAddress,
+        toToken: toTokenAddress,
+        amountIn,
+        amountOutMin,
+        userAddress,
+        deadline
+      });
+
+      if (!isConnected || !address) {
+        throw new Error('Wallet not connected in Farcaster');
+      }
+
+      // Use wagmi's writeContract approach for Farcaster MiniApps
+      const { writeContract } = await import('wagmi/actions');
+      const { config } = await import('../providers/MiniKitProvider');
+      
+      // Aerodrome Router contract
+      const AERODROME_ROUTER = '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43';
+      
+      const routes = [{
+        from: fromTokenAddress as `0x${string}`,
+        to: toTokenAddress as `0x${string}`,
+        stable: false,
+        factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
+      }];
+      
+      const hash = await writeContract(config, {
+        address: AERODROME_ROUTER as `0x${string}`,
+        abi: [
+          {
+            name: 'swapExactTokensForTokens',
+            type: 'function',
+            inputs: [
+              { name: 'amountIn', type: 'uint256' },
+              { name: 'amountOutMin', type: 'uint256' },
+              { 
+                name: 'routes', 
+                type: 'tuple[]',
+                components: [
+                  { name: 'from', type: 'address' },
+                  { name: 'to', type: 'address' },
+                  { name: 'stable', type: 'bool' },
+                  { name: 'factory', type: 'address' }
+                ]
+              },
+              { name: 'to', type: 'address' },
+              { name: 'deadline', type: 'uint256' }
+            ],
+            outputs: [{ name: 'amounts', type: 'uint256[]' }],
+            stateMutability: 'nonpayable'
+          }
+        ],
+        functionName: 'swapExactTokensForTokens',
+        args: [
+          BigInt(amountIn),
+          BigInt(amountOutMin), 
+          routes,
+          userAddress as `0x${string}`,
+          BigInt(deadline)
+        ]
+      });
+      
+      console.log('✅ Farcaster swap transaction sent:', hash);
+      
+      return {
+        success: true,
+        hash: hash
+      };
+    } catch (error: any) {
+      console.error('❌ Farcaster swap failed:', error);
+      
+      if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
+        throw new Error('Transaction was cancelled by user');
+      }
+      
+      throw new Error(`Farcaster swap failed: ${error?.message || 'Unknown error'}`);
+    }
+  }, [isConnected, address]);
+
+  // Farcaster-compatible token approval using wagmi/actions
+  const executeFarcasterApproval = useCallback(async (
+    tokenAddress: string,
+    spenderAddress: string,
+    amount: string
+  ): Promise<{ success: boolean; hash: string }> => {
+    try {
+      console.log('🔐 Executing Farcaster token approval:', {
+        token: tokenAddress,
+        spender: spenderAddress,
+        amount
+      });
+
+      if (!isConnected || !address) {
+        throw new Error('Wallet not connected in Farcaster');
+      }
+
+      // Use wagmi's writeContract approach for Farcaster MiniApps
+      const { writeContract } = await import('wagmi/actions');
+      const { config } = await import('../providers/MiniKitProvider');
+      
+      const hash = await writeContract(config, {
+        address: tokenAddress as `0x${string}`,
+        abi: [
+          {
+            name: 'approve',
+            type: 'function',
+            inputs: [
+              { name: 'spender', type: 'address' },
+              { name: 'amount', type: 'uint256' }
+            ],
+            outputs: [{ name: '', type: 'bool' }],
+            stateMutability: 'nonpayable'
+          }
+        ],
+        functionName: 'approve',
+        args: [spenderAddress as `0x${string}`, BigInt(amount)]
+      });
+      
+      console.log('✅ Farcaster approval transaction sent:', hash);
+      
+      return {
+        success: true,
+        hash: hash
+      };
+    } catch (error: any) {
+      console.error('❌ Farcaster approval failed:', error);
+      
+      if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
+        throw new Error('Approval was cancelled by user');
+      }
+      
+      throw new Error(`Farcaster approval failed: ${error?.message || 'Unknown error'}`);
+    }
+  }, [isConnected, address]);
+
   const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any) => {
     if (!walletAddress || !isConnected) {
       throw new Error('Wallet not connected');
@@ -836,56 +982,13 @@ export default function FarcasterMiniApp() {
         to: { token: toTokenData.baseToken, address: toTokenData.address }
       });
 
-      // Create provider and signer with enhanced Farcaster compatibility
-      let provider;
-      let signer;
-      
-      try {
-        if (walletClient) {
-          // Use wallet client if available (preferred for transactions)
-          console.log('🔍 Attempting to use wallet client provider...');
-          provider = new ethers.providers.Web3Provider(walletClient as any, {
-            name: 'base-mainnet',
-            chainId: 8453
-          });
-          signer = provider.getSigner();
-          
-          // Test the signer to ensure it works
-          await signer.getAddress();
-          console.log('✅ Wallet client provider working');
-        } else if (typeof window !== 'undefined' && window.ethereum) {
-          // Fallback to window.ethereum
-          console.log('🔍 Attempting to use window.ethereum provider...');
-          provider = new ethers.providers.Web3Provider(window.ethereum, {
-            name: 'base-mainnet',
-            chainId: 8453
-          });
-          signer = provider.getSigner();
-          
-          // Test the signer
-          await signer.getAddress();
-          console.log('✅ Window.ethereum provider working');
-        } else {
-          throw new Error('No wallet provider available');
-        }
-      } catch (providerError) {
-        console.error('❌ Provider setup failed:', providerError);
-        
-        // Try a more basic provider setup for Farcaster
-        if (walletClient) {
-          console.log('🔄 Trying basic wallet client setup...');
-          try {
-            provider = new ethers.providers.Web3Provider(walletClient as any);
-            signer = provider.getSigner();
-            console.log('✅ Basic wallet client setup successful');
-          } catch (basicError) {
-            console.error('❌ Basic wallet client failed:', basicError);
-            throw new Error(`Wallet provider error: ${(providerError as any)?.message || 'Unknown error'}. Please try refreshing or reconnecting your wallet.`);
-          }
-        } else {
-          throw new Error('No compatible wallet provider found. Please ensure your wallet is connected and supports Base network.');
-        }
-      }
+      // Simple wallet provider detection: use smart wallet if no window.ethereum but wallet is connected
+      console.log('🔍 Wallet detection:', {
+        hasWindowEthereum: !!(window as any).ethereum,
+        isConnected,
+        address,
+        userAgent: navigator.userAgent.substring(0, 100)
+      });
 
       // Convert amounts using proper decimals
       const fromDecimals = fromTokenData.decimals || 6;
@@ -895,56 +998,46 @@ export default function FarcasterMiniApp() {
       const slippageAmount = Number(swapQuote) * 0.98; // 2% slippage tolerance
       const minAmountOutFormatted = slippageAmount.toFixed(toDecimals);
       const minAmountOut = ethers.utils.parseUnits(minAmountOutFormatted, toDecimals);
+
+      // Calculate deadline (10 minutes from now)
+      const deadline = Math.floor(Date.now() / 1000) + 600;
       
-      // Verify pool exists before attempting swap
-      try {
-        console.log('🔍 Verifying pool exists...');
-        // Use JsonRpcProvider for pool verification to avoid wallet issues
-        const readOnlyProvider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
-        const testQuote = await getAerodromeQuote({
-          provider: readOnlyProvider,
-          amountIn: amountInUnits.toString(),
-          fromToken: fromTokenData.address,
-          toToken: toTokenData.address,
-          stable: false,
-          factory: AERODROME_FACTORY_ADDRESS
+      console.log('🔄 Swap parameters:', {
+        fromToken: fromTokenData.address,
+        toToken: toTokenData.address,
+        amountIn: amountInUnits.toString(),
+        amountOutMin: minAmountOut.toString(),
+        userAddress: address,
+        deadline: new Date(deadline * 1000).toISOString()
+      });
+      
+      let swapResult;
+      
+      if ((window as any).ethereum) {
+        // Use window.ethereum (MetaMask, Coinbase Wallet, etc.) - complex ethers.js approach
+        console.log('✅ Using window.ethereum provider for swap');
+        
+        // Create provider and signer
+        const provider = new ethers.providers.Web3Provider((window as any).ethereum, {
+          name: 'base-mainnet',
+          chainId: 8453
         });
-        console.log('✅ Pool exists, quote verified:', ethers.utils.formatUnits(testQuote[1], toDecimals));
-      } catch (poolError) {
-        console.error('❌ Pool verification failed:', poolError);
-        throw new Error(`No liquidity pool exists for ${swapFromToken}/${swapToToken} pair on Aerodrome DEX`);
-      }
-
-      // Set deadline (20 minutes from now)
-      const deadline = Math.floor(Date.now() / 1000) + 1200;
-
-      // First, approve the router to spend the from token
-      const fromTokenContract = new ethers.Contract(
-        fromTokenData.address,
-        [
-          'function approve(address spender, uint256 amount) external returns (bool)',
-          'function allowance(address owner, address spender) external view returns (uint256)'
-        ],
-        signer
-      );
-
-      // Check current allowance with error handling
-      console.log('🔍 Checking token allowance...');
-      let currentAllowance;
-      try {
-        currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
+        const signer = provider.getSigner();
+        
+        // Create token contract for approval check
+        const fromTokenContract = new ethers.Contract(
+          fromTokenData.address,
+          ['function allowance(address owner, address spender) view returns (uint256)', 'function approve(address spender, uint256 amount) returns (bool)'],
+          signer
+        );
+        
+        // Check current allowance
+        console.log('🔍 Checking token allowance...');
+        const currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
         console.log('💰 Current allowance:', ethers.utils.formatUnits(currentAllowance, fromDecimals));
-        console.log('💰 Required amount:', ethers.utils.formatUnits(amountInUnits, fromDecimals));
-      } catch (allowanceError) {
-        console.error('❌ Allowance check failed:', allowanceError);
-        // Assume zero allowance if check fails
-        currentAllowance = ethers.BigNumber.from(0);
-        console.log('⚠️ Assuming zero allowance due to check failure');
-      }
-      
-      if (currentAllowance.lt(amountInUnits)) {
-        console.log('⚙️ Approving token spend...');
-        try {
+        
+        if (currentAllowance.lt(amountInUnits)) {
+          console.log('⚙️ Approving token spend...');
           const approveTx = await fromTokenContract.approve(
             '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
             amountInUnits,
@@ -955,31 +1048,12 @@ export default function FarcasterMiniApp() {
           console.log('⏳ Waiting for approval transaction...');
           await approveTx.wait();
           console.log('✅ Approval successful!');
-        } catch (approvalError) {
-          console.error('❌ Approval failed:', approvalError);
-          throw new Error(`Token approval failed: ${(approvalError as any)?.message || 'Unknown error'}. Please try again or check your wallet connection.`);
+        } else {
+          console.log('✅ Sufficient allowance already exists');
         }
-      } else {
-        console.log('✅ Sufficient allowance already exists');
-      }
-
-      // Execute the swap
-      console.log('🔄 Executing swap with parameters:', {
-        amountIn: ethers.utils.formatUnits(amountInUnits, fromDecimals),
-        amountOutMin: ethers.utils.formatUnits(minAmountOut, toDecimals),
-        fromToken: fromTokenData.address,
-        toToken: toTokenData.address,
-        stable: false,
-        factory: AERODROME_FACTORY_ADDRESS,
-        userAddress: address,
-        deadline: new Date(deadline * 1000).toISOString()
-      });
-      
-      // Execute swap with Farcaster compatibility
-      let swapTx;
-      try {
-        console.log('🔄 Attempting swap with standard method...');
-        swapTx = await swapAerodrome({
+        
+        // Execute swap
+        const swapTx = await swapAerodrome({
           signer,
           amountIn: amountInUnits.toString(),
           amountOutMin: minAmountOut.toString(),
@@ -990,48 +1064,47 @@ export default function FarcasterMiniApp() {
           userAddress: address,
           deadline
         });
-        console.log('✅ Standard swap method successful');
-      } catch (swapError) {
-        console.error('❌ Standard swap failed:', swapError);
-        console.log('🔄 Trying direct contract interaction...');
         
-        // Fallback: Direct contract interaction with basic parameters
-        const routerContract = new ethers.Contract(
+        const receipt = await swapTx.wait();
+        swapResult = {
+          success: true,
+          hash: receipt.transactionHash
+        };
+        
+      } else if (isConnected && address) {
+        // No window.ethereum but wallet is connected - use Farcaster smart wallet approach
+        console.log('✅ Using Farcaster smart wallet for swap (no window.ethereum)');
+        
+        // First approve the token if needed
+        console.log('🔐 Approving token for swap...');
+        await executeFarcasterApproval(
+          fromTokenData.address,
           '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-          [
-            'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, tuple(address from, address to, bool stable, address factory)[] routes, address to, uint deadline) external returns (uint[] amounts)'
-          ],
-          signer
+          amountInUnits.toString()
         );
         
-        const routes = [{
-          from: fromTokenData.address,
-          to: toTokenData.address,
-          stable: false,
-          factory: AERODROME_FACTORY_ADDRESS
-        }];
+        // Wait a bit for approval to be confirmed
+        console.log('⏳ Waiting for approval confirmation...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        try {
-          swapTx = await routerContract.swapExactTokensForTokens(
-            amountInUnits,
-            minAmountOut,
-            routes,
-            address,
-            deadline,
-            {
-              gasLimit: ethers.utils.hexlify(800000),
-            }
-          );
-          console.log('✅ Direct contract swap successful');
-        } catch (directError) {
-          console.error('❌ Direct contract swap failed:', directError);
-          throw new Error(`Swap execution failed: ${(directError as any)?.message || 'Unknown error'}. The Farcaster environment may have limited provider support.`);
-        }
+        // Execute the swap
+        swapResult = await executeFarcasterSwap(
+          fromTokenData.address,
+          toTokenData.address,
+          amountInUnits.toString(),
+          minAmountOut.toString(),
+          address,
+          deadline
+        );
+        
+      } else {
+        console.error('❌ No wallet available');
+        throw new Error('Please connect your wallet first');
       }
-
-      const receipt = await swapTx.wait();
       
-      setSwapSuccess(`Swap successful! Transaction: ${receipt.transactionHash}`);
+      console.log('✅ Swap completed successfully!', swapResult);
+      
+      setSwapSuccess(`Swap successful! Transaction: ${swapResult.hash}`);
       setSwapAmount('');
       setSwapQuote(null);
       
