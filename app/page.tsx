@@ -6,15 +6,16 @@ import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
-import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
 import { executeUSDCTransaction, getUSDCBalance } from './utils/wallet';
 import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
+import { getAerodromeQuote, swapAerodrome, AERODROME_FACTORY_ADDRESS } from './utils/aerodrome';
 import Image from 'next/image';
 
-type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'invoice';
+type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'swap' | 'invoice';
 
 interface Country {
   name: string;
@@ -138,6 +139,17 @@ export default function FarcasterMiniApp() {
     return today.toISOString().split('T')[0];
   });
   const [invoiceStatus, setInvoiceStatus] = useState<string | null>(null);
+  
+  // Swap state variables
+  const [swapFromToken, setSwapFromToken] = useState('USDC');
+  const [swapToToken, setSwapToToken] = useState('');
+  const [swapAmount, setSwapAmount] = useState('');
+  const [swapQuote, setSwapQuote] = useState<string | null>(null);
+  const [swapIsLoading, setSwapIsLoading] = useState(false);
+  const [swapError, setSwapError] = useState<string | null>(null);
+  const [swapSuccess, setSwapSuccess] = useState<string | null>(null);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
     orderId: string;
@@ -687,6 +699,234 @@ export default function FarcasterMiniApp() {
       throw error;
     }
   }, [walletAddress, isConnected, currentRate]);
+
+  // Swap functionality
+  const fetchSwapQuote = useCallback(async () => {
+    if (!swapAmount || !swapFromToken || !swapToToken) {
+      console.log('❌ Missing required params:', { swapAmount, swapFromToken, swapToToken });
+      return;
+    }
+    
+    if (!isConnected) {
+      console.log('❌ Wallet not connected, skipping quote fetch');
+      return;
+    }
+
+    setSwapIsLoading(true);
+    setSwapError(null);
+    setSwapQuote(null);
+
+    try {
+      console.log('🔄 Fetching quote for:', swapAmount, swapFromToken, '->', swapToToken);
+      
+      // Get token addresses from stablecoins data
+      const fromTokenData = stablecoins.find(token => token.baseToken === swapFromToken);
+      const toTokenData = stablecoins.find(token => token.baseToken === swapToToken);
+
+      if (!fromTokenData || !toTokenData) {
+        throw new Error('Token not supported');
+      }
+
+      console.log('📊 Token data:', {
+        from: { symbol: fromTokenData.baseToken, address: fromTokenData.address, decimals: fromTokenData.decimals },
+        to: { symbol: toTokenData.baseToken, address: toTokenData.address, decimals: toTokenData.decimals }
+      });
+
+      try {
+        // Try Aerodrome first
+        const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+        
+        // Convert amount to token units (use token decimals or default to 6)
+        const fromDecimals = fromTokenData.decimals || 6;
+        const toDecimals = toTokenData.decimals || 6;
+        const amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
+
+        console.log('💱 Calling Aerodrome with:', {
+          amountIn: amountInUnits.toString(),
+          fromToken: fromTokenData.address,
+          toToken: toTokenData.address
+        });
+
+        // Get quote from Aerodrome (using volatile pools)
+        const quote = await getAerodromeQuote({
+          provider,
+          amountIn: amountInUnits.toString(),
+          fromToken: fromTokenData.address,
+          toToken: toTokenData.address,
+          stable: false, // Use volatile pools
+          factory: AERODROME_FACTORY_ADDRESS
+        });
+
+        console.log('✅ Aerodrome quote received:', quote);
+
+        // Convert quote back to readable format
+        const quoteAmount = ethers.utils.formatUnits(quote[1], toDecimals);
+        console.log('💰 Formatted quote amount:', quoteAmount);
+        setSwapQuote(quoteAmount);
+      } catch (aerodromeError) {
+        console.error('❌ Aerodrome quote failed:', aerodromeError);
+        throw aerodromeError; // Re-throw to show the actual error
+      }
+    } catch (error: any) {
+      console.error('❌ Quote fetch failed:', error);
+      setSwapError(error.message || 'Failed to fetch quote');
+    } finally {
+      setSwapIsLoading(false);
+    }
+  }, [swapAmount, swapFromToken, swapToToken, isConnected]);
+
+  const executeSwap = useCallback(async () => {
+    if (!swapAmount || !swapFromToken || !swapToToken || !swapQuote || !isConnected || !address) {
+      throw new Error('Missing swap parameters');
+    }
+
+    setSwapIsLoading(true);
+    setSwapError(null);
+    setSwapSuccess(null);
+
+    try {
+      // Get token data
+      const fromTokenData = stablecoins.find(token => token.baseToken === swapFromToken);
+      const toTokenData = stablecoins.find(token => token.baseToken === swapToToken);
+
+      if (!fromTokenData || !toTokenData) {
+        throw new Error('Token not supported');
+      }
+
+      // Create signer
+      if (!walletClient) {
+        throw new Error('No wallet client available');
+      }
+
+      const provider = new ethers.providers.Web3Provider(walletClient as any);
+      const signer = provider.getSigner();
+
+      // Convert amounts using proper decimals
+      const fromDecimals = fromTokenData.decimals || 6;
+      const toDecimals = toTokenData.decimals || 6;
+      const amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
+      const minAmountOut = ethers.utils.parseUnits(
+        (Number(swapQuote) * 0.995).toString(), // 0.5% slippage
+        toDecimals
+      );
+
+      // Set deadline (20 minutes from now)
+      const deadline = Math.floor(Date.now() / 1000) + 1200;
+
+      // First, approve the router to spend the from token
+      const fromTokenContract = new ethers.Contract(
+        fromTokenData.address,
+        [
+          'function approve(address spender, uint256 amount) external returns (bool)',
+          'function allowance(address owner, address spender) external view returns (uint256)'
+        ],
+        signer
+      );
+
+      // Check current allowance
+      const currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
+      
+      if (currentAllowance.lt(amountInUnits)) {
+        console.log('Approving token spend...');
+        const approveTx = await fromTokenContract.approve(
+          '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
+          amountInUnits
+        );
+        await approveTx.wait();
+      }
+
+      // Execute the swap
+      console.log('Executing swap...');
+      const swapTx = await swapAerodrome({
+        signer,
+        amountIn: amountInUnits.toString(),
+        amountOutMin: minAmountOut.toString(),
+        fromToken: fromTokenData.address,
+        toToken: toTokenData.address,
+        stable: false, // Use volatile pools
+        factory: AERODROME_FACTORY_ADDRESS,
+        userAddress: address,
+        deadline
+      });
+
+      const receipt = await swapTx.wait();
+      
+      setSwapSuccess(`Swap successful! Transaction: ${receipt.transactionHash}`);
+      setSwapAmount('');
+      setSwapQuote(null);
+      
+      // Refresh balance
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Swap failed:', error);
+      setSwapError(error.message || 'Swap failed');
+    } finally {
+      setSwapIsLoading(false);
+      setShowSwapModal(false);
+    }
+  }, [swapAmount, swapFromToken, swapToToken, swapQuote, isConnected, address, walletClient]);
+
+  // Fetch token balance for swap
+  const [swapFromBalance, setSwapFromBalance] = useState<string>('0.00');
+  const [swapToBalance, setSwapToBalance] = useState<string>('0.00');
+
+  const fetchTokenBalance = useCallback(async (tokenSymbol: string, walletAddress: string) => {
+    try {
+      const tokenData = stablecoins.find(token => token.baseToken === tokenSymbol);
+      if (!tokenData || !walletAddress) return '0.00';
+
+      // For USDC, use the existing balance
+      if (tokenSymbol === 'USDC') {
+        return walletBalance || '0.00';
+      }
+
+      // For other tokens, fetch balance using ethers
+      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+      const tokenContract = new ethers.Contract(
+        tokenData.address,
+        ['function balanceOf(address owner) external view returns (uint256)'],
+        provider
+      );
+
+      const tokenBalance = await tokenContract.balanceOf(walletAddress);
+      const decimals = tokenData.decimals || 6;
+      return ethers.utils.formatUnits(tokenBalance, decimals);
+    } catch (error) {
+      console.error('Error fetching token balance:', error);
+      return '0.00';
+    }
+  }, [walletBalance]);
+
+  // Update balances when tokens change
+  useEffect(() => {
+    if (isConnected && address) {
+      fetchTokenBalance(swapFromToken, address).then(setSwapFromBalance);
+      if (swapToToken) {
+        fetchTokenBalance(swapToToken, address).then(setSwapToBalance);
+      } else {
+        setSwapToBalance('0.00');
+      }
+    } else {
+      setSwapFromBalance('0.00');
+      setSwapToBalance('0.00');
+    }
+  }, [swapFromToken, swapToToken, isConnected, address, fetchTokenBalance]);
+
+  // Auto-fetch quote when swap parameters change
+  useEffect(() => {
+    if (swapAmount && swapFromToken && swapToToken && Number(swapAmount) > 0) {
+      const timeoutId = setTimeout(() => {
+        fetchSwapQuote();
+      }, 500); // Debounce for 500ms
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSwapQuote(null);
+    }
+  }, [swapAmount, swapFromToken, swapToToken, fetchSwapQuote]);
 
   const handleGeneratePaymentLink = useCallback(async () => {
     if (!linkAmount || !isConnected || !walletAddress) {
@@ -1327,6 +1567,130 @@ export default function FarcasterMiniApp() {
           <div className="absolute -top-1 -left-2 text-xl animate-bounce delay-500">
             ✨
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Swap Modal
+  const SwapModal = () => {
+    if (!showSwapModal) return null;
+
+    const fromTokenData = stablecoins.find(token => token.baseToken === swapFromToken);
+    const toTokenData = stablecoins.find(token => token.baseToken === swapToToken);
+
+    return (
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-700/30 shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Swap</h2>
+            <button
+              onClick={() => setShowSwapModal(false)}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* From Token */}
+          <div className="bg-slate-800/50 rounded-2xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-gray-400 text-sm font-medium">From</span>
+              <span className="text-gray-400 text-sm">Balance: {swapFromBalance}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{fromTokenData?.flag || '🇺🇸'}</span>
+                <span className="text-white font-bold text-lg">{swapFromToken}</span>
+              </div>
+              <div className="text-right">
+                <div className="text-white font-bold text-2xl">{swapAmount}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Swap Direction */}
+          <div className="flex justify-center my-4">
+            <div className="bg-slate-800 rounded-full p-3 border-4 border-slate-900">
+              <ArrowsRightLeftIcon className="w-5 h-5 text-white transform rotate-90" />
+            </div>
+          </div>
+
+          {/* To Token */}
+          <div className="bg-slate-800/50 rounded-2xl p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-gray-400 text-sm font-medium">To</span>
+              <span className="text-gray-400 text-sm">Balance: {swapToBalance}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{toTokenData?.flag || '🇲🇽'}</span>
+                <span className="text-white font-bold text-lg">{swapToToken}</span>
+              </div>
+              <div className="text-right">
+                <div className="text-white font-bold text-2xl">{swapQuote || '0'}</div>
+                {swapQuote && swapAmount && (
+                  <div className="text-gray-400 text-sm">
+                    1 {swapFromToken} = {(Number(swapQuote) / Number(swapAmount)).toFixed(6)} {swapToToken}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Settings */}
+          <div className="mb-6">
+            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-4">
+              <span>Advanced</span>
+              <ChevronDownIcon className="w-4 h-4" />
+            </div>
+            
+            <div className="space-y-3">
+              {/* Pool Type */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-sm">Pool Type</span>
+                <div className="flex gap-2">
+                  <button className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full">
+                    Volatile (Recommended)
+                  </button>
+                  <button className="bg-slate-700 text-gray-300 text-xs px-3 py-1 rounded-full">
+                    Stable
+                  </button>
+                </div>
+              </div>
+              
+              {/* Minimum Received */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-sm">Minimum received</span>
+                <span className="text-white text-sm font-medium">
+                  {swapQuote ? (Number(swapQuote) * 0.995).toFixed(4) : '0'} {swapToToken}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Swap Button */}
+          <button
+            onClick={executeSwap}
+            disabled={swapIsLoading}
+            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
+              swapIsLoading
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-500 text-white transform hover:scale-[1.02]'
+            }`}
+          >
+            {swapIsLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Swapping...
+              </div>
+            ) : (
+              'Swap'
+            )}
+          </button>
         </div>
       </div>
     );
@@ -2432,6 +2796,192 @@ export default function FarcasterMiniApp() {
     );
   };
 
+  const renderSwapTab = () => {
+    const fromTokenData = stablecoins.find(token => token.baseToken === swapFromToken);
+    const toTokenData = stablecoins.find(token => token.baseToken === swapToToken);
+
+    return (
+      <div className="space-y-3">
+        {/* Swap Header */}
+        <div className="text-center mb-3">
+          <h2 className="text-white font-bold text-lg mb-1">Token Swap</h2>
+          <p className="text-gray-400 text-xs">Swap between supported stablecoins instantly</p>
+        </div>
+
+        {/* From Token */}
+        <div className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/30">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-gray-400 text-sm font-medium">From</span>
+            <span className="text-gray-400 text-sm">Balance: {swapFromBalance}</span>
+          </div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{fromTokenData?.flag || '🇺🇸'}</span>
+              <select
+                value={swapFromToken}
+                onChange={(e) => setSwapFromToken(e.target.value)}
+                className="bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1"
+              >
+                {stablecoins.map((token) => (
+                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
+                    {token.baseToken}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+            </div>
+            <button 
+              onClick={() => {
+                const maxAmount = parseFloat(swapFromBalance);
+                if (maxAmount > 0) {
+                  setSwapAmount(maxAmount.toString());
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium transition-colors"
+            >
+              MAX
+            </button>
+          </div>
+          <input
+            type="number"
+            placeholder="1"
+            value={swapAmount}
+            onChange={(e) => setSwapAmount(e.target.value)}
+            className="w-full bg-transparent text-white text-2xl font-bold focus:outline-none placeholder-gray-500"
+          />
+        </div>
+
+        {/* Swap Direction */}
+        <div className="flex justify-center -my-1">
+          <button
+            onClick={() => {
+              if (swapToToken) {
+                const temp = swapFromToken;
+                setSwapFromToken(swapToToken);
+                setSwapToToken(temp);
+                setSwapAmount('');
+                setSwapQuote(null);
+              }
+            }}
+            className="bg-slate-800 rounded-full p-2 border-4 border-slate-900 hover:bg-slate-700 transition-colors"
+          >
+            <ArrowsRightLeftIcon className="w-4 h-4 text-white transform rotate-90" />
+          </button>
+        </div>
+
+        {/* To Token */}
+        <div className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/30">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-gray-400 text-sm font-medium">To</span>
+            <span className="text-gray-400 text-sm">Balance: {swapToBalance}</span>
+          </div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{toTokenData?.flag || '🇲🇽'}</span>
+              <select
+                value={swapToToken}
+                onChange={(e) => setSwapToToken(e.target.value)}
+                className="bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1"
+              >
+                <option value="" className="bg-slate-800">Select token</option>
+                {stablecoins
+                  .filter(token => token.baseToken !== swapFromToken)
+                  .map((token) => (
+                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
+                    {token.baseToken}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {swapIsLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Getting quote...</span>
+              </div>
+            ) : swapQuote ? (
+              swapQuote
+            ) : swapToToken ? (
+              '0.0'
+            ) : (
+              '0.0'
+            )}
+          </div>
+          {swapQuote && swapAmount && Number(swapAmount) > 0 && (
+            <div className="text-gray-400 text-xs mt-1">
+              1 {swapFromToken} = {(Number(swapQuote) / Number(swapAmount)).toFixed(6)} {swapToToken}
+            </div>
+          )}
+        </div>
+
+        {/* Error Display */}
+        {swapError && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+            <p className="text-red-400 text-xs">{swapError}</p>
+          </div>
+        )}
+
+        {/* Success Display */}
+        {swapSuccess && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+            <p className="text-green-400 text-xs">{swapSuccess}</p>
+          </div>
+        )}
+
+        {/* Swap Button */}
+        <button
+          onClick={() => setShowSwapModal(true)}
+          disabled={!isConnected || !swapAmount || !swapToToken || swapIsLoading}
+          className={`w-full py-3 rounded-2xl font-bold text-base transition-all border-2 ${
+            isConnected && swapAmount && swapToToken && !swapIsLoading
+              ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 hover:border-blue-400 transform hover:scale-[1.02]'
+              : 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
+          }`}
+        >
+          {!isConnected ? (
+            'Connect Wallet'
+          ) : swapIsLoading ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Swapping...
+            </div>
+          ) : !swapAmount ? (
+            'Swap'
+          ) : !swapToToken ? (
+            'Select token'
+          ) : (
+            'Swap'
+          )}
+        </button>
+
+        {/* Swap Features */}
+        <div className="bg-slate-800/30 rounded-xl p-2">
+          <h3 className="text-white font-semibold mb-1.5 text-xs">Swap Features</h3>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
+              <span>Instant token swaps via Aerodrome DEX</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
+              <span>Best exchange rates automatically</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
+              <span>Low slippage and minimal fees</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-300">
+              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
+              <span>Secure and decentralized</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'send':
@@ -2442,6 +2992,8 @@ export default function FarcasterMiniApp() {
         return renderDepositTab();
       case 'link':
         return renderLinkTab();
+      case 'swap':
+        return renderSwapTab();
       case 'invoice':
         return renderInvoiceTab();
       default:
@@ -2734,12 +3286,13 @@ export default function FarcasterMiniApp() {
 
         {/* Tab Navigation */}
         <div className="bg-slate-900/90 rounded-xl p-1.5 mb-2 border border-slate-700/50 shadow-2xl">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-6 gap-1">
             {[
               { key: 'send' as Tab, label: 'Send', icon: ArrowUpIcon },
               { key: 'pay' as Tab, label: 'Pay', icon: CurrencyDollarIcon },
               { key: 'deposit' as Tab, label: 'Deposit', icon: ArrowDownIcon },
               { key: 'link' as Tab, label: 'Link', icon: LinkIcon },
+              { key: 'swap' as Tab, label: 'Swap', icon: ArrowsRightLeftIcon },
               { key: 'invoice' as Tab, label: 'Invoice', icon: DocumentTextIcon }
             ].map(({ key, label, icon: Icon }) => (
               <button
@@ -2789,6 +3342,9 @@ export default function FarcasterMiniApp() {
       
       {/* Success Modal */}
       <SuccessModal />
+      
+      {/* Swap Modal */}
+      <SwapModal />
     </div>
   );
 }
