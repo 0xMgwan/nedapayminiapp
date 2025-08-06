@@ -1170,23 +1170,68 @@ export default function FarcasterMiniApp() {
             <div className="bg-slate-700/50 rounded-lg p-3">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-xs">Amount</span>
-                <span className="text-white font-semibold">{successData.amount}</span>
+                <div className="flex items-center gap-2">
+                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                  <span className="text-white font-semibold">{successData.amount}</span>
+                </div>
               </div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-xs">{successData.type === 'send' ? 'Recipient' : 'Till Number'}</span>
-                <span className="text-white font-mono text-sm">{successData.recipient}</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-white font-mono text-sm">{successData.recipient}</span>
+                  <span className="text-gray-500 text-xs">{recipientName || 'Mobile Money'}</span>
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-xs">Order ID</span>
-                <span className="text-blue-400 font-mono text-xs">{successData.orderId.slice(0, 8)}...</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(successData.orderId);
+                    // Show brief feedback
+                    const btn = event?.target as HTMLElement;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                      btn.textContent = originalText;
+                    }, 1000);
+                  }}
+                  className="text-blue-400 font-mono text-xs hover:text-blue-300 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  {successData.orderId.slice(0, 8)}...
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
               </div>
             </div>
 
             {/* Blockchain Hash */}
             <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-3 border border-blue-500/20">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <span className="text-blue-400 text-xs font-medium">Blockchain Transaction</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-blue-400 text-xs font-medium">Blockchain Transaction</span>
+                </div>
+                {successData.hash && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(successData.hash!);
+                      // Show brief feedback
+                      const btn = event?.target as HTMLElement;
+                      const originalText = btn.textContent;
+                      btn.textContent = 'Copied!';
+                      setTimeout(() => {
+                        btn.textContent = originalText;
+                      }, 1000);
+                    }}
+                    className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                    title="Copy transaction hash"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                )}
               </div>
               <p className="text-gray-300 font-mono text-xs break-all">
                 {successData.hash ? `${successData.hash.slice(0, 20)}...${successData.hash.slice(-10)}` : 'Transaction completed'}
