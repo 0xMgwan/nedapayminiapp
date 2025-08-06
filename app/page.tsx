@@ -836,23 +836,55 @@ export default function FarcasterMiniApp() {
         to: { token: toTokenData.baseToken, address: toTokenData.address }
       });
 
-      // Create provider and signer with fallback
+      // Create provider and signer with enhanced Farcaster compatibility
       let provider;
       let signer;
       
-      if (walletClient) {
-        // Use wallet client if available (preferred for transactions)
-        provider = new ethers.providers.Web3Provider(walletClient as any);
-        signer = provider.getSigner();
-        console.log('✅ Using wallet client provider');
-      } else if (typeof window !== 'undefined' && window.ethereum) {
-        // Fallback to window.ethereum
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-        console.log('✅ Using window.ethereum provider');
-      } else {
-        // Final fallback - use JsonRpcProvider for read operations, but this won't work for transactions
-        throw new Error('No wallet client available. Please ensure your wallet is connected.');
+      try {
+        if (walletClient) {
+          // Use wallet client if available (preferred for transactions)
+          console.log('🔍 Attempting to use wallet client provider...');
+          provider = new ethers.providers.Web3Provider(walletClient as any, {
+            name: 'base-mainnet',
+            chainId: 8453
+          });
+          signer = provider.getSigner();
+          
+          // Test the signer to ensure it works
+          await signer.getAddress();
+          console.log('✅ Wallet client provider working');
+        } else if (typeof window !== 'undefined' && window.ethereum) {
+          // Fallback to window.ethereum
+          console.log('🔍 Attempting to use window.ethereum provider...');
+          provider = new ethers.providers.Web3Provider(window.ethereum, {
+            name: 'base-mainnet',
+            chainId: 8453
+          });
+          signer = provider.getSigner();
+          
+          // Test the signer
+          await signer.getAddress();
+          console.log('✅ Window.ethereum provider working');
+        } else {
+          throw new Error('No wallet provider available');
+        }
+      } catch (providerError) {
+        console.error('❌ Provider setup failed:', providerError);
+        
+        // Try a more basic provider setup for Farcaster
+        if (walletClient) {
+          console.log('🔄 Trying basic wallet client setup...');
+          try {
+            provider = new ethers.providers.Web3Provider(walletClient as any);
+            signer = provider.getSigner();
+            console.log('✅ Basic wallet client setup successful');
+          } catch (basicError) {
+            console.error('❌ Basic wallet client failed:', basicError);
+            throw new Error(`Wallet provider error: ${providerError.message}. Please try refreshing or reconnecting your wallet.`);
+          }
+        } else {
+          throw new Error('No compatible wallet provider found. Please ensure your wallet is connected and supports Base network.');
+        }
       }
 
       // Convert amounts using proper decimals
@@ -896,21 +928,37 @@ export default function FarcasterMiniApp() {
         signer
       );
 
-      // Check current allowance
+      // Check current allowance with error handling
       console.log('🔍 Checking token allowance...');
-      const currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
-      console.log('💰 Current allowance:', ethers.utils.formatUnits(currentAllowance, fromDecimals));
-      console.log('💰 Required amount:', ethers.utils.formatUnits(amountInUnits, fromDecimals));
+      let currentAllowance;
+      try {
+        currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
+        console.log('💰 Current allowance:', ethers.utils.formatUnits(currentAllowance, fromDecimals));
+        console.log('💰 Required amount:', ethers.utils.formatUnits(amountInUnits, fromDecimals));
+      } catch (allowanceError) {
+        console.error('❌ Allowance check failed:', allowanceError);
+        // Assume zero allowance if check fails
+        currentAllowance = ethers.BigNumber.from(0);
+        console.log('⚠️ Assuming zero allowance due to check failure');
+      }
       
       if (currentAllowance.lt(amountInUnits)) {
         console.log('⚙️ Approving token spend...');
-        const approveTx = await fromTokenContract.approve(
-          '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-          amountInUnits
-        );
-        console.log('⏳ Waiting for approval transaction...');
-        await approveTx.wait();
-        console.log('✅ Approval successful!');
+        try {
+          const approveTx = await fromTokenContract.approve(
+            '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
+            amountInUnits,
+            {
+              gasLimit: ethers.utils.hexlify(100000), // 100k gas for approval
+            }
+          );
+          console.log('⏳ Waiting for approval transaction...');
+          await approveTx.wait();
+          console.log('✅ Approval successful!');
+        } catch (approvalError) {
+          console.error('❌ Approval failed:', approvalError);
+          throw new Error(`Token approval failed: ${approvalError.message}. Please try again or check your wallet connection.`);
+        }
       } else {
         console.log('✅ Sufficient allowance already exists');
       }
