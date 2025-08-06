@@ -1,16 +1,11 @@
 {
-  "buildCommand": "cd .. && npm install --omit=dev && npm run build",
+  "buildCommand": "npm install --production && npm run build",
   "devCommand": "next dev",
-  "installCommand": "cd .. && npm install --omit=dev",
-  "framework": "nextjs",
-  "outputDirectory": ".next",
-  "workspaces": [
-    "."
+  "installCommand": "npm install --production",
+  "builds": [
+    { "src": "package.json", "use": "@vercel/next" }
   ],
-  "ignoreBuildScripts": true,
-  "regions": ["iad1"],
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/.*", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "/" }
   ]
 }

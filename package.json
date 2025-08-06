@@ -18,12 +18,10 @@
     "blockchain"
   ],
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
-    "export": "next export",
     "start": "next start",
     "lint": "next lint",
-    "force-build": "bash ./force-build.sh",
     "postinstall": "prisma generate"
   },
   "dependencies": {
