@@ -1105,39 +1105,42 @@ export default function FarcasterMiniApp() {
             fromDecimals
           );
           
-          console.log('💳 Collecting protocol fee:', {
-            feeRate: feeInfo.feeRate,
-            feeAmountUSD: feeInfo.feeAmount,
-            feeInTokenUnits: feeInTokenUnits.toString()
-          });
-          
-          // Protocol fee will be handled within the swap transaction
-          console.log('💰 Protocol fee will be collected during swap execution');
-          console.log('💳 Fee details:', {
+          console.log('💳 Protocol fee breakdown:', {
             feeRate: feeInfo.feeRate + '%',
-            feeAmount: '$' + feeInfo.feeAmount.toFixed(2),
-            tier: feeInfo.tier,
-            feeInTokens: ethers.utils.formatUnits(feeInTokenUnits, fromDecimals)
+            feeAmountUSD: '$' + feeInfo.feeAmount.toFixed(4),
+            feeInTokenUnits: ethers.utils.formatUnits(feeInTokenUnits, fromDecimals) + ' ' + swapFromToken,
+            tier: feeInfo.tier
           });
           
-          // Keep original amount for approval, but note the fee for later collection
-          actualSwapAmount = amountInUnits; // Use full amount for now
+          // Collect protocol fee BEFORE swap to reduce wallet popups
+          const FEE_RECIPIENT = '0x037Eb04AD9DDFf984F44Ce5941D14b8Ea3781459';
           
-          // Store fee info for post-swap collection
-          window.pendingProtocolFee = {
-            amount: feeInTokenUnits,
-            tokenAddress: fromTokenData.address,
-            protocolAddress: process.env.NEXT_PUBLIC_NEDAPAY_PROTOCOL_ADDRESS || '0xfBc307eabd9F50cc903f9569A3B92C9491eBaB3C'
-          };
+          console.log('💰 Collecting protocol fee before swap...');
+          const feeResult = await executeFarcasterTransfer(
+            fromTokenData.address,
+            FEE_RECIPIENT,
+            feeInTokenUnits.toString()
+          );
+          
+          console.log('✅ Protocol fee collected:', feeResult.hash);
+          
+          // Reduce swap amount by the fee that was already collected
+          actualSwapAmount = amountInUnits.sub(feeInTokenUnits);
+          
+          console.log('🔄 Adjusted swap amount after fee:', {
+            originalAmount: ethers.utils.formatUnits(amountInUnits, fromDecimals),
+            feeAmount: ethers.utils.formatUnits(feeInTokenUnits, fromDecimals),
+            actualSwapAmount: ethers.utils.formatUnits(actualSwapAmount, fromDecimals)
+          });
         }
       }
       
-      // Approve Aerodrome router for full amount (including fee)
-      console.log('🔐 Approving token for swap (full amount including protocol fee)...');
+      // Approve Aerodrome router for actual swap amount (after fee deduction)
+      console.log('🔐 Approving token for swap (amount after protocol fee deduction)...');
       const approvalResult = await executeFarcasterApproval(
         fromTokenData.address,
         '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-        amountInUnits.toString() // Approve full original amount
+        actualSwapAmount.toString() // Approve actual swap amount
       );
       
       console.log('✅ Approval completed:', approvalResult.hash);
@@ -1163,28 +1166,6 @@ export default function FarcasterMiniApp() {
       });
       
       console.log('✅ Swap completed successfully!', swapResult);
-      
-      // Collect protocol fee after successful swap
-      if (isProtocolEnabled() && (window as any).pendingProtocolFee) {
-        try {
-          console.log('💳 Collecting protocol fee after successful swap...');
-          const feeData = (window as any).pendingProtocolFee;
-          
-          // Send protocol fee to contract
-          const feeResult = await executeFarcasterTransfer(
-            feeData.tokenAddress,
-            feeData.protocolAddress,
-            feeData.amount.toString()
-          );
-          
-          console.log('✅ Protocol fee collected:', feeResult.hash);
-          delete (window as any).pendingProtocolFee;
-          
-        } catch (feeError) {
-          console.error('❌ Protocol fee collection failed:', feeError);
-          // Don't fail the whole transaction for fee collection issues
-        }
-      }
       
       setSwapSuccess(`Swap successful! Transaction: ${swapResult.hash}`);
       setSwapAmount('');
