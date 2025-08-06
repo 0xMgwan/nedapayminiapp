@@ -1351,26 +1351,28 @@ export default function FarcasterMiniApp() {
         </div>
         
         <div className="text-right mb-3">
-          <div className="text-xs text-gray-400">
-            Balance: <div className="inline-flex items-center gap-2">
-              <button 
-                onClick={() => setAmount(walletBalance)}
-                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
-              >
-                {selectedSendToken === 'USDC' && <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />}
-                {selectedSendToken === 'USDT' && <img src="/assets/logos/usdt-logo.png" alt="USDT" className="w-3 h-3" />}
-                {selectedSendToken === 'DAI' && <img src="/assets/logos/dai-logo.png" alt="DAI" className="w-3 h-3" />}
-                {selectedSendToken === 'IDRX' && <img src="/assets/logos/idrx-logo.png" alt="IDRX" className="w-3 h-3" />}
-                {selectedSendToken} {walletBalance}
-              </button>
-              <button
-                onClick={refreshBalance}
-                className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
-                title="Refresh balance"
-              >
-                🔄
-              </button>
-            </div>
+          <div className="text-xs text-gray-400 flex items-center gap-2">
+            <span>Balance:</span>
+            <button 
+              onClick={() => setAmount(walletBalance)}
+              className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+            >
+              {selectedSendToken === 'USDC' ? (
+                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+              ) : (
+                <span className="text-sm">
+                  {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
+                </span>
+              )}
+              {selectedSendToken} {walletBalance}
+            </button>
+            <button
+              onClick={refreshBalance}
+              className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
+              title="Refresh balance"
+            >
+              🔄
+            </button>
           </div>
         </div>
 
@@ -1650,10 +1652,13 @@ export default function FarcasterMiniApp() {
         <div className="flex items-center gap-2">
           <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
           <div className="flex items-center gap-1">
-            {selectedPayToken === 'USDC' && <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />}
-            {selectedPayToken === 'USDT' && <img src="/assets/logos/usdt-logo.png" alt="USDT" className="w-4 h-4" />}
-            {selectedPayToken === 'DAI' && <img src="/assets/logos/dai-logo.png" alt="DAI" className="w-4 h-4" />}
-            {selectedPayToken === 'IDRX' && <img src="/assets/logos/idrx-logo.png" alt="IDRX" className="w-4 h-4" />}
+            {selectedPayToken === 'USDC' ? (
+              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+            ) : (
+              <span className="text-base">
+                {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
+              </span>
+            )}
             <span className="text-white text-sm font-medium">{selectedPayToken}</span>
           </div>
         </div>
@@ -1921,26 +1926,28 @@ export default function FarcasterMiniApp() {
           </div>
           
           <div className="text-right mb-2">
-            <div className="text-sm text-gray-400">
-              Balance: <div className="inline-flex items-center gap-2">
-                <button 
-                  onClick={() => setAmount(walletBalance)}
-                  className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
-                >
-                  {selectedPayToken === 'USDC' && <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />}
-                  {selectedPayToken === 'USDT' && <img src="/assets/logos/usdt-logo.png" alt="USDT" className="w-3 h-3" />}
-                  {selectedPayToken === 'DAI' && <img src="/assets/logos/dai-logo.png" alt="DAI" className="w-3 h-3" />}
-                  {selectedPayToken === 'IDRX' && <img src="/assets/logos/idrx-logo.png" alt="IDRX" className="w-3 h-3" />}
-                  {selectedPayToken} {walletBalance}
-                </button>
-                <button
-                  onClick={refreshBalance}
-                  className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
-                  title="Refresh balance"
-                >
-                  🔄
-                </button>
-              </div>
+            <div className="text-sm text-gray-400 flex items-center gap-2">
+              <span>Balance:</span>
+              <button 
+                onClick={() => setAmount(walletBalance)}
+                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+              >
+                {selectedPayToken === 'USDC' ? (
+                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                ) : (
+                  <span className="text-sm">
+                    {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
+                  </span>
+                )}
+                {selectedPayToken} {walletBalance}
+              </button>
+              <button
+                onClick={refreshBalance}
+                className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
+                title="Refresh balance"
+              >
+                🔄
+              </button>
             </div>
           </div>
 
