@@ -119,6 +119,8 @@ export default function FarcasterMiniApp() {
   const [institutions, setInstitutions] = useState<Array<{ name: string; code: string; type: string }>>([]);
   const [sendCurrency, setSendCurrency] = useState<'local' | 'usdc'>('local');
   const [payCurrency, setPayCurrency] = useState<'local' | 'usdc'>('local');
+  const [selectedSendToken, setSelectedSendToken] = useState('USDC');
+  const [selectedPayToken, setSelectedPayToken] = useState('USDC');
   const [isSwipeComplete, setIsSwipeComplete] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [walletBalance, setWalletBalance] = useState('0.00');
@@ -1036,7 +1038,7 @@ export default function FarcasterMiniApp() {
         institution: selectedInstitution,
         accountIdentifier: phoneNumber,
         accountName: 'Mobile Money Account',
-        memo: `Send ${sendCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' USDC'} to ${phoneNumber}`
+        memo: `Send ${sendCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' ' + selectedSendToken} to ${phoneNumber}`
       };
       
       // Execute Paycrest API transaction
@@ -1050,7 +1052,7 @@ export default function FarcasterMiniApp() {
       setSuccessData({
         orderId: result.orderId,
         hash: result.hash,
-        amount: sendCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} USDC`,
+        amount: sendCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} ${selectedSendToken}`,
         recipient: phoneNumber,
         type: 'send'
       });
@@ -1074,7 +1076,7 @@ export default function FarcasterMiniApp() {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
     }
-  }, [amount, phoneNumber, walletAddress, isConnected, sendCurrency, selectedCountry.currency, selectedCountry.code, selectedInstitution, executePaycrestTransaction, fetchWalletBalance]);
+  }, [amount, phoneNumber, walletAddress, isConnected, sendCurrency, selectedSendToken, selectedCountry.currency, selectedCountry.code, selectedInstitution, executePaycrestTransaction, fetchWalletBalance]);
 
   const handlePayTransaction = useCallback(async () => {
     if (!amount || !tillNumber) {
@@ -1102,7 +1104,7 @@ export default function FarcasterMiniApp() {
         institution: paymentType === 'bill' ? 'paybill' : 'till', // Different institution based on payment type
         accountIdentifier: paymentType === 'bill' ? businessNumber : tillNumber,
         accountName: paymentType === 'bill' ? 'Paybill Payment' : 'Till Payment',
-        memo: `Pay ${payCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' USDC'} to ${paymentType === 'bill' ? 'paybill ' + tillNumber + ' account ' + businessNumber : 'till ' + tillNumber}`
+        memo: `Pay ${payCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' ' + selectedPayToken} to ${paymentType === 'bill' ? 'paybill ' + tillNumber + ' account ' + businessNumber : 'till ' + tillNumber}`
       };
       
       // Execute Paycrest API transaction
@@ -1116,7 +1118,7 @@ export default function FarcasterMiniApp() {
       setSuccessData({
         orderId: result.orderId,
         hash: result.hash,
-        amount: payCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} USDC`,
+        amount: payCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} ${selectedPayToken}`,
         recipient: tillNumber,
         type: 'pay'
       });
@@ -1140,7 +1142,7 @@ export default function FarcasterMiniApp() {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
     }
-  }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
+  }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedPayToken, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
 
   const renderSendTab = () => (
     <div className="space-y-2">
@@ -1251,46 +1253,40 @@ export default function FarcasterMiniApp() {
               )}
             </button>
             
-            <button 
-              onClick={() => setSendCurrency('usdc')}
-              className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group flex items-center gap-1 ${
-                sendCurrency === 'usdc' 
-                  ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
-                  : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30 active:scale-95'
-              }`}
-            >
-              {/* Animated background */}
-              {sendCurrency === 'usdc' && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse" />
-              )}
-              
-              {/* Hover glow */}
-              <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                sendCurrency === 'usdc' 
-                  ? 'opacity-100 bg-blue-400/10' 
-                  : 'opacity-0 group-hover:opacity-100 bg-blue-400/5'
-              }`} />
-              
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className={`w-4 h-4 relative z-10 transition-all duration-300 ${
-                sendCurrency === 'usdc' ? 'drop-shadow-lg' : 'group-hover:scale-110'
-              }`} />
-              <span className={`relative z-10 transition-all duration-300 ${
-                sendCurrency === 'usdc' ? 'drop-shadow-lg' : 'group-hover:tracking-wider'
-              }`}>
-                USDC
-              </span>
-              
+            <div className="relative">
+              <select
+                value={selectedSendToken}
+                onChange={(e) => {
+                  setSelectedSendToken(e.target.value);
+                  setSendCurrency('usdc');
+                }}
+                onClick={() => setSendCurrency('usdc')}
+                className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group appearance-none pr-6 ${
+                  sendCurrency === 'usdc' 
+                    ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
+                    : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
+                }`}
+              >
+                {stablecoins.map((token) => (
+                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
+                    {token.baseToken}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <ChevronDownIcon className="w-3 h-3 text-white" />
+              </div>
               {/* Active indicator */}
               {sendCurrency === 'usdc' && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-bounce" />
               )}
-            </button>
+            </div>
           </div>
         </div>
         <div className="bg-slate-700 rounded-lg px-3 py-2">
           <div className="flex items-center">
             <span className="text-sm text-gray-400 mr-2">
-              {sendCurrency === 'local' ? selectedCountry.currency : 'USDC'}
+              {sendCurrency === 'local' ? selectedCountry.currency : selectedSendToken}
             </span>
             <input
               type="number"
@@ -1307,7 +1303,7 @@ export default function FarcasterMiniApp() {
         {amount && (
           <div className="mt-1 text-center text-xs text-gray-400 font-medium">
             {sendCurrency === 'local' ? (
-              <span>≈ {(parseFloat(amount) / parseFloat(currentRate)).toFixed(4)} USDC</span>
+              <span>≈ {(parseFloat(amount) / parseFloat(currentRate)).toFixed(4)} {selectedSendToken}</span>
             ) : (
               <span>≈ {(parseFloat(amount) * parseFloat(currentRate)).toFixed(2)} {selectedCountry.currency}</span>
             )}
@@ -1360,8 +1356,8 @@ export default function FarcasterMiniApp() {
             <span className="text-white">{paymentDetails.fee} {selectedCountry.currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Amount in USDC</span>
-            <span className="text-white">{paymentDetails.usdcAmount} USDC</span>
+            <span className="text-gray-400">Amount in {selectedSendToken}</span>
+            <span className="text-white">{paymentDetails.usdcAmount} {selectedSendToken}</span>
           </div>
         </div>
       </div>
@@ -1622,8 +1618,11 @@ export default function FarcasterMiniApp() {
         <div className="flex items-center gap-2">
           <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
           <div className="flex items-center gap-1">
-            <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-            <span className="text-white text-sm font-medium">USDC</span>
+            {selectedPayToken === 'USDC' && <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />}
+            {selectedPayToken === 'USDT' && <img src="/assets/logos/usdt-logo.png" alt="USDT" className="w-4 h-4" />}
+            {selectedPayToken === 'DAI' && <img src="/assets/logos/dai-logo.png" alt="DAI" className="w-4 h-4" />}
+            {selectedPayToken === 'IDRX' && <img src="/assets/logos/idrx-logo.png" alt="IDRX" className="w-4 h-4" />}
+            <span className="text-white text-sm font-medium">{selectedPayToken}</span>
           </div>
         </div>
       </div>
@@ -1833,46 +1832,40 @@ export default function FarcasterMiniApp() {
               )}
             </button>
             
-            <button 
-              onClick={() => setPayCurrency('usdc')}
-              className={`relative px-4 py-2 text-xs rounded-xl font-bold transition-all duration-300 ease-out overflow-hidden group flex items-center gap-2 ${
-                payCurrency === 'usdc' 
-                  ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
-                  : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30 active:scale-95'
-              }`}
-            >
-              {/* Animated background */}
-              {payCurrency === 'usdc' && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse" />
-              )}
-              
-              {/* Hover glow */}
-              <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                payCurrency === 'usdc' 
-                  ? 'opacity-100 bg-blue-400/10' 
-                  : 'opacity-0 group-hover:opacity-100 bg-blue-400/5'
-              }`} />
-              
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className={`w-4 h-4 relative z-10 transition-all duration-300 ${
-                payCurrency === 'usdc' ? 'drop-shadow-lg' : 'group-hover:scale-110'
-              }`} />
-              <span className={`relative z-10 transition-all duration-300 ${
-                payCurrency === 'usdc' ? 'drop-shadow-lg' : 'group-hover:tracking-wider'
-              }`}>
-                USDC
-              </span>
-              
+            <div className="relative">
+              <select
+                value={selectedPayToken}
+                onChange={(e) => {
+                  setSelectedPayToken(e.target.value);
+                  setPayCurrency('usdc');
+                }}
+                onClick={() => setPayCurrency('usdc')}
+                className={`relative px-4 py-2 text-xs rounded-xl font-bold transition-all duration-300 ease-out overflow-hidden group appearance-none pr-8 ${
+                  payCurrency === 'usdc' 
+                    ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
+                    : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
+                }`}
+              >
+                {stablecoins.map((token) => (
+                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
+                    {token.baseToken}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <ChevronDownIcon className="w-3 h-3 text-white" />
+              </div>
               {/* Active indicator */}
               {payCurrency === 'usdc' && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-bounce" />
               )}
-            </button>
+            </div>
           </div>
         </div>
         <div className="bg-slate-700 rounded-lg px-3 py-3">
           <div className="flex items-center">
             <span className="text-sm text-gray-400 mr-2">
-              {payCurrency === 'local' ? selectedCountry.currency : 'USDC'}
+              {payCurrency === 'local' ? selectedCountry.currency : selectedPayToken}
             </span>
             <input
               type="number"
@@ -1902,8 +1895,11 @@ export default function FarcasterMiniApp() {
                   onClick={() => setAmount(walletBalance)}
                   className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
-                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                  USDC {walletBalance}
+                  {selectedPayToken === 'USDC' && <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />}
+                  {selectedPayToken === 'USDT' && <img src="/assets/logos/usdt-logo.png" alt="USDT" className="w-3 h-3" />}
+                  {selectedPayToken === 'DAI' && <img src="/assets/logos/dai-logo.png" alt="DAI" className="w-3 h-3" />}
+                  {selectedPayToken === 'IDRX' && <img src="/assets/logos/idrx-logo.png" alt="IDRX" className="w-3 h-3" />}
+                  {selectedPayToken} {walletBalance}
                 </button>
                 <button
                   onClick={refreshBalance}
@@ -1917,7 +1913,7 @@ export default function FarcasterMiniApp() {
           </div>
 
           <div className="text-center text-xs text-gray-300 mb-4 font-semibold">
-            1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
+            1 {selectedPayToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
           </div>
         </div>
       </div>
@@ -1934,8 +1930,8 @@ export default function FarcasterMiniApp() {
             <span className="text-white">{paymentDetails.fee} {selectedCountry.currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Amount in USDC</span>
-            <span className="text-white">{paymentDetails.usdcAmount} USDC</span>
+            <span className="text-gray-400">Amount in {selectedPayToken}</span>
+            <span className="text-white">{paymentDetails.usdcAmount} {selectedPayToken}</span>
           </div>
         </div>
       </div>
@@ -1962,7 +1958,7 @@ export default function FarcasterMiniApp() {
             <div className="text-white text-sm font-semibold">
               {payCurrency === 'local' 
                 ? `${amount || '0'} ${selectedCountry.currency}`
-                : `${amount || '0'} USDC`
+                : `${amount || '0'} ${selectedPayToken}`
               }
             </div>
           </div>
