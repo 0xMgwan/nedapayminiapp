@@ -1135,7 +1135,7 @@ export default function FarcasterMiniApp() {
         
         {/* Helper Text */}
         <div className="text-center mt-2 text-xs text-gray-400">
-          Drag right to confirm send
+          Funds will be refunded to your wallet if the transaction fails
         </div>
       </div>
     </div>
