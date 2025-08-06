@@ -151,6 +151,8 @@ export default function FarcasterMiniApp() {
   const [swapIsLoading, setSwapIsLoading] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
   const [swapSuccess, setSwapSuccess] = useState<string | null>(null);
+  const [showSwapFromDropdown, setShowSwapFromDropdown] = useState(false);
+  const [showSwapToDropdown, setShowSwapToDropdown] = useState(false);
 
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -2807,19 +2809,35 @@ export default function FarcasterMiniApp() {
             <span className="text-gray-400 text-sm">Balance: {swapFromBalance}</span>
           </div>
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">{fromTokenData?.flag || '🇺🇸'}</span>
-              <select
-                value={swapFromToken}
-                onChange={(e) => setSwapFromToken(e.target.value)}
-                className="bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1"
+            <div className="relative">
+              <button
+                onClick={() => setShowSwapFromDropdown(!showSwapFromDropdown)}
+                className="flex items-center gap-2 bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1 hover:border-slate-500 transition-colors w-full justify-between"
               >
-                {stablecoins.map((token) => (
-                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
-                    {token.baseToken}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{fromTokenData?.flag || '🇺🇸'}</span>
+                  <span>{swapFromToken}</span>
+                </div>
+                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+              </button>
+              
+              {showSwapFromDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto w-80 min-w-max">
+                  {stablecoins.map((token) => (
+                    <button
+                      key={token.baseToken}
+                      onClick={() => {
+                        setSwapFromToken(token.baseToken);
+                        setShowSwapFromDropdown(false);
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors whitespace-nowrap"
+                    >
+                      <span className="text-lg">{token.flag || '🌍'}</span>
+                      <span className="text-white">{token.baseToken} - {token.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <button 
               onClick={() => {
@@ -2867,22 +2885,37 @@ export default function FarcasterMiniApp() {
             <span className="text-gray-400 text-sm">Balance: {swapToBalance}</span>
           </div>
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">{toTokenData?.flag || '🇲🇽'}</span>
-              <select
-                value={swapToToken}
-                onChange={(e) => setSwapToToken(e.target.value)}
-                className="bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1"
+            <div className="relative">
+              <button
+                onClick={() => setShowSwapToDropdown(!showSwapToDropdown)}
+                className="flex items-center gap-2 bg-transparent text-white font-bold text-base focus:outline-none border border-slate-600/50 rounded-lg px-2 py-1 hover:border-slate-500 transition-colors w-full justify-between"
               >
-                <option value="" className="bg-slate-800">Select token</option>
-                {stablecoins
-                  .filter(token => token.baseToken !== swapFromToken)
-                  .map((token) => (
-                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
-                    {token.baseToken}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{toTokenData?.flag || '🌍'}</span>
+                  <span>{swapToToken || 'Select token'}</span>
+                </div>
+                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+              </button>
+              
+              {showSwapToDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto w-80 min-w-max">
+                  {stablecoins
+                    .filter(token => token.baseToken !== swapFromToken)
+                    .map((token) => (
+                    <button
+                      key={token.baseToken}
+                      onClick={() => {
+                        setSwapToToken(token.baseToken);
+                        setShowSwapToDropdown(false);
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors whitespace-nowrap"
+                    >
+                      <span className="text-lg">{token.flag || '🌍'}</span>
+                      <span className="text-white">{token.baseToken} - {token.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="text-2xl font-bold text-white">
