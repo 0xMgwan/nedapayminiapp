@@ -2828,7 +2828,6 @@ export default function FarcasterMiniApp() {
                   </option>
                 ))}
               </select>
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
             </div>
             <button 
               onClick={() => {
@@ -2892,7 +2891,6 @@ export default function FarcasterMiniApp() {
                   </option>
                 ))}
               </select>
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white">
@@ -2956,28 +2954,7 @@ export default function FarcasterMiniApp() {
           )}
         </button>
 
-        {/* Swap Features */}
-        <div className="bg-slate-800/30 rounded-xl p-2">
-          <h3 className="text-white font-semibold mb-1.5 text-xs">Swap Features</h3>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
-              <span>Instant token swaps via Aerodrome DEX</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
-              <span>Best exchange rates automatically</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
-              <span>Low slippage and minimal fees</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <span className="w-1 h-1 bg-green-400 rounded-full"></span>
-              <span>Secure and decentralized</span>
-            </div>
-          </div>
-        </div>
+
       </div>
     );
   };
