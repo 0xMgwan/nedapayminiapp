@@ -109,7 +109,7 @@ export default function FarcasterMiniApp() {
   const [linkDescription, setLinkDescription] = useState('');
   const [selectedStablecoin, setSelectedStablecoin] = useState(stablecoins[0]);
   const [generatedLink, setGeneratedLink] = useState('');
-  const [paymentType, setPaymentType] = useState<'goods' | 'bill' | 'send'>('goods');
+  const [paymentType, setPaymentType] = useState<'goods' | 'bill'>('goods');
 
   const [isLoadingRate, setIsLoadingRate] = useState(false);
   const [currentRate, setCurrentRate] = useState('2547');
@@ -1347,7 +1347,7 @@ export default function FarcasterMiniApp() {
       </div>
 
       {/* Payment Type Buttons */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         <button
           onClick={() => setPaymentType('goods')}
           className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
@@ -1411,38 +1411,6 @@ export default function FarcasterMiniApp() {
             <div className="absolute top-2 right-2 w-2 h-2 bg-blue-300 rounded-full animate-ping" />
           )}
         </button>
-        
-        <button
-          onClick={() => setPaymentType('send')}
-          className={`relative py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ease-out border-2 overflow-hidden group ${
-            paymentType === 'send' 
-              ? 'bg-gradient-to-br from-purple-500 via-pink-600 to-rose-700 text-white border-purple-400/60 shadow-2xl shadow-purple-500/40 transform scale-105' 
-              : 'bg-slate-800/80 text-white hover:bg-slate-700/90 border-slate-600/50 hover:border-purple-500/30 hover:scale-102 hover:shadow-xl hover:shadow-purple-500/10 active:scale-95'
-          }`}
-        >
-          {/* Animated background */}
-          {paymentType === 'send' && (
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 animate-pulse" />
-          )}
-          
-          {/* Hover glow */}
-          <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
-            paymentType === 'send' 
-              ? 'opacity-100 bg-purple-400/10' 
-              : 'opacity-0 group-hover:opacity-100 bg-purple-400/5'
-          }`} />
-          
-          <span className={`relative z-10 transition-all duration-300 ${
-            paymentType === 'send' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
-          }`}>
-            💸 Send Money
-          </span>
-          
-          {/* Active pulse indicator */}
-          {paymentType === 'send' && (
-            <div className="absolute top-2 right-2 w-2 h-2 bg-purple-300 rounded-full animate-ping" />
-          )}
-        </button>
       </div>
 
       {/* Payment Type Specific Fields */}
@@ -1477,7 +1445,7 @@ export default function FarcasterMiniApp() {
           </div>
         </>
       ) : (
-        /* Till Number for Buy Goods and Send Money */
+        /* Till Number for Buy Goods */
         <div>
           <label className="block text-xs text-gray-400 mb-1.5">
             {paymentType === 'goods' ? 'Till Number' : 'Enter Till Number'}
@@ -1788,7 +1756,7 @@ export default function FarcasterMiniApp() {
         >
           {stablecoins.map((token) => (
             <option key={token.baseToken} value={token.baseToken}>
-              💰 {token.baseToken} - {token.name}
+              {token.flag} {token.baseToken} - {token.name}
             </option>
           ))}
         </select>
@@ -1927,7 +1895,7 @@ export default function FarcasterMiniApp() {
           >
             {stablecoins.map((token) => (
               <option key={token.baseToken} value={token.baseToken}>
-                {token.baseToken} - {token.name}
+                {token.flag} {token.baseToken} - {token.name}
               </option>
             ))}
           </select>
