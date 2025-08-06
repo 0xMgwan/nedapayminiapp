@@ -1011,96 +1011,37 @@ export default function FarcasterMiniApp() {
         deadline: new Date(deadline * 1000).toISOString()
       });
       
-      let swapResult;
-      
-      if ((window as any).ethereum) {
-        // Use window.ethereum (MetaMask, Coinbase Wallet, etc.) - complex ethers.js approach
-        console.log('✅ Using window.ethereum provider for swap');
-        
-        // Create provider and signer
-        const provider = new ethers.providers.Web3Provider((window as any).ethereum, {
-          name: 'base-mainnet',
-          chainId: 8453
-        });
-        const signer = provider.getSigner();
-        
-        // Create token contract for approval check
-        const fromTokenContract = new ethers.Contract(
-          fromTokenData.address,
-          ['function allowance(address owner, address spender) view returns (uint256)', 'function approve(address spender, uint256 amount) returns (bool)'],
-          signer
-        );
-        
-        // Check current allowance
-        console.log('🔍 Checking token allowance...');
-        const currentAllowance = await fromTokenContract.allowance(address, '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43');
-        console.log('💰 Current allowance:', ethers.utils.formatUnits(currentAllowance, fromDecimals));
-        
-        if (currentAllowance.lt(amountInUnits)) {
-          console.log('⚙️ Approving token spend...');
-          const approveTx = await fromTokenContract.approve(
-            '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-            amountInUnits,
-            {
-              gasLimit: ethers.utils.hexlify(100000), // 100k gas for approval
-            }
-          );
-          console.log('⏳ Waiting for approval transaction...');
-          await approveTx.wait();
-          console.log('✅ Approval successful!');
-        } else {
-          console.log('✅ Sufficient allowance already exists');
-        }
-        
-        // Execute swap
-        const swapTx = await swapAerodrome({
-          signer,
-          amountIn: amountInUnits.toString(),
-          amountOutMin: minAmountOut.toString(),
-          fromToken: fromTokenData.address,
-          toToken: toTokenData.address,
-          stable: false, // Use volatile pools
-          factory: AERODROME_FACTORY_ADDRESS,
-          userAddress: address,
-          deadline
-        });
-        
-        const receipt = await swapTx.wait();
-        swapResult = {
-          success: true,
-          hash: receipt.transactionHash
-        };
-        
-      } else if (isConnected && address) {
-        // No window.ethereum but wallet is connected - use Farcaster smart wallet approach
-        console.log('✅ Using Farcaster smart wallet for swap (no window.ethereum)');
-        
-        // First approve the token if needed
-        console.log('🔐 Approving token for swap...');
-        await executeFarcasterApproval(
-          fromTokenData.address,
-          '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-          amountInUnits.toString()
-        );
-        
-        // Wait a bit for approval to be confirmed
-        console.log('⏳ Waiting for approval confirmation...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Execute the swap
-        swapResult = await executeFarcasterSwap(
-          fromTokenData.address,
-          toTokenData.address,
-          amountInUnits.toString(),
-          minAmountOut.toString(),
-          address,
-          deadline
-        );
-        
-      } else {
+      // Force Farcaster approach for all swaps to ensure compatibility
+      if (!isConnected || !address) {
         console.error('❌ No wallet available');
         throw new Error('Please connect your wallet first');
       }
+      
+      console.log('✅ Using Farcaster smart wallet for swap');
+      
+      // First approve the token if needed
+      console.log('🔐 Approving token for swap...');
+      const approvalResult = await executeFarcasterApproval(
+        fromTokenData.address,
+        '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
+        amountInUnits.toString()
+      );
+      
+      console.log('✅ Approval completed:', approvalResult.hash);
+      
+      // Wait a bit for approval to be confirmed
+      console.log('⏳ Waiting for approval confirmation...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Execute the swap
+      const swapResult = await executeFarcasterSwap(
+        fromTokenData.address,
+        toTokenData.address,
+        amountInUnits.toString(),
+        minAmountOut.toString(),
+        address,
+        deadline
+      );
       
       console.log('✅ Swap completed successfully!', swapResult);
       
