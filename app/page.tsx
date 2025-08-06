@@ -153,6 +153,7 @@ export default function FarcasterMiniApp() {
   const [swapSuccess, setSwapSuccess] = useState<string | null>(null);
   const [showSwapFromDropdown, setShowSwapFromDropdown] = useState(false);
   const [showSwapToDropdown, setShowSwapToDropdown] = useState(false);
+  const [showInvoiceCurrencyDropdown, setShowInvoiceCurrencyDropdown] = useState(false);
 
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -2605,17 +2606,44 @@ export default function FarcasterMiniApp() {
           <div className="bg-slate-800/30 rounded-lg p-2">
             <div className="flex items-center justify-between">
               <span className="text-white text-xs font-medium">Payment Currency</span>
-              <select
-                value={invoiceCurrency}
-                onChange={(e) => setInvoiceCurrency(e.target.value)}
-                className="bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
-              >
-                {stablecoins.map((token) => (
-                  <option key={token.baseToken} value={token.baseToken}>
-                    {token.flag} {token.baseToken} - {token.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  onClick={() => setShowInvoiceCurrencyDropdown(!showInvoiceCurrencyDropdown)}
+                  className="bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] flex items-center justify-between gap-2 border border-slate-600/50 hover:border-slate-500 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {invoiceCurrency === 'USDC' ? (
+                      <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                    ) : (
+                      <span className="text-sm">{stablecoins.find(t => t.baseToken === invoiceCurrency)?.flag || '🌍'}</span>
+                    )}
+                    <span>{invoiceCurrency}</span>
+                  </div>
+                  <ChevronDownIcon className="w-3 h-3 text-gray-400" />
+                </button>
+                
+                {showInvoiceCurrencyDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto w-full min-w-max">
+                    {stablecoins.map((token) => (
+                      <button
+                        key={token.baseToken}
+                        onClick={() => {
+                          setInvoiceCurrency(token.baseToken);
+                          setShowInvoiceCurrencyDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors whitespace-nowrap"
+                      >
+                        {token.baseToken === 'USDC' ? (
+                          <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                        ) : (
+                          <span className="text-sm">{token.flag || '🌍'}</span>
+                        )}
+                        <span className="text-white">{token.baseToken} - {token.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
@@ -2940,7 +2968,11 @@ export default function FarcasterMiniApp() {
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors whitespace-nowrap"
                     >
-                      <span className="text-lg">{token.flag || '🌍'}</span>
+                      {token.baseToken === 'USDC' ? (
+                        <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
+                      ) : (
+                        <span className="text-lg">{token.flag || '🌍'}</span>
+                      )}
                       <span className="text-white">{token.baseToken} - {token.name}</span>
                     </button>
                   ))}
@@ -3022,7 +3054,11 @@ export default function FarcasterMiniApp() {
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors whitespace-nowrap"
                     >
-                      <span className="text-lg">{token.flag || '🌍'}</span>
+                      {token.baseToken === 'USDC' ? (
+                        <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
+                      ) : (
+                        <span className="text-lg">{token.flag || '🌍'}</span>
+                      )}
                       <span className="text-white">{token.baseToken} - {token.name}</span>
                     </button>
                   ))}
