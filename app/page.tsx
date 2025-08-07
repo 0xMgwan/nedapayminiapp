@@ -1116,6 +1116,7 @@ export default function FarcasterMiniApp() {
           // Store fee info for the swap execution
           (window as any).protocolFeeInfo = {
             feeInTokenUnits,
+            feeAmountUSD: feeInfo.feeAmount, // USD amount for USDC conversion
             protocolAddress: getNedaPayProtocolAddress()
           };
         }
@@ -1153,45 +1154,54 @@ export default function FarcasterMiniApp() {
       
       console.log('✅ Swap completed successfully!', swapResult);
       
-      // Collect protocol fee after successful swap through contract
+      // Collect protocol fee in USDC after successful swap
       if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
         try {
-          console.log('💳 Collecting protocol fee through contract...');
+          console.log('💳 Collecting protocol fee in USDC...');
           const feeInfo = (window as any).protocolFeeInfo;
           
+          // Calculate fee amount in USDC (output token)
+          const feeAmountUSD = feeInfo.feeAmountUSD; // USD amount
+          const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+          const feeInUSDC = ethers.utils.parseUnits(feeAmountUSD.toFixed(6), 6); // USDC has 6 decimals
+          
+          console.log('💰 Protocol fee details:', {
+            feeUSD: '$' + feeAmountUSD.toFixed(4),
+            feeInUSDC: ethers.utils.formatUnits(feeInUSDC, 6) + ' USDC',
+            protocolAddress: feeInfo.protocolAddress
+          });
+          
           // Create provider and signer
+          if (!walletClient) {
+            throw new Error('Wallet client not available');
+          }
           const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
           const signer = provider.getSigner();
           
-          // Protocol contract ABI
-          const protocolABI = [
-            'function processSwap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, bytes calldata swapData) external'
+          // USDC contract ABI
+          const erc20ABI = [
+            'function transfer(address to, uint256 amount) returns (bool)',
+            'function approve(address spender, uint256 amount) returns (bool)'
           ];
           
-          // Create contract instance
+          // Protocol contract ABI
+          const protocolABI = [
+            'function processPayment(address token, uint256 amount, string calldata paymentType) external'
+          ];
+          
+          // Create contract instances
+          const usdcContract = new ethers.Contract(USDC_ADDRESS, erc20ABI, signer);
           const protocolContract = new ethers.Contract(feeInfo.protocolAddress, protocolABI, signer);
           
-          // Approve protocol contract for fee amount
-          const tokenContract = new ethers.Contract(fromTokenData.address, [
-            'function approve(address spender, uint256 amount) returns (bool)'
-          ], signer);
-          
-          console.log('📝 Approving protocol contract for fee...');
-          const approveTx = await tokenContract.approve(feeInfo.protocolAddress, feeInfo.feeInTokenUnits);
+          // Single transaction: Approve and process fee in USDC
+          console.log('📝 Approving and processing protocol fee in USDC...');
+          const approveTx = await usdcContract.approve(feeInfo.protocolAddress, feeInUSDC);
           await approveTx.wait();
           
-          // Process fee through contract
-          console.log('💰 Processing fee through contract...');
-          const feeTx = await protocolContract.processSwap(
-            fromTokenData.address,
-            toTokenData.address,
-            feeInfo.feeInTokenUnits,
-            0,
-            '0x'
-          );
+          const feeTx = await protocolContract.processPayment(USDC_ADDRESS, feeInUSDC, 'swap_fee');
           await feeTx.wait();
           
-          console.log('✅ Protocol fee collected through contract:', feeTx.hash);
+          console.log('✅ Protocol fee collected in USDC through contract:', feeTx.hash);
           delete (window as any).protocolFeeInfo;
           
         } catch (feeError) {
