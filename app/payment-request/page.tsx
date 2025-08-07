@@ -255,25 +255,67 @@ function PaymentRequestPageContent() {
       // Process payment with protocol fee included in a single transaction
       let receipt;
       if (isProtocolEnabled()) {
-        // Calculate fee based on USD equivalent
+        // Calculate fee based on USD equivalent with accurate exchange rates
         let usdValue;
-        if (tokenSymbol === 'USDC' || tokenSymbol === 'USDT' || tokenSymbol === 'DAI') {
-          usdValue = amount; // Direct USD value for USD stablecoins
-        } else if (tokenSymbol === 'IDRX') {
-          // IDRX is pegged to Indonesian Rupiah (IDR)
-          // 1 USD ≈ 15,400 IDR (approximate exchange rate)
-          usdValue = amount / 15400; // Convert IDRX to USD equivalent
-        } else if (tokenSymbol === 'CNGN' || tokenSymbol === 'NGNC') {
-          // Nigerian Naira tokens
-          // 1 USD ≈ 1,500 NGN (approximate exchange rate)
-          usdValue = amount / 1500; // Convert NGN to USD equivalent
-        } else if (tokenSymbol === 'ZARP') {
-          // South African Rand
-          // 1 USD ≈ 18 ZAR (approximate exchange rate)
-          usdValue = amount / 18; // Convert ZAR to USD equivalent
-        } else {
-          // Conservative estimate for unknown tokens - assume 1:1 with USD
-          usdValue = amount;
+        
+        switch (tokenSymbol) {
+          case 'USDC':
+          case 'USDT':
+          case 'DAI':
+            usdValue = amount; // Direct USD value
+            break;
+            
+          case 'IDRX':
+            // Indonesian Rupiah: 1 USD ≈ 15,400 IDR
+            usdValue = amount / 15400;
+            break;
+            
+          case 'cNGN':
+          case 'NGNC':
+            // Nigerian Naira: 1 USD ≈ 1,500 NGN
+            usdValue = amount / 1500;
+            break;
+            
+          case 'ZARP':
+            // South African Rand: 1 USD ≈ 18 ZAR
+            usdValue = amount / 18;
+            break;
+            
+          case 'EURC':
+            // Euro: 1 USD ≈ 0.92 EUR
+            usdValue = amount / 0.92;
+            break;
+            
+          case 'CADC':
+            // Canadian Dollar: 1 USD ≈ 1.35 CAD
+            usdValue = amount / 1.35;
+            break;
+            
+          case 'BRL':
+            // Brazilian Real: 1 USD ≈ 5.0 BRL
+            usdValue = amount / 5.0;
+            break;
+            
+          case 'TRYB':
+            // Turkish Lira: 1 USD ≈ 32 TRY
+            usdValue = amount / 32;
+            break;
+            
+          case 'NZDD':
+            // New Zealand Dollar: 1 USD ≈ 1.6 NZD
+            usdValue = amount / 1.6;
+            break;
+            
+          case 'MXNe':
+            // Mexican Peso: 1 USD ≈ 20 MXN
+            usdValue = amount / 20;
+            break;
+            
+          default:
+            // Conservative estimate for unknown tokens - assume 1:1 with USD
+            console.warn('⚠️ Unknown token for USD conversion:', tokenSymbol, 'assuming 1:1');
+            usdValue = amount;
+            break;
         }
         
         const feeInfo = calculateDynamicFee(usdValue);
