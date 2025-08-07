@@ -1,0 +1,8 @@
+{
+  "network": "base",
+  "chainId": 8453,
+  "proxyAddress": "0x19d89D92e35a635441C3daB394F6FE289B015430",
+  "implementationAddress": "0x10dE41927cdD093dA160E562630e0efC19423869",
+  "deployedAt": "2025-08-06T21:18:21.633Z",
+  "version": "1.0.0"
+}

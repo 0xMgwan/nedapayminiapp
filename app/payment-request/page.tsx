@@ -259,8 +259,21 @@ function PaymentRequestPageContent() {
         let usdValue;
         if (tokenSymbol === 'USDC' || tokenSymbol === 'USDT' || tokenSymbol === 'DAI') {
           usdValue = amount; // Direct USD value for USD stablecoins
+        } else if (tokenSymbol === 'IDRX') {
+          // IDRX is pegged to Indonesian Rupiah (IDR)
+          // 1 USD ≈ 15,400 IDR (approximate exchange rate)
+          usdValue = amount / 15400; // Convert IDRX to USD equivalent
+        } else if (tokenSymbol === 'CNGN' || tokenSymbol === 'NGNC') {
+          // Nigerian Naira tokens
+          // 1 USD ≈ 1,500 NGN (approximate exchange rate)
+          usdValue = amount / 1500; // Convert NGN to USD equivalent
+        } else if (tokenSymbol === 'ZARP') {
+          // South African Rand
+          // 1 USD ≈ 18 ZAR (approximate exchange rate)
+          usdValue = amount / 18; // Convert ZAR to USD equivalent
         } else {
-          usdValue = amount; // Conservative estimate for other tokens
+          // Conservative estimate for unknown tokens - assume 1:1 with USD
+          usdValue = amount;
         }
         
         const feeInfo = calculateDynamicFee(usdValue);
@@ -306,6 +319,19 @@ function PaymentRequestPageContent() {
           console.log('💳 Processing protocol fee in USDC...');
           const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
           const feeInUSDC = ethers.utils.parseUnits(feeInfo.feeAmount.toFixed(6), 6);
+          
+          console.log('💰 Fee approval details:', {
+            feeAmountUSD: feeInfo.feeAmount,
+            feeAmountFixed: feeInfo.feeAmount.toFixed(6),
+            feeInUSDC: feeInUSDC.toString(),
+            feeInUSDCFormatted: ethers.utils.formatUnits(feeInUSDC, 6) + ' USDC'
+          });
+          
+          // Sanity check: ensure fee is reasonable (max $100)
+          if (feeInfo.feeAmount > 100) {
+            console.error('❌ Protocol fee too high:', feeInfo.feeAmount, 'USD');
+            throw new Error(`Protocol fee too high: $${feeInfo.feeAmount.toFixed(2)}. Please contact support.`);
+          }
           
           const usdcContract = new ethers.Contract(USDC_ADDRESS, [
             'function approve(address spender, uint256 amount) returns (bool)',
