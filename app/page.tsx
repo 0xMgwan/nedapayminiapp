@@ -14,6 +14,7 @@ import { executeUSDCTransaction, getUSDCBalance } from './utils/wallet';
 import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
 import { getAerodromeQuote, swapAerodrome, AERODROME_FACTORY_ADDRESS } from './utils/aerodrome';
 import { calculateDynamicFee, formatFeeInfo, isProtocolEnabled } from './utils/nedaPayProtocol';
+import { getNedaPayProtocolAddress } from './config/contracts';
 import Image from 'next/image';
 
 type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'swap' | 'invoice';
@@ -1105,42 +1106,27 @@ export default function FarcasterMiniApp() {
             fromDecimals
           );
           
-          console.log('💳 Protocol fee breakdown:', {
+          console.log('💳 Protocol fee will be collected during swap:', {
             feeRate: feeInfo.feeRate + '%',
             feeAmountUSD: '$' + feeInfo.feeAmount.toFixed(4),
             feeInTokenUnits: ethers.utils.formatUnits(feeInTokenUnits, fromDecimals) + ' ' + swapFromToken,
             tier: feeInfo.tier
           });
           
-          // Collect protocol fee BEFORE swap to reduce wallet popups
-          const FEE_RECIPIENT = '0x037Eb04AD9DDFf984F44Ce5941D14b8Ea3781459';
-          
-          console.log('💰 Collecting protocol fee before swap...');
-          const feeResult = await executeFarcasterTransfer(
-            fromTokenData.address,
-            FEE_RECIPIENT,
-            feeInTokenUnits.toString()
-          );
-          
-          console.log('✅ Protocol fee collected:', feeResult.hash);
-          
-          // Reduce swap amount by the fee that was already collected
-          actualSwapAmount = amountInUnits.sub(feeInTokenUnits);
-          
-          console.log('🔄 Adjusted swap amount after fee:', {
-            originalAmount: ethers.utils.formatUnits(amountInUnits, fromDecimals),
-            feeAmount: ethers.utils.formatUnits(feeInTokenUnits, fromDecimals),
-            actualSwapAmount: ethers.utils.formatUnits(actualSwapAmount, fromDecimals)
-          });
+          // Store fee info for the swap execution
+          (window as any).protocolFeeInfo = {
+            feeInTokenUnits,
+            protocolAddress: getNedaPayProtocolAddress()
+          };
         }
       }
       
-      // Approve Aerodrome router for actual swap amount (after fee deduction)
-      console.log('🔐 Approving token for swap (amount after protocol fee deduction)...');
+      // Approve Aerodrome router for original amount (protocol fee will be handled separately)
+      console.log('🔐 Approving token for swap...');
       const approvalResult = await executeFarcasterApproval(
         fromTokenData.address,
         '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-        actualSwapAmount.toString() // Approve actual swap amount
+        amountInUnits.toString() // Approve original amount
       );
       
       console.log('✅ Approval completed:', approvalResult.hash);
@@ -1149,11 +1135,11 @@ export default function FarcasterMiniApp() {
       console.log('⏳ Waiting for approval confirmation...');
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Execute the swap
+      // Execute the swap with original amount
       const swapResult = await executeFarcasterSwap(
         fromTokenData.address,
         toTokenData.address,
-        actualSwapAmount.toString(), // Use amount after fee deduction
+        amountInUnits.toString(), // Use original amount
         minAmountOut.toString(),
         address,
         deadline
@@ -1166,6 +1152,53 @@ export default function FarcasterMiniApp() {
       });
       
       console.log('✅ Swap completed successfully!', swapResult);
+      
+      // Collect protocol fee after successful swap through contract
+      if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
+        try {
+          console.log('💳 Collecting protocol fee through contract...');
+          const feeInfo = (window as any).protocolFeeInfo;
+          
+          // Create provider and signer
+          const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
+          const signer = provider.getSigner();
+          
+          // Protocol contract ABI
+          const protocolABI = [
+            'function processSwap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, bytes calldata swapData) external'
+          ];
+          
+          // Create contract instance
+          const protocolContract = new ethers.Contract(feeInfo.protocolAddress, protocolABI, signer);
+          
+          // Approve protocol contract for fee amount
+          const tokenContract = new ethers.Contract(fromTokenData.address, [
+            'function approve(address spender, uint256 amount) returns (bool)'
+          ], signer);
+          
+          console.log('📝 Approving protocol contract for fee...');
+          const approveTx = await tokenContract.approve(feeInfo.protocolAddress, feeInfo.feeInTokenUnits);
+          await approveTx.wait();
+          
+          // Process fee through contract
+          console.log('💰 Processing fee through contract...');
+          const feeTx = await protocolContract.processSwap(
+            fromTokenData.address,
+            toTokenData.address,
+            feeInfo.feeInTokenUnits,
+            0,
+            '0x'
+          );
+          await feeTx.wait();
+          
+          console.log('✅ Protocol fee collected through contract:', feeTx.hash);
+          delete (window as any).protocolFeeInfo;
+          
+        } catch (feeError) {
+          console.error('❌ Protocol fee collection failed:', feeError);
+          // Don't fail the whole transaction for fee collection issues
+        }
+      }
       
       setSwapSuccess(`Swap successful! Transaction: ${swapResult.hash}`);
       setSwapAmount('');

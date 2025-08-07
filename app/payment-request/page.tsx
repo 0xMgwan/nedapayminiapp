@@ -231,6 +231,7 @@ function PaymentRequestPageContent() {
           
           // Get protocol contract and fee recipient
           const protocolAddress = getNedaPayProtocolAddress();
+          const protocolContract = new ethers.Contract(protocolAddress, protocolABI, signer);
           const FEE_RECIPIENT = '0x037Eb04AD9DDFf984F44Ce5941D14b8Ea3781459'; // From contract
           
           const totalAmountNeeded = amountInWei.add(feeInTokenUnits);
@@ -248,21 +249,25 @@ function PaymentRequestPageContent() {
             throw new Error(`Insufficient ${tokenSymbol} balance. Need ${ethers.utils.formatUnits(totalAmountNeeded, decimals)} ${tokenSymbol}`);
           }
           
-          // Send protocol fee to fee recipient and payment to merchant as separate transfers
+          // Process protocol fee through contract for proper tracking
+          console.log('💰 Processing payment with protocol fee through contract...');
           
-          console.log('💰 Processing payment with protocol fee as separate transfer...');
+          // First: Approve protocol contract for fee amount
+          console.log('📝 Approving protocol contract for fee...');
+          const approveTx = await tokenContract.approve(protocolAddress, feeInTokenUnits);
+          await approveTx.wait();
           
-          // First transfer: Protocol fee to fee recipient
-          console.log('💳 Sending protocol fee to:', FEE_RECIPIENT);
-          const feeTx = await tokenContract.transfer(FEE_RECIPIENT, feeInTokenUnits);
+          // Second: Process fee through contract (this will appear on contract's transaction history)
+          console.log('💳 Processing protocol fee through contract:', protocolAddress);
+          const feeTx = await protocolContract.processPayment(tokenAddress, feeInTokenUnits, 'payment_link');
           await feeTx.wait();
           
-          // Second transfer: Payment amount to merchant
+          // Third: Send payment amount to merchant
           console.log('💰 Sending payment to merchant:', toAddress);
           const paymentTx = await tokenContract.transfer(toAddress, amountInWei);
           receipt = await paymentTx.wait();
           
-          console.log('✅ Payment and protocol fee processed successfully');
+          console.log('✅ Payment and protocol fee processed successfully through contract');
         } else {
           // No fee, just transfer the payment amount
           const tx = await tokenContract.transfer(toAddress, amountInWei);
