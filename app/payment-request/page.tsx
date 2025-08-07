@@ -127,19 +127,47 @@ function PaymentRequestPageContent() {
     console.log('🔍 Looking for token:', token);
     
     const stablecoin = stablecoins.find(s => s.baseToken === token);
-    console.log('🔍 Found stablecoin:', stablecoin);
     
-    // Check if address is valid (not a placeholder)
-    if (stablecoin?.address && 
-        stablecoin.address !== '0x123456789abcdef123456789abcdef123456789a' &&
+    if (stablecoin && 
+        stablecoin.address && 
+        ethers.utils.isAddress(stablecoin.address) &&
         stablecoin.chainId === 8453) { // Only Base mainnet tokens
       console.log('✅ Using valid token address:', stablecoin.address);
       return stablecoin.address;
     }
     
-    console.log('⚠️ Token not found or invalid, defaulting to USDC');
     // Default to USDC if token not found or invalid
+    console.log('⚠️ Token not found or invalid, defaulting to USDC');
     return "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // USDC on Base
+  };
+
+  const getTokenIcon = (token: string) => {
+    // Special case for USDC - always show the USDC logo
+    if (token === 'USDC') {
+      return {
+        type: 'image',
+        value: '/assets/logos/usdc-logo.png',
+        region: 'USD'
+      };
+    }
+    
+    // For other tokens, show country flags
+    const stablecoin = stablecoins.find(s => s.baseToken === token);
+    
+    if (stablecoin && stablecoin.flag) {
+      return {
+        type: 'flag',
+        value: stablecoin.flag,
+        region: stablecoin.region
+      };
+    }
+    
+    // Default to USDC logo for unknown tokens
+    return {
+      type: 'image',
+      value: '/assets/logos/usdc-logo.png',
+      region: 'USD'
+    };
   };
 
   const executeTokenTransaction = async (toAddress: string, amount: number, tokenSymbol: string, description?: string): Promise<boolean> => {
@@ -148,16 +176,37 @@ function PaymentRequestPageContent() {
     }
 
     try {
-      // Use wagmi walletClient directly
-      const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
-      const signer = provider.getSigner();
+      console.log('💰 Starting token transaction:', {
+        to: toAddress,
+        amount,
+        token: tokenSymbol,
+        from: walletAddress
+      });
+
+      // Validate token first
+      const tokenAddress = getTokenAddress(tokenSymbol);
+      console.log('🪙 Token address for', tokenSymbol, ':', tokenAddress);
       
-      // Check network
-      const network = await provider.getNetwork();
-      console.log('🌐 Current network:', network);
-      
-      if (network.chainId !== 8453) {
-        throw new Error('Please switch to Base network (Chain ID: 8453)');
+      if (!ethers.utils.isAddress(tokenAddress)) {
+        throw new Error(`Invalid token address for ${tokenSymbol}: ${tokenAddress}`);
+      }
+
+      // Create provider with better error handling
+      let provider, signer, network;
+      try {
+        provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
+        signer = provider.getSigner();
+        
+        // Check network
+        network = await provider.getNetwork();
+        console.log('🌐 Current network:', network);
+        
+        if (network.chainId !== 8453) {
+          throw new Error('Please switch to Base network (Chain ID: 8453)');
+        }
+      } catch (providerError) {
+        console.error('❌ Provider/Network error:', providerError);
+        throw new Error('Failed to connect to wallet or network. Please try reconnecting your wallet.');
       }
 
       const erc20ABI = [
@@ -178,13 +227,8 @@ function PaymentRequestPageContent() {
         'function aggregate(tuple(address target, bytes callData)[] calls) external returns (uint256 blockNumber, bytes[] returnData)'
       ];
 
-      const tokenAddress = getTokenAddress(tokenSymbol);
-      console.log('🪙 Using token address for', tokenSymbol, ':', tokenAddress);
-      
-      // Validate the address format
-      if (!ethers.utils.isAddress(tokenAddress)) {
-        throw new Error(`Invalid token address: ${tokenAddress}`);
-      }
+      // Token address already validated above
+      console.log('🔍 Using validated token address:', tokenAddress);
       
       // Get token info to determine decimals
       const tokenInfo = stablecoins.find(s => s.baseToken === tokenSymbol);
@@ -297,8 +341,23 @@ function PaymentRequestPageContent() {
       setTransactionHash(receipt.transactionHash);
       return receipt.status === 1;
     } catch (error: any) {
-      console.error('Transaction failed:', error);
-      throw error;
+      console.error('❌ Transaction failed for', tokenSymbol, ':', {
+        error: error.message,
+        code: error.code,
+        data: error.data,
+        tokenAddress: getTokenAddress(tokenSymbol)
+      });
+      
+      // Provide more specific error messages
+      if (error.message.includes('CORS')) {
+        throw new Error('Network connection issue. Please try refreshing the page and reconnecting your wallet.');
+      } else if (error.message.includes('insufficient')) {
+        throw new Error(`Insufficient ${tokenSymbol} balance or gas fees.`);
+      } else if (error.message.includes('rejected')) {
+        throw new Error('Transaction was rejected by user.');
+      } else {
+        throw new Error(`Payment failed: ${error.message}`);
+      }
     }
   };
 
@@ -380,11 +439,27 @@ function PaymentRequestPageContent() {
                 <span className="text-gray-400">Amount:</span>
                 <div className="flex items-center gap-1">
                   <span className="text-white font-medium">{paymentData?.amount}</span>
-                  <img 
-                    src="/assets/logos/usdc-logo.png" 
-                    alt="USDC" 
-                    className="w-4 h-4"
-                  />
+                  {(() => {
+                    const tokenIcon = getTokenIcon(paymentData?.token || '');
+                    if (tokenIcon.type === 'flag') {
+                      return (
+                        <span 
+                          className="text-lg" 
+                          title={tokenIcon.region}
+                        >
+                          {tokenIcon.value}
+                        </span>
+                      );
+                    } else {
+                      return (
+                        <img 
+                          src={tokenIcon.value} 
+                          alt={tokenIcon.region} 
+                          className="w-4 h-4"
+                        />
+                      );
+                    }
+                  })()} 
                   <span className="text-white font-medium">{paymentData?.token}</span>
                 </div>
               </div>
@@ -483,11 +558,27 @@ function PaymentRequestPageContent() {
             <div className="text-2xl font-bold text-white">
               {paymentData.amount} {paymentData.token}
             </div>
-            <img 
-              src="/assets/logos/usdc-logo.png" 
-              alt="USDC" 
-              className="w-6 h-6"
-            />
+            {(() => {
+              const tokenIcon = getTokenIcon(paymentData.token);
+              if (tokenIcon.type === 'flag') {
+                return (
+                  <span 
+                    className="text-2xl" 
+                    title={tokenIcon.region}
+                  >
+                    {tokenIcon.value}
+                  </span>
+                );
+              } else {
+                return (
+                  <img 
+                    src={tokenIcon.value} 
+                    alt={tokenIcon.region} 
+                    className="w-6 h-6"
+                  />
+                );
+              }
+            })()}
           </div>
           <div className="flex items-center justify-center gap-1 text-xs text-gray-400">
             <img 
