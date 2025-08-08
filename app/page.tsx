@@ -594,8 +594,65 @@ export default function FarcasterMiniApp() {
     }
   }, [isConnected, address]);
 
-  // Farcaster-compatible swap execution using wagmi/actions
-  // Batched transaction function that combines fee collection + swap
+  // Execute individual transactions with unlimited approval optimization
+  const executeOptimizedTransactions = useCallback(async (
+    approvalNeeded: boolean,
+    tokenAddress: string,
+    spenderAddress: string,
+    mainTransaction: () => Promise<string>
+  ) => {
+    try {
+      if (!isConnected || !address) {
+        throw new Error('Wallet not connected');
+      }
+
+      const { writeContract } = await import('wagmi/actions');
+      const { config } = await import('../providers/MiniKitProvider');
+      
+      // 1. Handle approval if needed (with unlimited approval)
+      if (approvalNeeded) {
+        console.log('📝 Setting unlimited approval to avoid future popups...');
+        
+        const erc20ABI = [
+          {
+            name: 'approve',
+            type: 'function',
+            inputs: [
+              { name: 'spender', type: 'address' },
+              { name: 'amount', type: 'uint256' }
+            ],
+            outputs: [{ name: '', type: 'bool' }],
+            stateMutability: 'nonpayable'
+          }
+        ];
+
+        // Use unlimited approval (MaxUint256) to avoid future approval popups
+        const approvalHash = await writeContract(config, {
+          address: tokenAddress as `0x${string}`,
+          abi: erc20ABI,
+          functionName: 'approve',
+          args: [spenderAddress as `0x${string}`, BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')], // MaxUint256
+        });
+        
+        console.log('✅ Unlimited approval transaction sent:', approvalHash);
+      }
+      
+      // 2. Execute main transaction
+      const mainHash = await mainTransaction();
+      console.log('✅ Main transaction completed:', mainHash);
+      
+      return {
+        success: true,
+        hash: mainHash
+      };
+      
+    } catch (error: any) {
+      console.error('❌ Optimized transaction failed:', error);
+      throw error;
+    }
+  }, [isConnected, address]);
+
+  // Optimized swap with fee collection using unlimited approval
   const executeBatchedSwapWithFee = useCallback(async (
     fromTokenAddress: string,
     toTokenAddress: string,
@@ -606,17 +663,57 @@ export default function FarcasterMiniApp() {
     feeInfo: any
   ): Promise<{ success: boolean; hash: string }> => {
     try {
-      console.log('🔄 Executing batched fee collection + swap transaction...');
-
-      if (!isConnected || !address) {
-        throw new Error('Wallet not connected in Farcaster');
-      }
-
-      // Use wagmi's writeContract approach for Farcaster MiniApps
+      console.log('🔄 Preparing optimized swap with fee collection...');
+      
       const { writeContract } = await import('wagmi/actions');
       const { config } = await import('../providers/MiniKitProvider');
       
-      // First execute the fee collection through protocol contract
+      // 1. Check if approval is needed for protocol fee
+      const erc20ABI = [
+        {
+          name: 'approve',
+          type: 'function',
+          inputs: [
+            { name: 'spender', type: 'address' },
+            { name: 'amount', type: 'uint256' }
+          ],
+          outputs: [{ name: '', type: 'bool' }],
+          stateMutability: 'nonpayable'
+        },
+        {
+          name: 'allowance',
+          type: 'function',
+          inputs: [
+            { name: 'owner', type: 'address' },
+            { name: 'spender', type: 'address' }
+          ],
+          outputs: [{ name: '', type: 'uint256' }],
+          stateMutability: 'view'
+        }
+      ];
+      
+      // Check current allowance for protocol contract
+      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+      const tokenContract = new ethers.Contract(fromTokenAddress, erc20ABI, provider);
+      const currentAllowance = await tokenContract.allowance(userAddress, feeInfo.protocolAddress);
+      const totalNeeded = ethers.BigNumber.from(amountIn).add(feeInfo.feeInTokenUnits);
+      
+      // 2. Set unlimited approval if needed
+      if (currentAllowance.lt(totalNeeded)) {
+        console.log('📝 Setting unlimited approval for protocol fee...');
+        
+        const approvalHash = await writeContract(config, {
+          address: fromTokenAddress as `0x${string}`,
+          abi: erc20ABI,
+          functionName: 'approve',
+          args: [feeInfo.protocolAddress as `0x${string}`, BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')],
+        });
+        
+        console.log('✅ Unlimited approval set:', approvalHash);
+      }
+
+      // 3. Process protocol fee
+      console.log('💰 Processing protocol fee...');
       const protocolABI = [
         {
           name: 'processSwap',
@@ -632,8 +729,7 @@ export default function FarcasterMiniApp() {
           stateMutability: 'nonpayable'
         }
       ];
-
-      // Execute fee collection first
+      
       const feeHash = await writeContract(config, {
         address: feeInfo.protocolAddress as `0x${string}`,
         abi: protocolABI,
@@ -642,78 +738,38 @@ export default function FarcasterMiniApp() {
           fromTokenAddress as `0x${string}`,
           toTokenAddress as `0x${string}`,
           BigInt(feeInfo.feeInTokenUnits.toString()),
-          BigInt(0), // amountOutMin for fee
-          '0x' as `0x${string}` // swapData
-        ]
-      });
-
-      console.log('✅ Fee collection transaction sent:', feeHash);
-      
-      // Small delay to ensure fee transaction is processed
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Then execute the main swap
-      const AERODROME_ROUTER = '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43';
-      
-      const routes = [{
-        from: fromTokenAddress as `0x${string}`,
-        to: toTokenAddress as `0x${string}`,
-        stable: false,
-        factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
-      }];
-      
-      const swapHash = await writeContract(config, {
-        address: AERODROME_ROUTER as `0x${string}`,
-        abi: [
-          {
-            name: 'swapExactTokensForTokens',
-            type: 'function',
-            inputs: [
-              { name: 'amountIn', type: 'uint256' },
-              { name: 'amountOutMin', type: 'uint256' },
-              { 
-                name: 'routes', 
-                type: 'tuple[]',
-                components: [
-                  { name: 'from', type: 'address' },
-                  { name: 'to', type: 'address' },
-                  { name: 'stable', type: 'bool' },
-                  { name: 'factory', type: 'address' }
-                ]
-              },
-              { name: 'to', type: 'address' },
-              { name: 'deadline', type: 'uint256' }
-            ],
-            outputs: [{ name: 'amounts', type: 'uint256[]' }],
-            stateMutability: 'nonpayable'
-          }
+          BigInt(0),
+          '0x' as `0x${string}`
         ],
-        functionName: 'swapExactTokensForTokens',
-        args: [
-          BigInt(amountIn),
-          BigInt(amountOutMin),
-          routes,
-          userAddress as `0x${string}`,
-          BigInt(deadline)
-        ]
       });
       
-      console.log('✅ Batched swap transaction sent:', swapHash);
+      console.log('✅ Protocol fee processed:', feeHash);
+
+      // 4. Execute main swap
+      console.log('🔄 Executing main swap...');
+      const swapResult = await executeFarcasterSwap(
+        fromTokenAddress,
+        toTokenAddress,
+        amountIn,
+        amountOutMin,
+        userAddress,
+        deadline
+      );
       
-      // Clean up batched fee info
+      // Clean up fee info
       delete (window as any).batchedFeeInfo;
       delete (window as any).protocolFeeInfo;
       
       return {
-        success: true,
-        hash: swapHash
+        success: swapResult.success,
+        hash: swapResult.hash
       };
       
     } catch (error: any) {
-      console.error('❌ Batched transaction failed:', error);
+      console.error('❌ Optimized swap with fee failed:', error);
       throw error;
     }
-  }, [isConnected, address]);
+  }, []);
 
   const executeFarcasterSwap = useCallback(async (
     fromTokenAddress: string,

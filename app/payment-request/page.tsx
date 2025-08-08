@@ -352,22 +352,11 @@ function PaymentRequestPageContent() {
             throw new Error(`Insufficient ${tokenSymbol} balance. Need ${ethers.utils.formatUnits(amountInWei, decimals)} ${tokenSymbol}`);
           }
           
-          // Send payment to merchant first
-          console.log('💰 Sending payment to merchant:', toAddress);
-          const paymentTx = await tokenContract.transfer(toAddress, amountInWei);
-          receipt = await paymentTx.wait();
+          // Execute payment with optimized protocol fee handling
+          console.log('💰 Processing payment with protocol fee...');
           
-          // Collect protocol fee in USDC after payment
-          console.log('💳 Processing protocol fee in USDC...');
           const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
           const feeInUSDC = ethers.utils.parseUnits(feeInfo.feeAmount.toFixed(6), 6);
-          
-          console.log('💰 Fee approval details:', {
-            feeAmountUSD: feeInfo.feeAmount,
-            feeAmountFixed: feeInfo.feeAmount.toFixed(6),
-            feeInUSDC: feeInUSDC.toString(),
-            feeInUSDCFormatted: ethers.utils.formatUnits(feeInUSDC, 6) + ' USDC'
-          });
           
           // Sanity check: ensure fee is reasonable (max $100)
           if (feeInfo.feeAmount > 100) {
@@ -375,49 +364,39 @@ function PaymentRequestPageContent() {
             throw new Error(`Protocol fee too high: $${feeInfo.feeAmount.toFixed(2)}. Please contact support.`);
           }
           
+          // 1. Send payment to merchant first
+          console.log('💰 Sending payment to merchant:', toAddress);
+          const paymentTx = await tokenContract.transfer(toAddress, amountInWei);
+          await paymentTx.wait();
+          console.log('✅ Payment transaction completed');
+          
+          // 2. Handle USDC approval and fee collection with unlimited approval
           const usdcContract = new ethers.Contract(USDC_ADDRESS, [
             'function approve(address spender, uint256 amount) returns (bool)',
+            'function allowance(address owner, address spender) view returns (uint256)',
             'function balanceOf(address owner) view returns (uint256)'
           ], signer);
           
-          // Check USDC balance
-          const usdcBalance = await usdcContract.balanceOf(address);
-          console.log('💳 USDC balance check:', {
-            userAddress: address,
-            usdcBalance: ethers.utils.formatUnits(usdcBalance, 6),
-            feeRequired: ethers.utils.formatUnits(feeInUSDC, 6),
-            hasEnoughUSDC: usdcBalance.gte(feeInUSDC)
-          });
+          // Check current allowance
+          const currentAllowance = await usdcContract.allowance(walletAddress, protocolAddress);
+          console.log('💳 Current USDC allowance:', ethers.utils.formatUnits(currentAllowance, 6));
           
-          if (usdcBalance.lt(feeInUSDC)) {
-            console.warn('⚠️ Insufficient USDC for protocol fee');
-            console.warn('Need', ethers.utils.formatUnits(feeInUSDC, 6), 'USDC but only have', ethers.utils.formatUnits(usdcBalance, 6));
-            
-            // Still try to process the fee - let the wallet handle the insufficient balance error
-            // This ensures the user sees the wallet popup and understands they need USDC for fees
-            try {
-              console.log('💳 Attempting fee collection anyway to show user the requirement...');
-              const usdcApproveTx = await usdcContract.approve(protocolAddress, feeInUSDC);
-              await usdcApproveTx.wait();
-              
-              const feeTx = await protocolContract.processPayment(USDC_ADDRESS, feeInUSDC, 'payment_link');
-              await feeTx.wait();
-              
-              console.log('✅ Protocol fee collected in USDC through contract:', feeTx.hash);
-            } catch (feeError: any) {
-              console.log('⚠️ Protocol fee collection failed (as expected due to insufficient USDC):', feeError.message);
-              // Continue with payment even if fee collection fails
-            }
+          // Only approve if allowance is insufficient
+          if (currentAllowance.lt(feeInUSDC)) {
+            console.log('📝 Setting unlimited USDC approval to avoid future popups...');
+            // Use unlimited approval (MaxUint256) to avoid future approval popups
+            const approveTx = await usdcContract.approve(protocolAddress, ethers.constants.MaxUint256);
+            await approveTx.wait();
+            console.log('✅ Unlimited USDC approval set');
           } else {
-            // Approve and process fee in USDC
-            const usdcApproveTx = await usdcContract.approve(protocolAddress, feeInUSDC);
-            await usdcApproveTx.wait();
-            
-            const feeTx = await protocolContract.processPayment(USDC_ADDRESS, feeInUSDC, 'payment_link');
-            await feeTx.wait();
-            
-            console.log('✅ Protocol fee collected in USDC through contract:', feeTx.hash);
+            console.log('✅ Sufficient USDC allowance already exists');
           }
+          
+          // 3. Process protocol fee
+          console.log('💳 Processing protocol fee...');
+          const feeTx = await protocolContract.processPayment(USDC_ADDRESS, feeInUSDC, 'payment_link');
+          receipt = await feeTx.wait();
+          console.log('✅ Protocol fee collection completed');
           
           console.log('✅ Payment processed successfully');
         } else {
