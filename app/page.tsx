@@ -312,14 +312,7 @@ export default function FarcasterMiniApp() {
     if (!currency || currency === 'USDC') return;
     
     // Define fallback rates for common currencies
-    const fallbackRates: { [key: string]: string } = {
-      'NGN': '1650.0',  // Nigeria Naira
-      'KES': '155.0',   // Kenya Shilling
-      'GHS': '15.8',    // Ghana Cedi
-      'TZS': '2585.5',  // Tanzania Shilling
-      'UGX': '3700.0',  // Uganda Shilling
-      'RWF': '1350.0'   // Rwanda Franc
-    };
+    // Removed fallback rates - using only real Paycrest API data
     
     try {
       setIsLoadingRate(true);
@@ -341,20 +334,9 @@ export default function FarcasterMiniApp() {
     } catch (error: any) {
       console.warn(`⚠️ Failed to fetch rate for ${currency}:`, error?.message || error);
       
-      // Use fallback rate if available
-      const fallbackRate = fallbackRates[currency] || '1000.0';
-      console.log(`🔄 Using fallback rate for ${currency}: ${fallbackRate}`);
-      
-      setCurrentRate(fallbackRate);
-      
-      // Update floating rates with fallback
-      setFloatingRates(prev => ({
-        ...prev,
-        [currency]: {
-          rate: fallbackRate,
-          timestamp: Date.now()
-        }
-      }));
+      // No fallback - only show real API data
+      setCurrentRate('API Error');
+      console.log(`❌ Could not fetch real rate for ${currency} - API unavailable`);
     } finally {
       setIsLoadingRate(false);
     }
@@ -444,25 +426,6 @@ export default function FarcasterMiniApp() {
             // Don't spam the console with full error objects
           }
         }
-        
-        // Ensure priority currencies always show up with fallback rates
-        const priorityFallbacks = {
-          'GHS': '15.8',
-          'NGN': '1650.0',
-          'KES': '155.0',
-          'TZS': '2585.5',
-          'UGX': '3700.0'
-        };
-        
-        Object.entries(priorityFallbacks).forEach(([currency, rate]) => {
-          setFloatingRates(prev => ({
-            ...prev,
-            [currency]: {
-              rate: rate,
-              timestamp: Date.now()
-            }
-          }));
-        });
         
       } catch (error) {
         console.error('Failed to load currencies and institutions:', error);
