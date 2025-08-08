@@ -862,8 +862,15 @@ export default function FarcasterMiniApp() {
         
         // Add gas parameters for all local stablecoins to help with estimation
         if (isLocalStablecoinApproval) {
-          approvalConfig.gas = BigInt(100000); // Higher gas limit for local stablecoins
-          console.log('🪙 Using local stablecoin gas parameters for approval');
+          // Ultra-specific gas handling for IDRX
+          if (fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()) {
+            approvalConfig.gas = BigInt(120000); // Even higher gas limit for IDRX
+            approvalConfig.gasPrice = BigInt(1000000000); // 1 gwei gas price for IDRX
+            console.log('🪙 Using IDRX ultra-specific gas parameters for approval');
+          } else {
+            approvalConfig.gas = BigInt(100000); // Higher gas limit for other local stablecoins
+            console.log('🪙 Using local stablecoin gas parameters for approval');
+          }
         }
         
         const approvalHash = await writeContract(config, approvalConfig);
@@ -923,14 +930,26 @@ export default function FarcasterMiniApp() {
       
       // Add higher gas limit for local stablecoin swaps to help with gas estimation
       if (isLocalStablecoinSwap) {
-        swapConfig.gas = BigInt(400000); // Higher gas limit for local stablecoin swaps
-        console.log('🪙 Using local stablecoin gas parameters for swap:', {
-          fromToken: fromTokenAddress,
-          toToken: toTokenAddress,
-          isFromLocal: isFromLocalStablecoin,
-          isToLocal: isToLocalStablecoin,
-          gasLimit: '400000'
-        });
+        // Ultra-specific gas handling for IDRX swaps
+        if (fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()) {
+          swapConfig.gas = BigInt(500000); // Ultra-high gas limit for IDRX swaps
+          swapConfig.gasPrice = BigInt(1000000000); // 1 gwei gas price for IDRX
+          console.log('🪙 Using IDRX ultra-specific gas parameters for swap:', {
+            fromToken: fromTokenAddress,
+            toToken: toTokenAddress,
+            gasLimit: '500000',
+            gasPrice: '1000000000'
+          });
+        } else {
+          swapConfig.gas = BigInt(400000); // Higher gas limit for other local stablecoin swaps
+          console.log('🪙 Using local stablecoin gas parameters for swap:', {
+            fromToken: fromTokenAddress,
+            toToken: toTokenAddress,
+            isFromLocal: isFromLocalStablecoin,
+            isToLocal: isToLocalStablecoin,
+            gasLimit: '400000'
+          });
+        }
       }
       
       const hash = await writeContract(config, swapConfig);
@@ -1323,19 +1342,34 @@ export default function FarcasterMiniApp() {
       const isLocalStablecoinInvolved = isFromLocalStablecoin || isToLocalStablecoin;
       
       if (isLocalStablecoinInvolved) {
-        // For any swap involving local stablecoins, ensure proper decimal formatting
-        const cleanAmount = parseFloat(swapAmount).toFixed(fromDecimals);
-        amountInUnits = ethers.utils.parseUnits(cleanAmount, fromDecimals);
-        console.log('🪙 Local stablecoin special handling:', {
-          fromToken: fromTokenData.baseToken,
-          toToken: toTokenData.baseToken,
-          originalAmount: swapAmount,
-          cleanAmount,
-          amountInUnits: amountInUnits.toString(),
-          decimals: fromDecimals,
-          isFromLocal: isFromLocalStablecoin,
-          isToLocal: isToLocalStablecoin
-        });
+        // Special ultra-specific handling for IDRX due to its 2-decimal format
+        if (fromTokenData.baseToken === 'IDRX') {
+          // For IDRX, use ultra-conservative decimal handling
+          const idrxAmount = Math.floor(parseFloat(swapAmount) * 100) / 100; // Ensure exactly 2 decimals
+          const cleanAmount = idrxAmount.toFixed(2);
+          amountInUnits = ethers.utils.parseUnits(cleanAmount, 2);
+          console.log('🪙 IDRX ultra-specific handling:', {
+            originalAmount: swapAmount,
+            idrxAmount,
+            cleanAmount,
+            amountInUnits: amountInUnits.toString(),
+            decimals: 2
+          });
+        } else {
+          // For other local stablecoins, use standard formatting
+          const cleanAmount = parseFloat(swapAmount).toFixed(fromDecimals);
+          amountInUnits = ethers.utils.parseUnits(cleanAmount, fromDecimals);
+          console.log('🪙 Local stablecoin standard handling:', {
+            fromToken: fromTokenData.baseToken,
+            toToken: toTokenData.baseToken,
+            originalAmount: swapAmount,
+            cleanAmount,
+            amountInUnits: amountInUnits.toString(),
+            decimals: fromDecimals,
+            isFromLocal: isFromLocalStablecoin,
+            isToLocal: isToLocalStablecoin
+          });
+        }
       } else {
         amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
       }
