@@ -124,6 +124,7 @@ export default function FarcasterMiniApp() {
   const [selectedSendToken, setSelectedSendToken] = useState('USDC');
   const [selectedPayToken, setSelectedPayToken] = useState('USDC');
   const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
+  const [showPayTokenDropdown, setShowPayTokenDropdown] = useState(false);
   const [isSwipeComplete, setIsSwipeComplete] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [walletBalance, setWalletBalance] = useState('0.00');
@@ -1962,21 +1963,12 @@ export default function FarcasterMiniApp() {
 
   const renderPayTab = () => (
     <div className="space-y-4">
-      {/* Header with Currency Toggle */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-white text-lg font-medium">Pay</h2>
         <div className="flex items-center gap-2">
           <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
-          <div className="flex items-center gap-1">
-            {selectedPayToken === 'USDC' ? (
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-            ) : (
-              <span className="text-base">
-                {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
-              </span>
-            )}
-            <span className="text-white text-sm font-medium">{selectedPayToken}</span>
-          </div>
+          <span className="text-white text-sm">Base</span>
         </div>
       </div>
 
@@ -2186,27 +2178,52 @@ export default function FarcasterMiniApp() {
             </button>
             
             <div className="relative">
-              <select
-                value={selectedPayToken}
-                onChange={(e) => {
-                  setSelectedPayToken(e.target.value);
-                  setPayCurrency('usdc');
-                }}
-                onClick={() => setPayCurrency('usdc')}
-                className={`relative px-4 py-2 text-xs rounded-xl font-bold transition-all duration-300 ease-out overflow-hidden group appearance-none pr-8 ${
-                  payCurrency === 'usdc' 
-                    ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
-                    : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
-                }`}
-              >
-                {stablecoins.map((token) => (
-                  <option key={token.baseToken} value={token.baseToken} className="bg-slate-800">
-                    {token.baseToken}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                <ChevronDownIcon className="w-3 h-3 text-white" />
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setPayCurrency('usdc');
+                    setShowPayTokenDropdown(!showPayTokenDropdown);
+                  }}
+                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between ${
+                    payCurrency === 'usdc' 
+                      ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
+                      : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {selectedPayToken === 'USDC' ? (
+                      <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                    ) : (
+                      <span className="text-xs">
+                        {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
+                      </span>
+                    )}
+                    <span>{selectedPayToken}</span>
+                  </div>
+                  <ChevronDownIcon className="w-3 h-3 text-white" />
+                </button>
+                
+                {showPayTokenDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-48 overflow-y-auto">
+                    {stablecoins.map((token) => (
+                      <button
+                        key={token.baseToken}
+                        onClick={() => {
+                          setSelectedPayToken(token.baseToken);
+                          setShowPayTokenDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors"
+                      >
+                        {token.baseToken === 'USDC' ? (
+                          <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                        ) : (
+                          <span className="text-xs">{token.flag || '🌍'}</span>
+                        )}
+                        <span className="text-white">{token.baseToken}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {/* Active indicator */}
               {payCurrency === 'usdc' && (
@@ -2233,37 +2250,39 @@ export default function FarcasterMiniApp() {
         
         {/* You'll pay section */}
         <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex justify-between items-start">
             <span className="text-gray-400 text-sm">You'll pay</span>
-            <div className="flex items-center gap-2">
-              <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
-              <span className="text-white text-sm font-medium">Base</span>
-            </div>
-          </div>
-          
-          <div className="text-right mb-2">
-            <div className="text-sm text-gray-400 flex items-center gap-2">
-              <span>Balance:</span>
-              <button 
-                onClick={() => setAmount(walletBalance)}
-                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
-              >
-                {selectedPayToken === 'USDC' ? (
-                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                ) : (
-                  <span className="text-sm">
-                    {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
-                  </span>
-                )}
-                {selectedPayToken} {walletBalance}
-              </button>
-              <button
-                onClick={refreshBalance}
-                className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
-                title="Refresh balance"
-              >
-                🔄
-              </button>
+            <div className="text-right">
+              {/* Base Network Label */}
+              <div className="flex items-center justify-end gap-1 mb-1">
+                <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
+                <span className="text-white text-xs">Base</span>
+              </div>
+              
+              {/* Balance underneath Base */}
+              <div className="text-xs text-gray-400 flex items-center justify-end gap-2">
+                <span>Balance:</span>
+                <button 
+                  onClick={() => setAmount(walletBalance)}
+                  className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  {selectedPayToken === 'USDC' ? (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                  ) : (
+                    <span className="text-sm">
+                      {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
+                    </span>
+                  )}
+                  {selectedPayToken} {walletBalance}
+                </button>
+                <button
+                  onClick={refreshBalance}
+                  className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
+                  title="Refresh balance"
+                >
+                  🔄
+                </button>
+              </div>
             </div>
           </div>
 
