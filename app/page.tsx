@@ -836,17 +836,35 @@ export default function FarcasterMiniApp() {
       const currentAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
       const amountNeeded = ethers.BigNumber.from(amountIn);
       
+      console.log('🔍 Approval validation:', {
+        fromTokenAddress,
+        amountIn,
+        amountNeeded: amountNeeded.toString(),
+        currentAllowance: currentAllowance.toString(),
+        isIDRX: fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()
+      });
+      
       // Set exact amount approval to avoid "unlimited" warnings
       if (currentAllowance.lt(amountNeeded)) {
         console.log('📝 Setting exact amount approval for router...');
         
         // Use exact amount needed to avoid any "unlimited" interpretation
-        const approvalHash = await writeContract(config, {
+        // Add specific gas parameters for IDRX to help with gas estimation
+        const isIDRX = fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase();
+        const approvalConfig: any = {
           address: fromTokenAddress as `0x${string}`,
           abi: erc20ABI,
           functionName: 'approve',
           args: [AERODROME_ROUTER as `0x${string}`, BigInt(amountNeeded.toString())],
-        });
+        };
+        
+        // Add gas parameters for IDRX to help with estimation
+        if (isIDRX) {
+          approvalConfig.gas = BigInt(80000); // Higher gas limit for IDRX
+          console.log('🪙 Using IDRX-specific gas parameters for approval');
+        }
+        
+        const approvalHash = await writeContract(config, approvalConfig);
         
         console.log('✅ Exact amount approval set for router:', approvalHash);
       } else {
@@ -861,7 +879,9 @@ export default function FarcasterMiniApp() {
         factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
       }];
       
-      const hash = await writeContract(config, {
+      // Add IDRX-specific gas parameters for better gas estimation
+      const isIDRXSwap = fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase();
+      const swapConfig: any = {
         address: AERODROME_ROUTER as `0x${string}`,
         abi: [
           {
@@ -895,7 +915,15 @@ export default function FarcasterMiniApp() {
           userAddress as `0x${string}`,
           BigInt(deadline)
         ]
-      });
+      };
+      
+      // Add higher gas limit for IDRX swaps to help with gas estimation
+      if (isIDRXSwap) {
+        swapConfig.gas = BigInt(350000); // Higher gas limit for IDRX swaps
+        console.log('🪙 Using IDRX-specific gas parameters for swap');
+      }
+      
+      const hash = await writeContract(config, swapConfig);
       
       console.log('✅ Farcaster swap transaction sent:', hash);
       
@@ -1278,7 +1306,21 @@ export default function FarcasterMiniApp() {
         swapAmount
       });
       
-      const amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
+      // Special handling for IDRX's 2-decimal format to avoid gas estimation issues
+      let amountInUnits;
+      if (fromTokenData.baseToken === 'IDRX') {
+        // For IDRX, ensure we're using exactly 2 decimals and proper formatting
+        const cleanAmount = parseFloat(swapAmount).toFixed(2);
+        amountInUnits = ethers.utils.parseUnits(cleanAmount, 2);
+        console.log('🪙 IDRX special handling:', {
+          originalAmount: swapAmount,
+          cleanAmount,
+          amountInUnits: amountInUnits.toString(),
+          decimals: 2
+        });
+      } else {
+        amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
+      }
       
       console.log('💰 Amount calculation:', {
         originalAmount: swapAmount,
