@@ -383,11 +383,12 @@ function PaymentRequestPageContent() {
           
           // Only approve if allowance is insufficient
           if (currentAllowance.lt(feeInUSDC)) {
-            console.log('📝 Setting unlimited USDC approval to avoid future popups...');
-            // Use unlimited approval (MaxUint256) to avoid future approval popups
-            const approveTx = await usdcContract.approve(protocolAddress, ethers.constants.MaxUint256);
+            console.log('📝 Setting USDC approval for protocol fee...');
+            // Use 10x the needed amount instead of unlimited to avoid security warnings
+            const approvalAmount = feeInUSDC.mul(10);
+            const approveTx = await usdcContract.approve(protocolAddress, approvalAmount);
             await approveTx.wait();
-            console.log('✅ Unlimited USDC approval set');
+            console.log('✅ USDC approval set for protocol fee');
           } else {
             console.log('✅ Sufficient USDC allowance already exists');
           }

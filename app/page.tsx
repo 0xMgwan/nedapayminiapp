@@ -594,11 +594,12 @@ export default function FarcasterMiniApp() {
     }
   }, [isConnected, address]);
 
-  // Execute individual transactions with unlimited approval optimization
+  // Execute individual transactions with reasonable approval optimization
   const executeOptimizedTransactions = useCallback(async (
     approvalNeeded: boolean,
     tokenAddress: string,
     spenderAddress: string,
+    approvalAmount: string,
     mainTransaction: () => Promise<string>
   ) => {
     try {
@@ -609,9 +610,9 @@ export default function FarcasterMiniApp() {
       const { writeContract } = await import('wagmi/actions');
       const { config } = await import('../providers/MiniKitProvider');
       
-      // 1. Handle approval if needed (with unlimited approval)
+      // 1. Handle approval if needed (with reasonable approval amount)
       if (approvalNeeded) {
-        console.log('📝 Setting unlimited approval to avoid future popups...');
+        console.log('📝 Setting reasonable approval to avoid security warnings...');
         
         const erc20ABI = [
           {
@@ -626,15 +627,17 @@ export default function FarcasterMiniApp() {
           }
         ];
 
-        // Use unlimited approval (MaxUint256) to avoid future approval popups
+        // Use 10x the needed amount instead of unlimited to avoid security warnings
+        const reasonableAmount = ethers.BigNumber.from(approvalAmount).mul(10);
+        
         const approvalHash = await writeContract(config, {
           address: tokenAddress as `0x${string}`,
           abi: erc20ABI,
           functionName: 'approve',
-          args: [spenderAddress as `0x${string}`, BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')], // MaxUint256
+          args: [spenderAddress as `0x${string}`, BigInt(reasonableAmount.toString())],
         });
         
-        console.log('✅ Unlimited approval transaction sent:', approvalHash);
+        console.log('✅ Reasonable approval transaction sent:', approvalHash);
       }
       
       // 2. Execute main transaction
@@ -698,18 +701,21 @@ export default function FarcasterMiniApp() {
       const currentAllowance = await tokenContract.allowance(userAddress, feeInfo.protocolAddress);
       const totalNeeded = ethers.BigNumber.from(amountIn).add(feeInfo.feeInTokenUnits);
       
-      // 2. Set unlimited approval if needed
+      // 2. Set reasonable approval if needed
       if (currentAllowance.lt(totalNeeded)) {
-        console.log('📝 Setting unlimited approval for protocol fee...');
+        console.log('📝 Setting approval for protocol fee...');
+        
+        // Use 10x the needed amount instead of unlimited to avoid security warnings
+        const approvalAmount = totalNeeded.mul(10);
         
         const approvalHash = await writeContract(config, {
           address: fromTokenAddress as `0x${string}`,
           abi: erc20ABI,
           functionName: 'approve',
-          args: [feeInfo.protocolAddress as `0x${string}`, BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')],
+          args: [feeInfo.protocolAddress as `0x${string}`, BigInt(approvalAmount.toString())],
         });
         
-        console.log('✅ Unlimited approval set:', approvalHash);
+        console.log('✅ Approval set for protocol fee:', approvalHash);
       }
 
       // 3. Process protocol fee
@@ -800,6 +806,54 @@ export default function FarcasterMiniApp() {
       // Aerodrome Router contract
       const AERODROME_ROUTER = '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43';
       
+      // 1. Check and set approval if needed
+      const erc20ABI = [
+        {
+          name: 'approve',
+          type: 'function',
+          inputs: [
+            { name: 'spender', type: 'address' },
+            { name: 'amount', type: 'uint256' }
+          ],
+          outputs: [{ name: '', type: 'bool' }],
+          stateMutability: 'nonpayable'
+        },
+        {
+          name: 'allowance',
+          type: 'function',
+          inputs: [
+            { name: 'owner', type: 'address' },
+            { name: 'spender', type: 'address' }
+          ],
+          outputs: [{ name: '', type: 'uint256' }],
+          stateMutability: 'view'
+        }
+      ];
+      
+      // Check current allowance for router
+      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+      const tokenContract = new ethers.Contract(fromTokenAddress, erc20ABI, provider);
+      const currentAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
+      const amountNeeded = ethers.BigNumber.from(amountIn);
+      
+      // Set exact amount approval to avoid "unlimited" warnings
+      if (currentAllowance.lt(amountNeeded)) {
+        console.log('📝 Setting exact amount approval for router...');
+        
+        // Use exact amount needed to avoid any "unlimited" interpretation
+        const approvalHash = await writeContract(config, {
+          address: fromTokenAddress as `0x${string}`,
+          abi: erc20ABI,
+          functionName: 'approve',
+          args: [AERODROME_ROUTER as `0x${string}`, BigInt(amountNeeded.toString())],
+        });
+        
+        console.log('✅ Exact amount approval set for router:', approvalHash);
+      } else {
+        console.log('✅ Sufficient allowance already exists for router');
+      }
+      
+      // 2. Execute swap
       const routes = [{
         from: fromTokenAddress as `0x${string}`,
         to: toTokenAddress as `0x${string}`,
@@ -1215,7 +1269,23 @@ export default function FarcasterMiniApp() {
       // Convert amounts using proper decimals
       const fromDecimals = fromTokenData.decimals || 6;
       const toDecimals = toTokenData.decimals || 6;
+      
+      console.log('🔍 Token decimal info:', {
+        fromToken: fromTokenData.baseToken,
+        fromDecimals,
+        toToken: toTokenData.baseToken,
+        toDecimals,
+        swapAmount
+      });
+      
       const amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
+      
+      console.log('💰 Amount calculation:', {
+        originalAmount: swapAmount,
+        fromDecimals,
+        amountInUnits: amountInUnits.toString(),
+        isIDRX: fromTokenData.baseToken === 'IDRX'
+      });
       // Calculate minimum amount out with proper decimal handling (increased slippage for production)
       const slippageAmount = Number(swapQuote) * 0.98; // 2% slippage tolerance
       const minAmountOutFormatted = slippageAmount.toFixed(toDecimals);
@@ -1282,62 +1352,40 @@ export default function FarcasterMiniApp() {
         }
       }
       
-      // Approve Aerodrome router for original amount (protocol fee will be handled separately)
-      console.log('🔐 Approving token for swap...');
-      const approvalResult = await executeFarcasterApproval(
-        fromTokenData.address,
-        '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43', // Aerodrome router
-        amountInUnits.toString() // Approve original amount
-      );
-      
-      console.log('✅ Approval completed:', approvalResult.hash);
-      
-      // Wait a bit for approval to be confirmed
-      console.log('⏳ Waiting for approval confirmation...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Execute the swap with adjusted amount (after protocol fee deduction)
-      let adjustedSwapAmount = amountInUnits;
-      
-      // If protocol fee is enabled, deduct it from swap amount
-      if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
-        const feeInfo = (window as any).protocolFeeInfo;
-        adjustedSwapAmount = amountInUnits.sub(feeInfo.feeInTokenUnits);
-        console.log('💰 Adjusted swap amount after fee deduction:', {
-          originalAmount: ethers.utils.formatUnits(amountInUnits, fromDecimals),
-          feeAmount: ethers.utils.formatUnits(feeInfo.feeInTokenUnits, fromDecimals),
-          adjustedSwapAmount: ethers.utils.formatUnits(adjustedSwapAmount, fromDecimals)
-        });
-      }
-      
-      // Execute batched transaction: fee collection + swap in one transaction
+      // Execute swap with protocol fee handling
       let swapResult;
-      if (isProtocolEnabled() && (window as any).batchedFeeInfo) {
-        console.log('🔄 Executing batched fee collection + swap transaction...');
+      
+      if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
+        console.log('🔄 Executing swap with protocol fee...');
+        const feeInfo = (window as any).protocolFeeInfo;
+        
+        // Use the batched swap function that handles protocol fees
         swapResult = await executeBatchedSwapWithFee(
           fromTokenData.address,
           toTokenData.address,
-          adjustedSwapAmount.toString(),
+          amountInUnits.toString(),
           minAmountOut.toString(),
           address,
           deadline,
-          (window as any).batchedFeeInfo
+          feeInfo
         );
       } else {
+        console.log('🔄 Executing regular swap...');
+        // Regular swap without protocol fee
         swapResult = await executeFarcasterSwap(
           fromTokenData.address,
           toTokenData.address,
-          adjustedSwapAmount.toString(),
+          amountInUnits.toString(),
           minAmountOut.toString(),
           address,
           deadline
         );
       }
       
-      console.log('💰 Swap executed with protocol fee:', {
-        originalAmount: amountInUnits.toString(),
-        adjustedSwapAmount: adjustedSwapAmount.toString(),
-        protocolFeeEnabled: isProtocolEnabled()
+      console.log('💰 Swap executed:', {
+        swapAmount: amountInUnits.toString(),
+        protocolFeeEnabled: isProtocolEnabled(),
+        swapResult: swapResult.success ? 'Success' : 'Failed'
       });
       
       console.log('✅ Swap completed successfully!', swapResult);
