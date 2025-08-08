@@ -786,12 +786,13 @@ export default function FarcasterMiniApp() {
     deadline: number
   ): Promise<{ success: boolean; hash: string }> => {
     try {
-      console.log('🎆 Executing Farcaster MiniApp swap:', {
-        fromToken: fromTokenAddress,
-        toToken: toTokenAddress,
-        amountIn,
-        amountOutMin,
-        userAddress,
+      console.log('🔍 Swap execution started:', {
+        from: fromTokenAddress,
+        to: toTokenAddress,
+        isConnected,
+        hasAddress: !!address,
+        hasWalletClient: !!walletClient,
+        direction: fromTokenAddress.toLowerCase() === '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase() ? 'USDC → Local' : 'Local → USDC',
         deadline
       });
 
@@ -981,12 +982,60 @@ export default function FarcasterMiniApp() {
       // Use the working swapAerodrome utility instead of wagmi
       console.log('🔄 Using swapAerodrome utility for swap execution...');
       
-      if (!walletClient) {
-        throw new Error('Wallet client not available');
+      // Robust wallet client retrieval with retry logic
+      let currentWalletClient = walletClient;
+      
+      if (!currentWalletClient) {
+        console.log('❌ Wallet client not immediately available, attempting to get fresh client...');
+        console.log('🔍 Connection status:', { isConnected, address: address?.slice(0, 6) + '...' });
+        
+        if (!isConnected || !address) {
+          throw new Error('Wallet not connected. Please connect your wallet first.');
+        }
+        
+        // Wait a moment and try to get the wallet client from the window object (MiniKit specific)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // For Farcaster MiniApps, try to get the client from window.ethereum or MiniKit
+        if (typeof window !== 'undefined' && (window as any).ethereum) {
+          try {
+            const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+            const signer = provider.getSigner();
+            
+            console.log('✅ Using window.ethereum provider as fallback');
+            
+            // Execute swap using the fallback provider
+            const tx = await swapAerodrome({
+              signer,
+              amountIn: amountIn,
+              amountOutMin: amountOutMin,
+              fromToken: fromTokenAddress,
+              toToken: toTokenAddress,
+              stable: isStablePair,
+              factory: AERODROME_FACTORY_ADDRESS,
+              userAddress: userAddress,
+              deadline
+            });
+            
+            const hash = tx.hash;
+            console.log('✅ Farcaster swap transaction sent:', hash);
+            
+            return {
+              success: true,
+              hash: hash
+            };
+          } catch (fallbackError: any) {
+            console.error('❌ Fallback provider also failed:', fallbackError);
+          }
+        }
+        
+        throw new Error('Wallet client unavailable. Please refresh the page and try again.');
       }
       
+      console.log('✅ Wallet client available, proceeding with swap...');
+      
       // Convert wagmi client to ethers signer
-      const swapProvider = new ethers.providers.Web3Provider(walletClient.transport);
+      const swapProvider = new ethers.providers.Web3Provider(currentWalletClient.transport);
       const signer = swapProvider.getSigner();
       
       // Pre-swap validation and debugging
