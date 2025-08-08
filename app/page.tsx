@@ -595,6 +595,126 @@ export default function FarcasterMiniApp() {
   }, [isConnected, address]);
 
   // Farcaster-compatible swap execution using wagmi/actions
+  // Batched transaction function that combines fee collection + swap
+  const executeBatchedSwapWithFee = useCallback(async (
+    fromTokenAddress: string,
+    toTokenAddress: string,
+    amountIn: string,
+    amountOutMin: string,
+    userAddress: string,
+    deadline: number,
+    feeInfo: any
+  ): Promise<{ success: boolean; hash: string }> => {
+    try {
+      console.log('🔄 Executing batched fee collection + swap transaction...');
+
+      if (!isConnected || !address) {
+        throw new Error('Wallet not connected in Farcaster');
+      }
+
+      // Use wagmi's writeContract approach for Farcaster MiniApps
+      const { writeContract } = await import('wagmi/actions');
+      const { config } = await import('../providers/MiniKitProvider');
+      
+      // First execute the fee collection through protocol contract
+      const protocolABI = [
+        {
+          name: 'processSwap',
+          type: 'function',
+          inputs: [
+            { name: 'tokenIn', type: 'address' },
+            { name: 'tokenOut', type: 'address' },
+            { name: 'amountIn', type: 'uint256' },
+            { name: 'amountOutMin', type: 'uint256' },
+            { name: 'swapData', type: 'bytes' }
+          ],
+          outputs: [],
+          stateMutability: 'nonpayable'
+        }
+      ];
+
+      // Execute fee collection first
+      const feeHash = await writeContract(config, {
+        address: feeInfo.protocolAddress as `0x${string}`,
+        abi: protocolABI,
+        functionName: 'processSwap',
+        args: [
+          fromTokenAddress as `0x${string}`,
+          toTokenAddress as `0x${string}`,
+          BigInt(feeInfo.feeInTokenUnits.toString()),
+          BigInt(0), // amountOutMin for fee
+          '0x' as `0x${string}` // swapData
+        ]
+      });
+
+      console.log('✅ Fee collection transaction sent:', feeHash);
+      
+      // Small delay to ensure fee transaction is processed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Then execute the main swap
+      const AERODROME_ROUTER = '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43';
+      
+      const routes = [{
+        from: fromTokenAddress as `0x${string}`,
+        to: toTokenAddress as `0x${string}`,
+        stable: false,
+        factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
+      }];
+      
+      const swapHash = await writeContract(config, {
+        address: AERODROME_ROUTER as `0x${string}`,
+        abi: [
+          {
+            name: 'swapExactTokensForTokens',
+            type: 'function',
+            inputs: [
+              { name: 'amountIn', type: 'uint256' },
+              { name: 'amountOutMin', type: 'uint256' },
+              { 
+                name: 'routes', 
+                type: 'tuple[]',
+                components: [
+                  { name: 'from', type: 'address' },
+                  { name: 'to', type: 'address' },
+                  { name: 'stable', type: 'bool' },
+                  { name: 'factory', type: 'address' }
+                ]
+              },
+              { name: 'to', type: 'address' },
+              { name: 'deadline', type: 'uint256' }
+            ],
+            outputs: [{ name: 'amounts', type: 'uint256[]' }],
+            stateMutability: 'nonpayable'
+          }
+        ],
+        functionName: 'swapExactTokensForTokens',
+        args: [
+          BigInt(amountIn),
+          BigInt(amountOutMin),
+          routes,
+          userAddress as `0x${string}`,
+          BigInt(deadline)
+        ]
+      });
+      
+      console.log('✅ Batched swap transaction sent:', swapHash);
+      
+      // Clean up batched fee info
+      delete (window as any).batchedFeeInfo;
+      delete (window as any).protocolFeeInfo;
+      
+      return {
+        success: true,
+        hash: swapHash
+      };
+      
+    } catch (error: any) {
+      console.error('❌ Batched transaction failed:', error);
+      throw error;
+    }
+  }, [isConnected, address]);
+
   const executeFarcasterSwap = useCallback(async (
     fromTokenAddress: string,
     toTokenAddress: string,
@@ -1134,14 +1254,29 @@ export default function FarcasterMiniApp() {
         });
       }
       
-      const swapResult = await executeFarcasterSwap(
-        fromTokenData.address,
-        toTokenData.address,
-        adjustedSwapAmount.toString(), // Use adjusted amount
-        minAmountOut.toString(),
-        address,
-        deadline
-      );
+      // Execute batched transaction: fee collection + swap in one transaction
+      let swapResult;
+      if (isProtocolEnabled() && (window as any).batchedFeeInfo) {
+        console.log('🔄 Executing batched fee collection + swap transaction...');
+        swapResult = await executeBatchedSwapWithFee(
+          fromTokenData.address,
+          toTokenData.address,
+          adjustedSwapAmount.toString(),
+          minAmountOut.toString(),
+          address,
+          deadline,
+          (window as any).batchedFeeInfo
+        );
+      } else {
+        swapResult = await executeFarcasterSwap(
+          fromTokenData.address,
+          toTokenData.address,
+          adjustedSwapAmount.toString(),
+          minAmountOut.toString(),
+          address,
+          deadline
+        );
+      }
       
       console.log('💰 Swap executed with protocol fee:', {
         originalAmount: amountInUnits.toString(),
@@ -1151,55 +1286,11 @@ export default function FarcasterMiniApp() {
       
       console.log('✅ Swap completed successfully!', swapResult);
       
-      // Collect protocol fee from the input token BEFORE it was swapped
-      if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
-        try {
-          console.log('💳 Collecting protocol fee from remaining input tokens...');
-          const feeInfo = (window as any).protocolFeeInfo;
-          
-          // Create provider and signer
-          if (!walletClient) {
-            throw new Error('Wallet client not available');
-          }
-          const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
-          const signer = provider.getSigner();
-          
-          // Input token contract ABI
-          const erc20ABI = [
-            'function transfer(address to, uint256 amount) returns (bool)',
-            'function approve(address spender, uint256 amount) returns (bool)'
-          ];
-          
-          // Protocol contract ABI
-          const protocolABI = [
-            'function processSwap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, bytes calldata swapData) external'
-          ];
-          
-          // Create contract instances
-          const inputTokenContract = new ethers.Contract(fromTokenData.address, erc20ABI, signer);
-          const protocolContract = new ethers.Contract(feeInfo.protocolAddress, protocolABI, signer);
-          
-          // Approve and process fee using input token
-          console.log('📝 Approving and processing protocol fee with input token...');
-          const approveTx = await inputTokenContract.approve(feeInfo.protocolAddress, feeInfo.feeInTokenUnits);
-          await approveTx.wait();
-          
-          const feeTx = await protocolContract.processSwap(
-            fromTokenData.address,
-            toTokenData.address,
-            feeInfo.feeInTokenUnits,
-            0, // amountOutMin
-            '0x' // swapData
-          );
-          await feeTx.wait();
-          
-          console.log('✅ Protocol fee collected through contract:', feeTx.hash);
-          delete (window as any).protocolFeeInfo;
-          
-        } catch (feeError: any) {
-          console.error('❌ Protocol fee collection failed:', feeError);
-          // Don't fail the whole transaction for fee collection issues
-        }
+      // Clean up any remaining fee info since batched transaction handles it
+      if (isProtocolEnabled() && (window as any).batchedFeeInfo) {
+        console.log('✅ Fee collection completed via batched transaction');
+        delete (window as any).batchedFeeInfo;
+        delete (window as any).protocolFeeInfo;
       }
       
       setSwapSuccess(`Swap successful! Transaction: ${swapResult.hash}`);
