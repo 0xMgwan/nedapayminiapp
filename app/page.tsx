@@ -1640,23 +1640,24 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
         
-        {/* Currency Conversion Display */}
-        {amount && (
-          <div className="mt-1 text-center text-xs text-gray-400 font-medium">
-            {sendCurrency === 'local' ? (
-              <span>≈ {(parseFloat(amount) / parseFloat(currentRate)).toFixed(4)} {selectedSendToken}</span>
-            ) : (
-              <span>≈ {(parseFloat(amount) * parseFloat(currentRate)).toFixed(2)} {selectedCountry.currency}</span>
-            )}
-          </div>
-        )}
-
       </div>
 
       {/* Payment Details */}
       <div className="space-y-1">
         <div className="flex justify-between items-start">
-          <span className="text-gray-400 text-xs">You'll pay</span>
+          <div>
+            <span className="text-gray-400 text-xs">You'll pay</span>
+            {/* Currency Conversion Display underneath You'll pay */}
+            {amount && (
+              <div className="mt-1 text-xs text-gray-400 font-medium">
+                {sendCurrency === 'local' ? (
+                  <span>≈ {(parseFloat(amount) / parseFloat(currentRate)).toFixed(4)} {selectedSendToken}</span>
+                ) : (
+                  <span>≈ {(parseFloat(amount) * parseFloat(currentRate)).toFixed(2)} {selectedCountry.currency}</span>
+                )}
+              </div>
+            )}
+          </div>
           <div className="text-right">
             {/* Base Network Label */}
             <div className="flex items-center justify-end gap-1 mb-1">
