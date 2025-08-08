@@ -831,8 +831,8 @@ export default function FarcasterMiniApp() {
       ];
       
       // Check current allowance for router
-      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
-      const tokenContract = new ethers.Contract(fromTokenAddress, erc20ABI, provider);
+      const rpcProvider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+      const tokenContract = new ethers.Contract(fromTokenAddress, erc20ABI, rpcProvider);
       const currentAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
       const amountNeeded = ethers.BigNumber.from(amountIn);
       
@@ -864,60 +864,98 @@ export default function FarcasterMiniApp() {
         if (isLocalStablecoinApproval) {
           // Ultra-specific gas handling for IDRX
           if (fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()) {
-            approvalConfig.gas = BigInt(120000); // Even higher gas limit for IDRX
-            approvalConfig.gasPrice = BigInt(1000000000); // 1 gwei gas price for IDRX
-            console.log('🪙 Using IDRX ultra-specific gas parameters for approval');
+            approvalConfig.gas = BigInt(120000); // Conservative gas limit for IDRX approval
+            console.log('🪙 Using IDRX approval gas limit only (no fee override)');
           } else {
-            approvalConfig.gas = BigInt(100000); // Higher gas limit for other local stablecoins
-            console.log('🪙 Using local stablecoin gas parameters for approval');
+            approvalConfig.gas = BigInt(100000); // Conservative gas limit for other locals
+            console.log('🪙 Using local stablecoin approval gas limit only (no fee override)');
           }
         }
         
-        const approvalHash = await writeContract(config, approvalConfig);
+        console.log('📤 Sending approval transaction to wallet...');
+        const { writeContract: writeApprovalContract } = await import('wagmi/actions');
+        const approvalHash = await writeApprovalContract(config, approvalConfig);
         
         console.log('✅ Exact amount approval set for router:', approvalHash);
       } else {
         console.log('✅ Sufficient allowance already exists for router');
       }
       
-      // 2. Execute swap
+      // 2. Execute swap with route validation
+      // Detect local stablecoins via address set (USDC + known locals)
+      const USDC_ADDR = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
+      // Build from stablecoins.ts to avoid stale/placeholder addresses
+      // Lazy import to avoid circular issues in Next.js build graph
+      const { stablecoins } = await import('./data/stablecoins');
+      const LOCAL_STABLES = new Set<string>(
+        stablecoins
+          .filter((t: any) => t.address && t.address.toLowerCase() !== USDC_ADDR)
+          .map((t: any) => t.address.toLowerCase())
+      );
+
+      const fromIsLocal = LOCAL_STABLES.has(fromTokenAddress.toLowerCase());
+      const toIsLocal = LOCAL_STABLES.has(toTokenAddress.toLowerCase());
+      const fromIsUSDC = fromTokenAddress.toLowerCase() === USDC_ADDR;
+      const toIsUSDC = toTokenAddress.toLowerCase() === USDC_ADDR;
+      
+      // All local stablecoins use volatile pools, not stable pools
+      // This is because local stablecoins often don't have stable pools with sufficient liquidity
+      const hasLocalStablecoin = fromIsLocal || toIsLocal;
+      
+      // Use volatile pools for any swap involving local stablecoins, stable only for USDC-USDC
+      const isStablePair = hasLocalStablecoin ? false : (fromIsUSDC && toIsUSDC);
+
       const routes = [{
         from: fromTokenAddress as `0x${string}`,
         to: toTokenAddress as `0x${string}`,
-        stable: false,
+        stable: isStablePair,
         factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
       }];
       
+      console.log('🛣️ Route configuration:', {
+        routes,
+        fromTokenAddress,
+        toTokenAddress,
+        factoryAddress: AERODROME_FACTORY_ADDRESS,
+        stable: isStablePair
+      });
+      
       // Add local stablecoin gas parameters for better gas estimation (either direction)
-      const isFromLocalStablecoin = fromTokenAddress.toLowerCase() !== '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
-      const isToLocalStablecoin = toTokenAddress.toLowerCase() !== '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
+      const isFromLocalStablecoin = fromIsLocal;
+      const isToLocalStablecoin = toIsLocal;
       const isLocalStablecoinSwap = isFromLocalStablecoin || isToLocalStablecoin;
+      // Use the exact ABI from Aerodrome router contract
+      const AERODROME_ROUTER_ABI = [
+        {
+          "inputs": [
+            { "internalType": "uint256", "name": "amountIn", "type": "uint256" },
+            { "internalType": "uint256", "name": "amountOutMin", "type": "uint256" },
+            {
+              "components": [
+                { "internalType": "address", "name": "from", "type": "address" },
+                { "internalType": "address", "name": "to", "type": "address" },
+                { "internalType": "bool", "name": "stable", "type": "bool" },
+                { "internalType": "address", "name": "factory", "type": "address" }
+              ],
+              "internalType": "struct IRouter.Route[]",
+              "name": "routes",
+              "type": "tuple[]"
+            },
+            { "internalType": "address", "name": "to", "type": "address" },
+            { "internalType": "uint256", "name": "deadline", "type": "uint256" }
+          ],
+          "name": "swapExactTokensForTokens",
+          "outputs": [
+            { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ];
+
       const swapConfig: any = {
         address: AERODROME_ROUTER as `0x${string}`,
-        abi: [
-          {
-            name: 'swapExactTokensForTokens',
-            type: 'function',
-            inputs: [
-              { name: 'amountIn', type: 'uint256' },
-              { name: 'amountOutMin', type: 'uint256' },
-              { 
-                name: 'routes', 
-                type: 'tuple[]',
-                components: [
-                  { name: 'from', type: 'address' },
-                  { name: 'to', type: 'address' },
-                  { name: 'stable', type: 'bool' },
-                  { name: 'factory', type: 'address' }
-                ]
-              },
-              { name: 'to', type: 'address' },
-              { name: 'deadline', type: 'uint256' }
-            ],
-            outputs: [{ name: 'amounts', type: 'uint256[]' }],
-            stateMutability: 'nonpayable'
-          }
-        ],
+        abi: AERODROME_ROUTER_ABI,
         functionName: 'swapExactTokensForTokens',
         args: [
           BigInt(amountIn),
@@ -930,29 +968,95 @@ export default function FarcasterMiniApp() {
       
       // Add higher gas limit for local stablecoin swaps to help with gas estimation
       if (isLocalStablecoinSwap) {
-        // Ultra-specific gas handling for IDRX swaps
+        // Apply only gas limits; let wallet estimate fees
         if (fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()) {
-          swapConfig.gas = BigInt(500000); // Ultra-high gas limit for IDRX swaps
-          swapConfig.gasPrice = BigInt(1000000000); // 1 gwei gas price for IDRX
-          console.log('🪙 Using IDRX ultra-specific gas parameters for swap:', {
-            fromToken: fromTokenAddress,
-            toToken: toTokenAddress,
-            gasLimit: '500000',
-            gasPrice: '1000000000'
-          });
+          swapConfig.gas = BigInt(500000); // Conservative upper bound for IDRX swaps
+          console.log('🪙 Using IDRX swap gas limit only (no fee override):', { gasLimit: '500000' });
         } else {
-          swapConfig.gas = BigInt(400000); // Higher gas limit for other local stablecoin swaps
-          console.log('🪙 Using local stablecoin gas parameters for swap:', {
-            fromToken: fromTokenAddress,
-            toToken: toTokenAddress,
-            isFromLocal: isFromLocalStablecoin,
-            isToLocal: isToLocalStablecoin,
-            gasLimit: '400000'
-          });
+          swapConfig.gas = BigInt(400000); // Conservative upper bound for other locals
+          console.log('🪙 Using local stablecoin swap gas limit only (no fee override):', { gasLimit: '400000' });
         }
       }
       
-      const hash = await writeContract(config, swapConfig);
+      // Use the working swapAerodrome utility instead of wagmi
+      console.log('🔄 Using swapAerodrome utility for swap execution...');
+      
+      if (!walletClient) {
+        throw new Error('Wallet client not available');
+      }
+      
+      // Convert wagmi client to ethers signer
+      const swapProvider = new ethers.providers.Web3Provider(walletClient.transport);
+      const signer = swapProvider.getSigner();
+      
+      // Pre-swap validation and debugging
+      console.log('🔍 Pre-swap validation:', {
+        amountIn,
+        amountOutMin,
+        fromToken: fromTokenAddress,
+        toToken: toTokenAddress,
+        stable: isStablePair,
+        factory: AERODROME_FACTORY_ADDRESS,
+        userAddress,
+        deadline,
+        currentAllowance: currentAllowance.toString(),
+        amountNeeded: amountNeeded.toString()
+      });
+
+      // Double-check allowance before swap
+      const finalAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
+      console.log('🔍 Final allowance check:', {
+        finalAllowance: finalAllowance.toString(),
+        amountNeeded: amountNeeded.toString(),
+        sufficient: finalAllowance.gte(amountNeeded)
+      });
+
+      if (!finalAllowance.gte(amountNeeded)) {
+        throw new Error(`Insufficient allowance: ${finalAllowance.toString()} < ${amountNeeded.toString()}`);
+      }
+
+      // Get fresh quote to validate pool and amounts
+      try {
+        console.log('🔍 Getting fresh quote to validate pool...');
+        const freshQuote = await getAerodromeQuote({
+          provider: rpcProvider,
+          amountIn: amountIn,
+          fromToken: fromTokenAddress,
+          toToken: toTokenAddress,
+          stable: isStablePair,
+          factory: AERODROME_FACTORY_ADDRESS
+        });
+        
+        console.log('✅ Fresh quote received:', {
+          inputAmount: amountIn,
+          outputAmount: freshQuote[1]?.toString(),
+          minimumOutput: amountOutMin,
+          slippageOk: ethers.BigNumber.from(freshQuote[1]?.toString() || '0').gte(amountOutMin)
+        });
+
+        // Check if the fresh quote meets our minimum output
+        if (!ethers.BigNumber.from(freshQuote[1]?.toString() || '0').gte(amountOutMin)) {
+          throw new Error(`Fresh quote too low: ${freshQuote[1]?.toString()} < ${amountOutMin} (price moved, increase slippage)`);
+        }
+      } catch (quoteError: any) {
+        console.error('❌ Fresh quote failed:', quoteError);
+        throw new Error(`Pool validation failed: ${quoteError?.message || 'Pool might not exist or have insufficient liquidity'}`);
+      }
+
+      // Execute swap using the working utility
+      const tx = await swapAerodrome({
+        signer,
+        amountIn: amountIn,
+        amountOutMin: amountOutMin,
+        fromToken: fromTokenAddress,
+        toToken: toTokenAddress,
+        stable: isStablePair,
+        factory: AERODROME_FACTORY_ADDRESS,
+        userAddress: userAddress,
+        deadline
+      });
+      
+      const hash = tx.hash;
       
       console.log('✅ Farcaster swap transaction sent:', hash);
       
@@ -965,6 +1069,23 @@ export default function FarcasterMiniApp() {
       
       if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
         throw new Error('Transaction was cancelled by user');
+      }
+      
+      // Enhanced error messages for common swap failures
+      if (error?.message?.includes('execution reverted')) {
+        throw new Error('Swap failed: Insufficient liquidity or slippage too high. Try reducing the amount or increasing slippage tolerance.');
+      }
+      
+      if (error?.message?.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
+        throw new Error('Swap failed: Price impact too high. Try reducing the swap amount or increasing slippage tolerance.');
+      }
+      
+      if (error?.message?.includes('INSUFFICIENT_LIQUIDITY')) {
+        throw new Error('Swap failed: Not enough liquidity in the pool for this token pair.');
+      }
+      
+      if (error?.message?.includes('Unable to estimate')) {
+        throw new Error('Unable to estimate gas for this swap. The token pair might not have sufficient liquidity.');
       }
       
       throw new Error(`Farcaster swap failed: ${error?.message || 'Unknown error'}`);
@@ -1381,9 +1502,21 @@ export default function FarcasterMiniApp() {
         isIDRX: fromTokenData.baseToken === 'IDRX'
       });
       // Calculate minimum amount out with proper decimal handling (increased slippage for production)
-      const slippageAmount = Number(swapQuote) * 0.98; // 2% slippage tolerance
+      // Use higher slippage for local stablecoins due to lower liquidity
+      const isLocalStablecoinSwap = isFromLocalStablecoin || isToLocalStablecoin;
+      const slippagePercentage = isLocalStablecoinSwap ? 0.95 : 0.98; // 5% for local stablecoins, 2% for USDC
+      const slippageAmount = Number(swapQuote) * slippagePercentage;
       const minAmountOutFormatted = slippageAmount.toFixed(toDecimals);
       const minAmountOut = ethers.utils.parseUnits(minAmountOutFormatted, toDecimals);
+      
+      console.log('📊 Slippage calculation:', {
+        swapQuote,
+        slippagePercentage: `${(1 - slippagePercentage) * 100}%`,
+        slippageAmount,
+        minAmountOutFormatted,
+        minAmountOut: minAmountOut.toString(),
+        isLocalStablecoinSwap
+      });
 
       // Calculate deadline (10 minutes from now)
       const deadline = Math.floor(Date.now() / 1000) + 600;
