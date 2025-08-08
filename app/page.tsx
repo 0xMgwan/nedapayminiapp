@@ -1655,41 +1655,43 @@ export default function FarcasterMiniApp() {
 
       {/* Payment Details */}
       <div className="space-y-1">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <span className="text-gray-400 text-xs">You'll pay</span>
-          <div className="flex items-center gap-1">
-            <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
-            <span className="text-white text-xs">Base</span>
-          </div>
-        </div>
-        
-        <div className="text-right mb-3">
-          <div className="text-xs text-gray-400 flex items-center gap-2">
-            <span>Balance:</span>
-            <button 
-              onClick={() => setAmount(walletBalance)}
-              className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
-            >
-              {selectedSendToken === 'USDC' ? (
-                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-              ) : (
-                <span className="text-sm">
-                  {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
-                </span>
-              )}
-              {selectedSendToken} {walletBalance}
-            </button>
-            <button
-              onClick={refreshBalance}
-              className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
-              title="Refresh balance"
-            >
-              🔄
-            </button>
+          <div className="text-right">
+            {/* Base Network Label */}
+            <div className="flex items-center justify-end gap-1 mb-1">
+              <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
+              <span className="text-white text-xs">Base</span>
+            </div>
+            
+            {/* Balance underneath Base */}
+            <div className="text-xs text-gray-400 flex items-center justify-end gap-2">
+              <span>Balance:</span>
+              <button 
+                onClick={() => setAmount(walletBalance)}
+                className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+              >
+                {selectedSendToken === 'USDC' ? (
+                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                ) : (
+                  <span className="text-sm">
+                    {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
+                  </span>
+                )}
+                {selectedSendToken} {walletBalance}
+              </button>
+              <button
+                onClick={refreshBalance}
+                className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
+                title="Refresh balance"
+              >
+                🔄
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="text-center text-xs text-gray-300 mb-4 font-semibold">
+        <div className="text-center text-xs text-gray-300 mb-4 font-semibold mt-3">
           1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
         </div>
 
