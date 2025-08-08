@@ -88,9 +88,23 @@ const CurrencyRatesWidget = () => {
   const loadCurrencies = useCallback(async () => {
     try {
       const supportedCurrencies = await fetchSupportedCurrencies();
-      const sortedCurrencies = [...supportedCurrencies].sort((a, b) => 
-        a.code.localeCompare(b.code)
+      
+      // Priority currencies to display (whitelisted)
+      const priorityCurrencies = ['NGN', 'KES', 'GHS', 'TZS', 'UGX', 'ZAR', 'EGP', 'MAD', 'XOF', 'XAF'];
+      
+      // Filter to only show priority currencies
+      const filteredCurrencies = supportedCurrencies.filter(currency => 
+        priorityCurrencies.includes(currency.code)
       );
+      
+      // Sort priority currencies by the order defined in priorityCurrencies array
+      const sortedCurrencies = filteredCurrencies.sort((a, b) => {
+        const aIndex = priorityCurrencies.indexOf(a.code);
+        const bIndex = priorityCurrencies.indexOf(b.code);
+        return aIndex - bIndex;
+      });
+      
+      console.log(`💱 Displaying ${sortedCurrencies.length} priority currencies:`, sortedCurrencies.map(c => c.code));
       setCurrencies(sortedCurrencies);
       return sortedCurrencies;
     } catch (err) {
