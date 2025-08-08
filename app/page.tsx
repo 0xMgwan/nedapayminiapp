@@ -836,12 +836,15 @@ export default function FarcasterMiniApp() {
       const currentAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
       const amountNeeded = ethers.BigNumber.from(amountIn);
       
+      // Check if this is a local stablecoin (not USDC)
+      const isLocalStablecoinApproval = fromTokenAddress.toLowerCase() !== '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
+      
       console.log('🔍 Approval validation:', {
         fromTokenAddress,
         amountIn,
         amountNeeded: amountNeeded.toString(),
         currentAllowance: currentAllowance.toString(),
-        isIDRX: fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()
+        isLocalStablecoin: isLocalStablecoinApproval
       });
       
       // Set exact amount approval to avoid "unlimited" warnings
@@ -849,8 +852,7 @@ export default function FarcasterMiniApp() {
         console.log('📝 Setting exact amount approval for router...');
         
         // Use exact amount needed to avoid any "unlimited" interpretation
-        // Add specific gas parameters for IDRX to help with gas estimation
-        const isIDRX = fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase();
+        // Add specific gas parameters for all local stablecoins to help with gas estimation
         const approvalConfig: any = {
           address: fromTokenAddress as `0x${string}`,
           abi: erc20ABI,
@@ -858,10 +860,10 @@ export default function FarcasterMiniApp() {
           args: [AERODROME_ROUTER as `0x${string}`, BigInt(amountNeeded.toString())],
         };
         
-        // Add gas parameters for IDRX to help with estimation
-        if (isIDRX) {
-          approvalConfig.gas = BigInt(80000); // Higher gas limit for IDRX
-          console.log('🪙 Using IDRX-specific gas parameters for approval');
+        // Add gas parameters for all local stablecoins to help with estimation
+        if (isLocalStablecoinApproval) {
+          approvalConfig.gas = BigInt(100000); // Higher gas limit for local stablecoins
+          console.log('🪙 Using local stablecoin gas parameters for approval');
         }
         
         const approvalHash = await writeContract(config, approvalConfig);
@@ -879,8 +881,10 @@ export default function FarcasterMiniApp() {
         factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
       }];
       
-      // Add IDRX-specific gas parameters for better gas estimation
-      const isIDRXSwap = fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase();
+      // Add local stablecoin gas parameters for better gas estimation (either direction)
+      const isFromLocalStablecoin = fromTokenAddress.toLowerCase() !== '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
+      const isToLocalStablecoin = toTokenAddress.toLowerCase() !== '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
+      const isLocalStablecoinSwap = isFromLocalStablecoin || isToLocalStablecoin;
       const swapConfig: any = {
         address: AERODROME_ROUTER as `0x${string}`,
         abi: [
@@ -917,10 +921,16 @@ export default function FarcasterMiniApp() {
         ]
       };
       
-      // Add higher gas limit for IDRX swaps to help with gas estimation
-      if (isIDRXSwap) {
-        swapConfig.gas = BigInt(350000); // Higher gas limit for IDRX swaps
-        console.log('🪙 Using IDRX-specific gas parameters for swap');
+      // Add higher gas limit for local stablecoin swaps to help with gas estimation
+      if (isLocalStablecoinSwap) {
+        swapConfig.gas = BigInt(400000); // Higher gas limit for local stablecoin swaps
+        console.log('🪙 Using local stablecoin gas parameters for swap:', {
+          fromToken: fromTokenAddress,
+          toToken: toTokenAddress,
+          isFromLocal: isFromLocalStablecoin,
+          isToLocal: isToLocalStablecoin,
+          gasLimit: '400000'
+        });
       }
       
       const hash = await writeContract(config, swapConfig);
@@ -1306,17 +1316,25 @@ export default function FarcasterMiniApp() {
         swapAmount
       });
       
-      // Special handling for IDRX's 2-decimal format to avoid gas estimation issues
+      // Special handling for all local stablecoins to avoid gas estimation issues
       let amountInUnits;
-      if (fromTokenData.baseToken === 'IDRX') {
-        // For IDRX, ensure we're using exactly 2 decimals and proper formatting
-        const cleanAmount = parseFloat(swapAmount).toFixed(2);
-        amountInUnits = ethers.utils.parseUnits(cleanAmount, 2);
-        console.log('🪙 IDRX special handling:', {
+      const isFromLocalStablecoin = fromTokenData.baseToken !== 'USDC';
+      const isToLocalStablecoin = toTokenData.baseToken !== 'USDC';
+      const isLocalStablecoinInvolved = isFromLocalStablecoin || isToLocalStablecoin;
+      
+      if (isLocalStablecoinInvolved) {
+        // For any swap involving local stablecoins, ensure proper decimal formatting
+        const cleanAmount = parseFloat(swapAmount).toFixed(fromDecimals);
+        amountInUnits = ethers.utils.parseUnits(cleanAmount, fromDecimals);
+        console.log('🪙 Local stablecoin special handling:', {
+          fromToken: fromTokenData.baseToken,
+          toToken: toTokenData.baseToken,
           originalAmount: swapAmount,
           cleanAmount,
           amountInUnits: amountInUnits.toString(),
-          decimals: 2
+          decimals: fromDecimals,
+          isFromLocal: isFromLocalStablecoin,
+          isToLocal: isToLocalStablecoin
         });
       } else {
         amountInUnits = ethers.utils.parseUnits(swapAmount, fromDecimals);
