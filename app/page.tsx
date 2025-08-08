@@ -416,10 +416,10 @@ export default function FarcasterMiniApp() {
         }
         
         // Load initial floating rates for supported currencies (limit to prevent API spam)
-        const priorityCurrencies = ['NGN', 'KES', 'TZS', 'UGX']; // Focus on main supported currencies
+        const priorityCurrencies = ['NGN', 'KES', 'GHS', 'TZS', 'UGX']; // Focus on main supported currencies
         const currenciesToLoad = supportedCurrencies
           .filter(currency => priorityCurrencies.includes(currency.code))
-          .slice(0, 4); // Limit to 4 to avoid API rate limits
+          .slice(0, 5); // Limit to 5 to avoid API rate limits
         
         console.log(`💱 Loading rates for ${currenciesToLoad.length} priority currencies...`);
         
@@ -444,6 +444,26 @@ export default function FarcasterMiniApp() {
             // Don't spam the console with full error objects
           }
         }
+        
+        // Ensure priority currencies always show up with fallback rates
+        const priorityFallbacks = {
+          'GHS': '15.8',
+          'NGN': '1650.0',
+          'KES': '155.0',
+          'TZS': '2585.5',
+          'UGX': '3700.0'
+        };
+        
+        Object.entries(priorityFallbacks).forEach(([currency, rate]) => {
+          setFloatingRates(prev => ({
+            ...prev,
+            [currency]: {
+              rate: rate,
+              timestamp: Date.now()
+            }
+          }));
+        });
+        
       } catch (error) {
         console.error('Failed to load currencies and institutions:', error);
       }
@@ -1136,11 +1156,24 @@ export default function FarcasterMiniApp() {
       console.log('⏳ Waiting for approval confirmation...');
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Execute the swap with original amount
+      // Execute the swap with adjusted amount (after protocol fee deduction)
+      let adjustedSwapAmount = amountInUnits;
+      
+      // If protocol fee is enabled, deduct it from swap amount
+      if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
+        const feeInfo = (window as any).protocolFeeInfo;
+        adjustedSwapAmount = amountInUnits.sub(feeInfo.feeInTokenUnits);
+        console.log('💰 Adjusted swap amount after fee deduction:', {
+          originalAmount: ethers.utils.formatUnits(amountInUnits, fromDecimals),
+          feeAmount: ethers.utils.formatUnits(feeInfo.feeInTokenUnits, fromDecimals),
+          adjustedSwapAmount: ethers.utils.formatUnits(adjustedSwapAmount, fromDecimals)
+        });
+      }
+      
       const swapResult = await executeFarcasterSwap(
         fromTokenData.address,
         toTokenData.address,
-        amountInUnits.toString(), // Use original amount
+        adjustedSwapAmount.toString(), // Use adjusted amount
         minAmountOut.toString(),
         address,
         deadline
@@ -1148,28 +1181,17 @@ export default function FarcasterMiniApp() {
       
       console.log('💰 Swap executed with protocol fee:', {
         originalAmount: amountInUnits.toString(),
-        actualSwapAmount: actualSwapAmount.toString(),
+        adjustedSwapAmount: adjustedSwapAmount.toString(),
         protocolFeeEnabled: isProtocolEnabled()
       });
       
       console.log('✅ Swap completed successfully!', swapResult);
       
-      // Collect protocol fee in USDC after successful swap
+      // Collect protocol fee from the input token BEFORE it was swapped
       if (isProtocolEnabled() && (window as any).protocolFeeInfo) {
         try {
-          console.log('💳 Collecting protocol fee in USDC...');
+          console.log('💳 Collecting protocol fee from remaining input tokens...');
           const feeInfo = (window as any).protocolFeeInfo;
-          
-          // Calculate fee amount in USDC (output token)
-          const feeAmountUSD = feeInfo.feeAmountUSD; // USD amount
-          const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-          const feeInUSDC = ethers.utils.parseUnits(feeAmountUSD.toFixed(6), 6); // USDC has 6 decimals
-          
-          console.log('💰 Protocol fee details:', {
-            feeUSD: '$' + feeAmountUSD.toFixed(4),
-            feeInUSDC: ethers.utils.formatUnits(feeInUSDC, 6) + ' USDC',
-            protocolAddress: feeInfo.protocolAddress
-          });
           
           // Create provider and signer
           if (!walletClient) {
@@ -1178,7 +1200,7 @@ export default function FarcasterMiniApp() {
           const provider = new ethers.providers.Web3Provider(walletClient.transport, 'any');
           const signer = provider.getSigner();
           
-          // USDC contract ABI
+          // Input token contract ABI
           const erc20ABI = [
             'function transfer(address to, uint256 amount) returns (bool)',
             'function approve(address spender, uint256 amount) returns (bool)'
@@ -1186,25 +1208,31 @@ export default function FarcasterMiniApp() {
           
           // Protocol contract ABI
           const protocolABI = [
-            'function processPayment(address token, uint256 amount, string calldata paymentType) external'
+            'function processSwap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, bytes calldata swapData) external'
           ];
           
           // Create contract instances
-          const usdcContract = new ethers.Contract(USDC_ADDRESS, erc20ABI, signer);
+          const inputTokenContract = new ethers.Contract(fromTokenData.address, erc20ABI, signer);
           const protocolContract = new ethers.Contract(feeInfo.protocolAddress, protocolABI, signer);
           
-          // Single transaction: Approve and process fee in USDC
-          console.log('📝 Approving and processing protocol fee in USDC...');
-          const approveTx = await usdcContract.approve(feeInfo.protocolAddress, feeInUSDC);
+          // Approve and process fee using input token
+          console.log('📝 Approving and processing protocol fee with input token...');
+          const approveTx = await inputTokenContract.approve(feeInfo.protocolAddress, feeInfo.feeInTokenUnits);
           await approveTx.wait();
           
-          const feeTx = await protocolContract.processPayment(USDC_ADDRESS, feeInUSDC, 'swap_fee');
+          const feeTx = await protocolContract.processSwap(
+            fromTokenData.address,
+            toTokenData.address,
+            feeInfo.feeInTokenUnits,
+            0, // amountOutMin
+            '0x' // swapData
+          );
           await feeTx.wait();
           
-          console.log('✅ Protocol fee collected in USDC through contract:', feeTx.hash);
+          console.log('✅ Protocol fee collected through contract:', feeTx.hash);
           delete (window as any).protocolFeeInfo;
           
-        } catch (feeError) {
+        } catch (feeError: any) {
           console.error('❌ Protocol fee collection failed:', feeError);
           // Don't fail the whole transaction for fee collection issues
         }
@@ -3674,7 +3702,7 @@ export default function FarcasterMiniApp() {
           }
           
           .animate-scroll-left {
-            animation: scroll-left 30s linear infinite;
+            animation: scroll-left 8s linear infinite;
           }
           
           .animate-scroll-left:hover {
