@@ -25,16 +25,16 @@ export async function GET(request: NextRequest) {
     paymentUrl += `&protocolFee=${protocolFee}&feeTier=${encodeURIComponent(feeTier)}&protocolEnabled=${protocolEnabled}`;
   }
   
-  // Create Farcaster MiniApp metadata with specific payment details
+  // Create Farcaster MiniApp metadata with specific payment details (exact format from docs)
   const miniappData = {
     version: '1',
-    imageUrl: `${baseUrl}/api/og/payment?amount=${amount}&currency=${token}&description=${encodeURIComponent(description)}`,
+    imageUrl: `${baseUrl}/og-image.png`,
     button: {
       title: `💰 Pay $${amount} ${token}`,
       action: {
         type: 'launch_miniapp',
+        url: paymentUrl,
         name: 'NedaPay',
-        url: paymentUrl, // This is the key - specific payment URL
         splashImageUrl: `${baseUrl}/splash.png`,
         splashBackgroundColor: '#1e293b'
       }
@@ -77,10 +77,7 @@ export async function GET(request: NextRequest) {
   <meta name="twitter:description" content="${description} - Pay $${amount} ${token} instantly with NedaPay on Base" />
   <meta name="twitter:image" content="${baseUrl}/api/og/payment?amount=${amount}&currency=${token}&description=${encodeURIComponent(description)}" />
   
-  <!-- Immediate redirect to payment page -->
-  <script>
-    window.location.href = '${paymentUrl}';
-  </script>
+  <!-- No JavaScript redirect - let Farcaster handle MiniApp launch -->
 </head>
 <body>
   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
