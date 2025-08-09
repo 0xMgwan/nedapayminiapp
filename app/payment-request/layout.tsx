@@ -24,8 +24,39 @@ export const metadata: Metadata = {
     description: 'Complete your payment instantly with NedaPay on Base',
     images: ['https://nedapayminiapp.vercel.app/api/og/payment'],
   },
-  // Note: Farcaster meta tags should use 'name' attribute, not 'other'
-  // These will be added via a custom Head component
+  other: {
+    // Farcaster MiniApp metadata - static fallback that will be enhanced by client-side updates
+    'fc:miniapp': JSON.stringify({
+      version: '1',
+      imageUrl: 'https://nedapayminiapp.vercel.app/api/og/payment',
+      button: {
+        title: '💰 Pay with NedaPay',
+        action: {
+          type: 'launch_miniapp',
+          name: 'NedaPay',
+          url: 'https://nedapayminiapp.vercel.app/payment-request',
+          splashImageUrl: 'https://nedapayminiapp.vercel.app/splash.png',
+          splashBackgroundColor: '#1e293b'
+        }
+      }
+    }),
+    
+    // Backward compatibility
+    'fc:frame': JSON.stringify({
+      version: '1',
+      imageUrl: 'https://nedapayminiapp.vercel.app/api/og/payment',
+      button: {
+        title: '💰 Pay with NedaPay',
+        action: {
+          type: 'launch_frame',
+          name: 'NedaPay',
+          url: 'https://nedapayminiapp.vercel.app/payment-request',
+          splashImageUrl: 'https://nedapayminiapp.vercel.app/splash.png',
+          splashBackgroundColor: '#1e293b'
+        }
+      }
+    }),
+  },
 };
 
 export default function PaymentRequestLayout({

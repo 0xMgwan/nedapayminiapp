@@ -98,12 +98,25 @@ function PaymentRequestPageContent() {
           action: {
             type: 'launch_miniapp',
             name: 'NedaPay',
-            url: currentUrl,
+            url: currentUrl, // This should be the full URL with all payment parameters
             splashImageUrl: `${baseUrl}/splash.png`,
             splashBackgroundColor: '#1e293b'
           }
         }
       };
+
+      // Update both property-based and name-based meta tags for maximum compatibility
+      updateMetaTag('fc:miniapp', JSON.stringify(miniappData));
+      updateMetaTag('fc:frame', JSON.stringify({
+        ...miniappData,
+        button: {
+          ...miniappData.button,
+          action: {
+            ...miniappData.button.action,
+            type: 'launch_frame'
+          }
+        }
+      }));
 
       updateFarcasterMetaTag('fc:miniapp', JSON.stringify(miniappData));
       updateFarcasterMetaTag('fc:frame', JSON.stringify({
