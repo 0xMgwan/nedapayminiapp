@@ -1899,17 +1899,14 @@ export default function FarcasterMiniApp() {
         protocolFeeParams = `&protocolFee=${feeInfo.feeRate}&feeTier=${encodeURIComponent(feeInfo.tier)}&protocolEnabled=true`;
       }
       
-      // Create direct payment request URL
-      const directPaymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
+      // Create direct payment request URL (reverting to working approach)
+      const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
       
-      // Create sharing URL that has proper Farcaster metadata and redirects to payment page
-      const shareableLink = `${baseUrl}/api/share?amount=${linkAmount}&currency=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&link=${encodeURIComponent(directPaymentLink)}`;
-      
-      // Use the shareable link for Farcaster sharing
-      setGeneratedLink(shareableLink);
+      // Use the direct payment link for sharing
+      setGeneratedLink(paymentLink);
       
       // Store payment request data
-      const paymentData = {
+      const storedPaymentData = {
         id: linkId,
         amount: linkAmount,
         token: selectedStablecoin.baseToken,
@@ -1924,10 +1921,10 @@ export default function FarcasterMiniApp() {
       };
       
       // Store in localStorage for now (in production, this would be stored in a database)
-      localStorage.setItem(`payment-${linkId}`, JSON.stringify(paymentData));
+      localStorage.setItem(`payment-${linkId}`, JSON.stringify(storedPaymentData));
       
       // Copy to clipboard
-      await navigator.clipboard.writeText(shareableLink);
+      await navigator.clipboard.writeText(paymentLink);
       alert('✅ Payment link generated and copied to clipboard!');
       
     } catch (error) {

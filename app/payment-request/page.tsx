@@ -134,12 +134,20 @@ function PaymentRequestPageContent() {
       const merchant = searchParams.get('merchant');
       
       console.log('🔍 Payment link parameters:', { id, amount, token, description, merchant });
+      console.log('🔍 Current URL:', window.location.href);
+      console.log('🔍 Search params:', window.location.search);
       
       // Debug token resolution
       if (token) {
         const resolvedAddress = getTokenAddress(token);
         console.log('🪙 Token resolution:', { token, resolvedAddress });
       }
+
+      // Check if we have all required parameters
+      if (!id) console.error('❌ Missing payment ID');
+      if (!amount) console.error('❌ Missing payment amount');
+      if (!token) console.error('❌ Missing payment token');
+      if (!merchant) console.error('❌ Missing merchant address');
 
       if (id && amount && token && merchant) {
         const data: PaymentData = {
@@ -165,6 +173,10 @@ function PaymentRequestPageContent() {
         
         console.log('Generated QR data:', qrData);
         generateQRCode(qrData);
+      } else {
+        console.error('❌ Payment data loading failed - missing required parameters');
+        console.error('❌ This will cause payment to fail');
+        // Don't show an alert here, just log the error for debugging
       }
       setIsLoading(false);
     };
