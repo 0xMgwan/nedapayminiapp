@@ -36,7 +36,7 @@ function PaymentRequestPageContent() {
 
   const walletAddress = address;
 
-  // Initialize frame detection
+  // Initialize frame detection and update metadata
   useEffect(() => {
     const checkFrameEnvironment = () => {
       try {
@@ -57,6 +57,63 @@ function PaymentRequestPageContent() {
 
     checkFrameEnvironment();
   }, []);
+
+  // Update metadata dynamically for specific payment details
+  useEffect(() => {
+    if (paymentData) {
+      const baseUrl = window.location.origin;
+      const currentUrl = window.location.href;
+      
+      // Update page title
+      document.title = `NedaPay - Pay $${paymentData.amount} ${paymentData.token}`;
+      
+      // Update or add meta tags for Farcaster
+      const updateMetaTag = (property: string, content: string) => {
+        let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', property);
+          document.head.appendChild(meta);
+        }
+        meta.content = content;
+      };
+
+      // Update Farcaster MiniApp metadata with specific payment details
+      const safeDescription = paymentData.description || 'Payment Request';
+      const miniappData = {
+        version: '1',
+        imageUrl: `${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(safeDescription)}`,
+        button: {
+          title: `💰 Pay $${paymentData.amount} ${paymentData.token}`,
+          action: {
+            type: 'launch_miniapp',
+            name: 'NedaPay',
+            url: currentUrl,
+            splashImageUrl: `${baseUrl}/splash.png`,
+            splashBackgroundColor: '#1e293b'
+          }
+        }
+      };
+
+      updateMetaTag('fc:miniapp', JSON.stringify(miniappData));
+      updateMetaTag('fc:frame', JSON.stringify({
+        ...miniappData,
+        button: {
+          ...miniappData.button,
+          action: {
+            ...miniappData.button.action,
+            type: 'launch_frame'
+          }
+        }
+      }));
+
+      // Update Open Graph tags
+      updateMetaTag('og:title', `NedaPay - Pay $${paymentData.amount} ${paymentData.token}`);
+      updateMetaTag('og:description', `${safeDescription} - Pay $${paymentData.amount} ${paymentData.token} instantly with NedaPay on Base`);
+      updateMetaTag('og:image', `${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(safeDescription)}`);
+      updateMetaTag('og:url', currentUrl);
+    }
+  }, [paymentData]);
 
   useEffect(() => {
     const loadPaymentData = () => {

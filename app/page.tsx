@@ -157,6 +157,7 @@ export default function FarcasterMiniApp() {
   const [showSwapFromDropdown, setShowSwapFromDropdown] = useState(false);
   const [showSwapToDropdown, setShowSwapToDropdown] = useState(false);
   const [showInvoiceCurrencyDropdown, setShowInvoiceCurrencyDropdown] = useState(false);
+  const [showLinkCurrencyDropdown, setShowLinkCurrencyDropdown] = useState(false);
 
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -3219,18 +3220,42 @@ export default function FarcasterMiniApp() {
       <div>
         <label className="block text-gray-400 text-xs mb-1">Currency</label>
         <div className="relative">
-          <select 
-            value={selectedStablecoin.baseToken}
-            onChange={(e) => setSelectedStablecoin(stablecoins.find(t => t.baseToken === e.target.value) || stablecoins[0])}
-            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <button
+            onClick={() => setShowLinkCurrencyDropdown(!showLinkCurrencyDropdown)}
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between border border-slate-600/50 hover:border-slate-500 transition-colors"
           >
-            {stablecoins.map((token) => (
-              <option key={token.baseToken} value={token.baseToken}>
-                {token.flag} {token.baseToken} - {token.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2">
+              {selectedStablecoin.baseToken === 'USDC' ? (
+                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+              ) : (
+                <span className="text-sm">{selectedStablecoin.flag || '🌍'}</span>
+              )}
+              <span>{selectedStablecoin.baseToken} - {selectedStablecoin.name}</span>
+            </div>
+            <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+          </button>
+          
+          {showLinkCurrencyDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto">
+              {stablecoins.map((token) => (
+                <button
+                  key={token.baseToken}
+                  onClick={() => {
+                    setSelectedStablecoin(token);
+                    setShowLinkCurrencyDropdown(false);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-sm transition-colors"
+                >
+                  {token.baseToken === 'USDC' ? (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                  ) : (
+                    <span className="text-sm">{token.flag || '🌍'}</span>
+                  )}
+                  <span className="text-white">{token.baseToken} - {token.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
