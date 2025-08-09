@@ -38,39 +38,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: 'Pay, Accept, Swap and On/Offramp your Stablecoins to Fiat in seconds.',
       images: [`${URL}/og-image.png`],
     },
+    // Note: Removed Farcaster metadata from main layout to prevent conflicts
+    // Payment-request pages have their own specific Farcaster metadata
     other: {
-      // Primary frame metadata for Farcaster MiniApp (modern format)
-      'fc:miniapp': JSON.stringify({
-        version: '1',
-        imageUrl: `${URL}/og-image.png`,
-        button: {
-          title: `💰 Launch ${PROJECT_NAME}`,
-          action: {
-            type: 'launch_miniapp',
-            name: PROJECT_NAME,
-            url: URL,
-            splashImageUrl: `${URL}/splash.png`,
-            splashBackgroundColor: '#1e293b'
-          }
-        }
-      }),
-      
-      // Backward compatibility
-      'fc:frame': JSON.stringify({
-        version: '1',
-        imageUrl: `${URL}/og-image.png`,
-        button: {
-          title: `💰 Launch ${PROJECT_NAME}`,
-          action: {
-            type: 'launch_frame',
-            name: PROJECT_NAME,
-            url: URL,
-            splashImageUrl: `${URL}/splash.png`,
-            splashBackgroundColor: '#1e293b'
-          }
-        }
-      }),
-      
       // OpenFrames
       'of:version': 'vNext',
       'of:accepts:xmtp': '2024-02-01',
