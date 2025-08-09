@@ -78,11 +78,11 @@ function PaymentRequestPageContent() {
         meta.content = content;
       };
 
-      const updateMetaTag = (property: string, content: string) => {
-        let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+      const updateMetaTag = (property: string, content: string, attributeType: 'property' | 'name' = 'property') => {
+        let meta = document.querySelector(`meta[${attributeType}="${property}"]`) as HTMLMetaElement;
         if (!meta) {
           meta = document.createElement('meta');
-          meta.setAttribute('property', property);
+          meta.setAttribute(attributeType, property);
           document.head.appendChild(meta);
         }
         meta.content = content;
@@ -135,6 +135,35 @@ function PaymentRequestPageContent() {
       updateMetaTag('og:description', `${safeDescription} - Pay $${paymentData.amount} ${paymentData.token} instantly with NedaPay on Base`);
       updateMetaTag('og:image', `${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(safeDescription)}`);
       updateMetaTag('og:url', currentUrl);
+
+      // Create and update Farcaster MiniApp metadata
+      const farcasterMiniappData = {
+        version: '1',
+        imageUrl: `${baseUrl}/og-image.png`,
+        button: {
+          title: `💰 Pay $${paymentData.amount} ${paymentData.token}`,
+          action: {
+            type: 'launch_miniapp',
+            url: currentUrl,
+            name: 'NedaPay',
+            splashImageUrl: `${baseUrl}/splash.png`,
+            splashBackgroundColor: '#1e293b'
+          }
+        }
+      };
+
+      // Update Farcaster metadata
+      updateMetaTag('fc:miniapp', JSON.stringify(farcasterMiniappData), 'name');
+      updateMetaTag('fc:frame', JSON.stringify({
+        ...farcasterMiniappData,
+        button: {
+          ...farcasterMiniappData.button,
+          action: {
+            ...farcasterMiniappData.button.action,
+            type: 'launch_frame'
+          }
+        }
+      }), 'name');
     }
   }, [paymentData]);
 
