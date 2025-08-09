@@ -77,10 +77,7 @@ export async function GET(request: NextRequest) {
   <meta name="twitter:description" content="${description} - Pay $${amount} ${token} instantly with NedaPay on Base" />
   <meta name="twitter:image" content="${baseUrl}/api/og/payment?amount=${amount}&currency=${token}&description=${encodeURIComponent(description)}" />
   
-  <script>
-    // Redirect to the actual payment page
-    window.location.href = '${paymentUrl}';
-  </script>
+  <!-- No JavaScript redirect - let Farcaster handle MiniApp launch -->
 </head>
 <body>
   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
@@ -89,8 +86,11 @@ export async function GET(request: NextRequest) {
       <div style="font-size: 2rem; font-weight: bold; margin: 20px 0;">$${amount}</div>
       <div style="font-size: 1.2rem; opacity: 0.8; margin-bottom: 20px;">${token}</div>
       <div style="font-size: 1rem; margin: 20px 0; opacity: 0.9;">${description}</div>
-      <p>Redirecting to payment page...</p>
-      <a href="${paymentUrl}" style="background: linear-gradient(45deg, #4CAF50, #45a049); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 25px; text-decoration: none; display: inline-block; margin-top: 20px;">Pay Now</a>
+      <p>Click the launch button above to open in NedaPay MiniApp</p>
+      <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 20px;">If you're seeing this page directly, <a href="${paymentUrl}" style="color: #4CAF50;">click here to pay</a></p>
+      <div style="font-size: 0.7rem; opacity: 0.5; margin-top: 20px; word-break: break-all;">
+        Debug: ${paymentUrl}
+      </div>
     </div>
   </div>
 </body>
