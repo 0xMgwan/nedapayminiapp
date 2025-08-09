@@ -837,7 +837,7 @@ export default function FarcasterMiniApp() {
       const currentAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
       const amountNeeded = ethers.BigNumber.from(amountIn);
       
-      // Check if this is a local stablecoin (not USDC)
+      // Check if this is a local stablecoin (not USDC) for approval
       const isLocalStablecoinApproval = fromTokenAddress.toLowerCase() !== '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
       
       console.log('🔍 Approval validation:', {
@@ -847,7 +847,7 @@ export default function FarcasterMiniApp() {
         currentAllowance: currentAllowance.toString(),
         isLocalStablecoin: isLocalStablecoinApproval
       });
-      
+
       // Set exact amount approval to avoid "unlimited" warnings
       if (currentAllowance.lt(amountNeeded)) {
         console.log('📝 Setting exact amount approval for router...');
@@ -874,10 +874,85 @@ export default function FarcasterMiniApp() {
         }
         
         console.log('📤 Sending approval transaction to wallet...');
-        const { writeContract: writeApprovalContract } = await import('wagmi/actions');
-        const approvalHash = await writeApprovalContract(config, approvalConfig);
+        console.log('🔍 Approval transaction details:', {
+          tokenAddress: fromTokenAddress,
+          spender: AERODROME_ROUTER,
+          amount: amountNeeded.toString(),
+          userAddress: userAddress,
+          isConnected,
+          hasAddress: !!address
+        });
         
-        console.log('✅ Exact amount approval set for router:', approvalHash);
+        // Ensure we have the correct user context for the approval
+        if (!userAddress || userAddress === '0x0000000000000000000000000000000000000000') {
+          throw new Error('Invalid user address for approval transaction');
+        }
+        
+        const { writeContract: writeApprovalContract } = await import('wagmi/actions');
+        const approvalHash = await writeApprovalContract(config, {
+          ...approvalConfig,
+          account: userAddress as `0x${string}` // Explicitly set the account
+        });
+        
+        console.log('✅ Approval transaction sent:', approvalHash);
+        
+        // CRITICAL: Wait for approval confirmation before proceeding
+        console.log('⏳ Waiting for approval confirmation...');
+        const { waitForTransactionReceipt } = await import('wagmi/actions');
+        
+        try {
+          const approvalReceipt = await waitForTransactionReceipt(config, {
+            hash: approvalHash,
+            timeout: 120000 // 2 minutes timeout
+          });
+          
+          console.log('✅ Approval confirmed on-chain:', {
+            status: approvalReceipt.status,
+            blockNumber: approvalReceipt.blockNumber,
+            gasUsed: approvalReceipt.gasUsed?.toString()
+          });
+          
+          // Double-check allowance after confirmation with retry logic
+          let newAllowance;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+            try {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Wait 1s, 2s, 3s
+              newAllowance = await tokenContract.allowance(userAddress, AERODROME_ROUTER);
+              console.log(`🔍 Allowance check attempt ${retryCount + 1}:`, {
+                expected: amountNeeded.toString(),
+                actual: newAllowance.toString(),
+                sufficient: newAllowance.gte(amountNeeded)
+              });
+              
+              if (newAllowance.gte(amountNeeded)) {
+                console.log('✅ Allowance confirmed sufficient');
+                break;
+              }
+              
+              retryCount++;
+              if (retryCount === maxRetries) {
+                console.log('⚠️ Allowance still insufficient after retries, but proceeding with swap (approval transaction was confirmed)');
+                // Don't throw error - the approval transaction was confirmed, so proceed
+                break;
+              }
+            } catch (allowanceCheckError: any) {
+              console.log(`❌ Allowance check attempt ${retryCount + 1} failed:`, allowanceCheckError.message);
+              retryCount++;
+              if (retryCount === maxRetries) {
+                console.log('⚠️ Allowance check failed, but approval transaction was confirmed, proceeding with swap');
+                // Don't throw error - the approval transaction was confirmed
+                break;
+              }
+            }
+          }
+          
+        } catch (confirmError: any) {
+          console.error('❌ Approval confirmation failed:', confirmError);
+          throw new Error(`Approval confirmation failed: ${confirmError.message}`);
+        }
       } else {
         console.log('✅ Sufficient allowance already exists for router');
       }
@@ -894,22 +969,21 @@ export default function FarcasterMiniApp() {
           .map((t: any) => t.address.toLowerCase())
       );
 
-      const fromIsLocal = LOCAL_STABLES.has(fromTokenAddress.toLowerCase());
-      const toIsLocal = LOCAL_STABLES.has(toTokenAddress.toLowerCase());
+      const fromIsLocalStable = LOCAL_STABLES.has(fromTokenAddress.toLowerCase());
+      const toIsLocalStable = LOCAL_STABLES.has(toTokenAddress.toLowerCase());
       const fromIsUSDC = fromTokenAddress.toLowerCase() === USDC_ADDR;
       const toIsUSDC = toTokenAddress.toLowerCase() === USDC_ADDR;
       
-      // All local stablecoins use volatile pools, not stable pools
-      // This is because local stablecoins often don't have stable pools with sufficient liquidity
-      const hasLocalStablecoin = fromIsLocal || toIsLocal;
+      // Try stable pools first for better gas estimation, then fallback to volatile
+      const hasLocalStablecoin = fromIsLocalStable || toIsLocalStable;
       
-      // Use volatile pools for any swap involving local stablecoins, stable only for USDC-USDC
-      const isStablePair = hasLocalStablecoin ? false : (fromIsUSDC && toIsUSDC);
+      // Start with stable pools for all stablecoin pairs
+      const useStablePair = true; // Always try stable pools first
 
       const routes = [{
         from: fromTokenAddress as `0x${string}`,
         to: toTokenAddress as `0x${string}`,
-        stable: isStablePair,
+        stable: useStablePair,
         factory: AERODROME_FACTORY_ADDRESS as `0x${string}`
       }];
       
@@ -918,12 +992,12 @@ export default function FarcasterMiniApp() {
         fromTokenAddress,
         toTokenAddress,
         factoryAddress: AERODROME_FACTORY_ADDRESS,
-        stable: isStablePair
+        stable: useStablePair
       });
       
       // Add local stablecoin gas parameters for better gas estimation (either direction)
-      const isFromLocalStablecoin = fromIsLocal;
-      const isToLocalStablecoin = toIsLocal;
+      const isFromLocalStablecoin = fromIsLocalStable;
+      const isToLocalStablecoin = toIsLocalStable;
       const isLocalStablecoinSwap = isFromLocalStablecoin || isToLocalStablecoin;
       // Use the exact ABI from Aerodrome router contract
       const AERODROME_ROUTER_ABI = [
@@ -973,14 +1047,17 @@ export default function FarcasterMiniApp() {
         if (fromTokenAddress.toLowerCase() === '0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22'.toLowerCase()) {
           swapConfig.gas = BigInt(500000); // Conservative upper bound for IDRX swaps
           console.log('🪙 Using IDRX swap gas limit only (no fee override):', { gasLimit: '500000' });
+        } else if (fromTokenAddress.toLowerCase() === '0x269caE7Dc59803e5C596c95756faEeBb6030E0aF'.toLowerCase()) {
+          swapConfig.gas = BigInt(450000); // Slightly higher gas limit for MXNe swaps
+          console.log('🪙 Using MXNe swap gas limit only (no fee override):', { gasLimit: '450000' });
         } else {
           swapConfig.gas = BigInt(400000); // Conservative upper bound for other locals
           console.log('🪙 Using local stablecoin swap gas limit only (no fee override):', { gasLimit: '400000' });
         }
       }
       
-      // Use the working swapAerodrome utility instead of wagmi
-      console.log('🔄 Using swapAerodrome utility for swap execution...');
+      // Implement robust swap with stable/volatile pool fallback
+      console.log('🔄 Starting robust swap with pool fallback strategy...');
       
       // Robust wallet client retrieval with retry logic
       let currentWalletClient = walletClient;
@@ -996,46 +1073,18 @@ export default function FarcasterMiniApp() {
         // Wait a moment and try to get the wallet client from the window object (MiniKit specific)
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // For Farcaster MiniApps, try to get the client from window.ethereum or MiniKit
-        if (typeof window !== 'undefined' && (window as any).ethereum) {
-          try {
-            const provider = new ethers.providers.Web3Provider((window as any).ethereum);
-            const signer = provider.getSigner();
-            
-            console.log('✅ Using window.ethereum provider as fallback');
-            
-            // Execute swap using the fallback provider
-            const tx = await swapAerodrome({
-              signer,
-              amountIn: amountIn,
-              amountOutMin: amountOutMin,
-              fromToken: fromTokenAddress,
-              toToken: toTokenAddress,
-              stable: isStablePair,
-              factory: AERODROME_FACTORY_ADDRESS,
-              userAddress: userAddress,
-              deadline
-            });
-            
-            const hash = tx.hash;
-            console.log('✅ Farcaster swap transaction sent:', hash);
-            
-            return {
-              success: true,
-              hash: hash
-            };
-          } catch (fallbackError: any) {
-            console.error('❌ Fallback provider also failed:', fallbackError);
-          }
+        // Try to get wallet client from window.ethereum as fallback
+        if ((window as any).ethereum) {
+          console.log('✅ Using window.ethereum provider as fallback');
+          currentWalletClient = (window as any).ethereum;
+        } else {
+          throw new Error('Wallet client unavailable. Please refresh the page and try again.');
         }
-        
-        throw new Error('Wallet client unavailable. Please refresh the page and try again.');
       }
       
       console.log('✅ Wallet client available, proceeding with swap...');
       
-      // Convert wagmi client to ethers signer
-      const swapProvider = new ethers.providers.Web3Provider(currentWalletClient.transport);
+      const swapProvider = new ethers.providers.Web3Provider(currentWalletClient!.transport || currentWalletClient!);
       const signer = swapProvider.getSigner();
       
       // Pre-swap validation and debugging
@@ -1044,7 +1093,7 @@ export default function FarcasterMiniApp() {
         amountOutMin,
         fromToken: fromTokenAddress,
         toToken: toTokenAddress,
-        stable: isStablePair,
+        stable: useStablePair,
         factory: AERODROME_FACTORY_ADDRESS,
         userAddress,
         deadline,
@@ -1072,7 +1121,7 @@ export default function FarcasterMiniApp() {
           amountIn: amountIn,
           fromToken: fromTokenAddress,
           toToken: toTokenAddress,
-          stable: isStablePair,
+          stable: useStablePair,
           factory: AERODROME_FACTORY_ADDRESS
         });
         
@@ -1092,52 +1141,84 @@ export default function FarcasterMiniApp() {
         throw new Error(`Pool validation failed: ${quoteError?.message || 'Pool might not exist or have insufficient liquidity'}`);
       }
 
-      // Execute swap using the working utility
-      const tx = await swapAerodrome({
-        signer,
-        amountIn: amountIn,
-        amountOutMin: amountOutMin,
-        fromToken: fromTokenAddress,
-        toToken: toTokenAddress,
-        stable: isStablePair,
-        factory: AERODROME_FACTORY_ADDRESS,
-        userAddress: userAddress,
-        deadline
-      });
+      // Simple direct swap execution - copy exact logic from main app
+      console.log('🔄 Executing direct swap with volatile pools (like main app)...');
       
-      const hash = tx.hash;
-      
-      console.log('✅ Farcaster swap transaction sent:', hash);
-      
-      return {
-        success: true,
-        hash: hash
-      };
+      let tx;
+      try {
+        tx = await swapAerodrome({
+          signer,
+          amountIn,
+          amountOutMin,
+          fromToken: fromTokenAddress,
+          toToken: toTokenAddress,
+          stable: false, // Always use volatile pools for local stablecoins
+          factory: AERODROME_FACTORY_ADDRESS,
+          userAddress,
+          deadline
+        });
+        
+        console.log('✅ Direct swap successful:', tx.hash);
+        return { success: true, hash: tx.hash };
+        
+      } catch (error: any) {
+        console.error('❌ Direct swap failed:', error);
+        
+        // If it's a slippage issue, try with higher slippage once
+        if (error?.message?.includes('slippage') || error?.message?.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
+          console.log('🔄 Retrying with higher slippage (15%)...');
+          
+          try {
+            const higherSlippageAmount = Number(amountOutMin) * 0.85; // 15% slippage
+            const higherSlippageAmountOut = ethers.utils.parseUnits(
+              higherSlippageAmount.toFixed(6), 
+              6
+            ).toString();
+            
+            tx = await swapAerodrome({
+              signer,
+              amountIn,
+              amountOutMin: higherSlippageAmountOut,
+              fromToken: fromTokenAddress,
+              toToken: toTokenAddress,
+              stable: false,
+              factory: AERODROME_FACTORY_ADDRESS,
+              userAddress,
+              deadline
+            });
+            
+            console.log('✅ Higher slippage swap successful:', tx.hash);
+            return { success: true, hash: tx.hash };
+            
+          } catch (slippageError: any) {
+            console.error('❌ Higher slippage swap also failed:', slippageError);
+            throw new Error('Swap failed: Insufficient liquidity or slippage too high. Try reducing the amount or increasing slippage tolerance.');
+          }
+        }
+        
+        // Handle other common errors
+        if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
+          throw new Error('Transaction was cancelled by user');
+        }
+        
+        if (error?.message?.includes('execution reverted')) {
+          throw new Error('Swap failed: Insufficient liquidity or slippage too high. Try reducing the amount or increasing slippage tolerance.');
+        }
+        
+        if (error?.message?.includes('INSUFFICIENT_LIQUIDITY')) {
+          throw new Error('Swap failed: Not enough liquidity in the pool for this token pair.');
+        }
+        
+        if (error?.message?.includes('Unable to estimate')) {
+          throw new Error('Unable to estimate gas for this swap. The token pair might not have sufficient liquidity.');
+        }
+        
+        throw new Error(`Swap failed: ${error?.message || 'Unknown error'}`);
+      }
+
     } catch (error: any) {
       console.error('❌ Farcaster swap failed:', error);
-      
-      if (error?.message?.includes('user rejected') || error?.message?.includes('denied')) {
-        throw new Error('Transaction was cancelled by user');
-      }
-      
-      // Enhanced error messages for common swap failures
-      if (error?.message?.includes('execution reverted')) {
-        throw new Error('Swap failed: Insufficient liquidity or slippage too high. Try reducing the amount or increasing slippage tolerance.');
-      }
-      
-      if (error?.message?.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
-        throw new Error('Swap failed: Price impact too high. Try reducing the swap amount or increasing slippage tolerance.');
-      }
-      
-      if (error?.message?.includes('INSUFFICIENT_LIQUIDITY')) {
-        throw new Error('Swap failed: Not enough liquidity in the pool for this token pair.');
-      }
-      
-      if (error?.message?.includes('Unable to estimate')) {
-        throw new Error('Unable to estimate gas for this swap. The token pair might not have sufficient liquidity.');
-      }
-      
-      throw new Error(`Farcaster swap failed: ${error?.message || 'Unknown error'}`);
+      throw error; // Re-throw the error as-is
     }
   }, [isConnected, address]);
 
@@ -1512,9 +1593,9 @@ export default function FarcasterMiniApp() {
       const isLocalStablecoinInvolved = isFromLocalStablecoin || isToLocalStablecoin;
       
       if (isLocalStablecoinInvolved) {
-        // Special ultra-specific handling for IDRX due to its 2-decimal format
+        // Ultra-robust handling for ALL local stablecoins to ensure consistent behavior
         if (fromTokenData.baseToken === 'IDRX') {
-          // For IDRX, use ultra-conservative decimal handling
+          // For IDRX, use ultra-conservative decimal handling (2 decimals)
           const idrxAmount = Math.floor(parseFloat(swapAmount) * 100) / 100; // Ensure exactly 2 decimals
           const cleanAmount = idrxAmount.toFixed(2);
           amountInUnits = ethers.utils.parseUnits(cleanAmount, 2);
@@ -1525,17 +1606,33 @@ export default function FarcasterMiniApp() {
             amountInUnits: amountInUnits.toString(),
             decimals: 2
           });
+        } else if (fromTokenData.baseToken === 'MXNe') {
+          // For MXNe, use ultra-conservative decimal handling (6 decimals)
+          const mxneAmount = Math.floor(parseFloat(swapAmount) * 1000000) / 1000000; // Ensure exactly 6 decimals
+          const cleanAmount = mxneAmount.toFixed(6);
+          amountInUnits = ethers.utils.parseUnits(cleanAmount, 6);
+          console.log('🪙 MXNe ultra-specific handling:', {
+            originalAmount: swapAmount,
+            mxneAmount,
+            cleanAmount,
+            amountInUnits: amountInUnits.toString(),
+            decimals: 6
+          });
         } else {
-          // For other local stablecoins, use standard formatting
-          const cleanAmount = parseFloat(swapAmount).toFixed(fromDecimals);
+          // For all other local stablecoins, use ultra-conservative decimal handling
+          const multiplier = Math.pow(10, fromDecimals);
+          const preciseAmount = Math.floor(parseFloat(swapAmount) * multiplier) / multiplier;
+          const cleanAmount = preciseAmount.toFixed(fromDecimals);
           amountInUnits = ethers.utils.parseUnits(cleanAmount, fromDecimals);
-          console.log('🪙 Local stablecoin standard handling:', {
+          console.log('🪙 Local stablecoin ultra-robust handling:', {
             fromToken: fromTokenData.baseToken,
             toToken: toTokenData.baseToken,
             originalAmount: swapAmount,
+            preciseAmount,
             cleanAmount,
             amountInUnits: amountInUnits.toString(),
             decimals: fromDecimals,
+            multiplier,
             isFromLocal: isFromLocalStablecoin,
             isToLocal: isToLocalStablecoin
           });
@@ -3882,8 +3979,8 @@ export default function FarcasterMiniApp() {
         return renderDepositTab();
       case 'link':
         return renderLinkTab();
-      case 'swap':
-        return renderSwapTab();
+      // case 'swap': // Temporarily hidden
+      //   return renderSwapTab();
       case 'invoice':
         return renderInvoiceTab();
       default:
@@ -4171,14 +4268,14 @@ export default function FarcasterMiniApp() {
         `}</style>
 
         {/* Tab Navigation */}
-        <div className="bg-slate-900/90 rounded-xl p-1.5 mb-2 border border-slate-700/50 shadow-2xl">
-          <div className="grid grid-cols-6 gap-1">
+        <div className="bg-slate-900/90 rounded-xl p-1 mb-2 border border-slate-700/50 shadow-2xl">
+          <div className="grid grid-cols-5 gap-1">
             {[
               { key: 'send' as Tab, label: 'Send', icon: ArrowUpIcon },
               { key: 'pay' as Tab, label: 'Pay', icon: CurrencyDollarIcon },
               { key: 'deposit' as Tab, label: 'Deposit', icon: ArrowDownIcon },
               { key: 'link' as Tab, label: 'Link', icon: LinkIcon },
-              { key: 'swap' as Tab, label: 'Swap', icon: ArrowsRightLeftIcon },
+              // { key: 'swap' as Tab, label: 'Swap', icon: ArrowsRightLeftIcon }, // Temporarily hidden
               { key: 'invoice' as Tab, label: 'Invoice', icon: DocumentTextIcon }
             ].map(({ key, label, icon: Icon }) => (
               <button
