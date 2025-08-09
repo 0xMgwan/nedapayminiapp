@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { params: string[] } }
-) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   
   // Extract payment parameters
@@ -12,14 +9,23 @@ export async function GET(
   const token = searchParams.get('token') || 'USDC';
   const description = searchParams.get('description') || 'Payment Request';
   const merchant = searchParams.get('merchant') || '';
+  const protocolFee = searchParams.get('protocolFee') || '';
+  const feeTier = searchParams.get('feeTier') || '';
+  const protocolEnabled = searchParams.get('protocolEnabled') || '';
+  
+  console.log('🔍 Payment share route parameters:', { id, amount, token, description, merchant, protocolFee });
   
   const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
-  const currentUrl = request.url;
   
   // Create the payment request URL that the MiniApp should open
-  const paymentUrl = `${baseUrl}/payment-request?id=${id}&amount=${amount}&token=${token}&description=${encodeURIComponent(description)}&merchant=${merchant}`;
+  let paymentUrl = `${baseUrl}/payment-request?id=${id}&amount=${amount}&token=${token}&description=${encodeURIComponent(description)}&merchant=${merchant}`;
   
-  // Create Farcaster MiniApp metadata
+  // Add protocol fee parameters if present
+  if (protocolFee && feeTier && protocolEnabled) {
+    paymentUrl += `&protocolFee=${protocolFee}&feeTier=${encodeURIComponent(feeTier)}&protocolEnabled=${protocolEnabled}`;
+  }
+  
+  // Create Farcaster MiniApp metadata with specific payment details
   const miniappData = {
     version: '1',
     imageUrl: `${baseUrl}/api/og/payment?amount=${amount}&currency=${token}&description=${encodeURIComponent(description)}`,
@@ -34,6 +40,8 @@ export async function GET(
       }
     }
   };
+
+  console.log('🎯 Generated Farcaster metadata:', JSON.stringify(miniappData, null, 2));
 
   // Generate HTML with proper Farcaster metadata using name attributes
   const html = `<!DOCTYPE html>
@@ -60,7 +68,7 @@ export async function GET(
   <meta property="og:title" content="NedaPay - Pay $${amount} ${token}" />
   <meta property="og:description" content="${description} - Pay $${amount} ${token} instantly with NedaPay on Base" />
   <meta property="og:image" content="${baseUrl}/api/og/payment?amount=${amount}&currency=${token}&description=${encodeURIComponent(description)}" />
-  <meta property="og:url" content="${currentUrl}" />
+  <meta property="og:url" content="${request.url}" />
   <meta property="og:type" content="website" />
   
   <!-- Twitter Card metadata -->
