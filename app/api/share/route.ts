@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       action: {
         type: 'launch_miniapp',
         name: 'NedaPay',
-        url: link || baseUrl,
+        url: link || baseUrl, // This should be the direct payment-request URL
         splashImageUrl: `${baseUrl}/splash.png`,
         splashBackgroundColor: '#1e293b'
       }
@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
   <meta name="twitter:title" content="NedaPay - ${description}" />
   <meta name="twitter:description" content="Pay $${amount} ${currency} instantly with NedaPay on Base" />
   <meta name="twitter:image" content="${baseUrl}/api/og/payment?amount=${amount}&currency=${currency}&description=${encodeURIComponent(description)}" />
+  
   
   <style>
     body {

@@ -1465,7 +1465,7 @@ export default function FarcasterMiniApp() {
   }, [walletAddress, isConnected, currentRate]);
 
   // Farcaster sharing functionality
-  const handleShareOnFarcaster = useCallback((shareableLink: string) => {
+  const handleShareOnFarcaster = useCallback((paymentLink: string) => {
     try {
       // Create shareable text for Farcaster
       const shareText = `💰 ${linkDescription || 'Payment Request'} - $${linkAmount || '0'} ${selectedStablecoin.baseToken}\n\nPay instantly with NedaPay! 🚀`;
@@ -1477,14 +1477,14 @@ export default function FarcasterMiniApp() {
           type: 'createCast',
           data: {
             text: shareText,
-            embeds: [shareableLink] // Use the shareable link with embed metadata
+            embeds: [paymentLink] // Use the direct payment link with embedded metadata
           }
         }, '*');
         
-        alert('🚀 Shared to Farcaster! The payment link will display with a rich preview.');
+        alert('🚀 Shared to Farcaster! The payment link will display with a rich preview and open directly in NedaPay.');
       } else {
         // Fallback: Copy share text and link to clipboard
-        const fullShareText = `${shareText}\n\n${shareableLink}`;
+        const fullShareText = `${shareText}\n\n${paymentLink}`;
         navigator.clipboard.writeText(fullShareText).then(() => {
           alert('💰 Share text copied to clipboard!\n\nPaste it in Farcaster to share your payment link with a rich preview.');
         });
@@ -1492,7 +1492,7 @@ export default function FarcasterMiniApp() {
     } catch (error) {
       console.error('Failed to share on Farcaster:', error);
       // Fallback: Copy link to clipboard
-      navigator.clipboard.writeText(shareableLink).then(() => {
+      navigator.clipboard.writeText(paymentLink).then(() => {
         alert('Payment link copied to clipboard!');
       });
     }
@@ -1901,10 +1901,8 @@ export default function FarcasterMiniApp() {
       // Create payment request URL that will show the payment modal
       const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
       
-      // Create shareable URL with Farcaster embed metadata
-      const shareableLink = `${baseUrl}/api/share?amount=${linkAmount}&currency=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&link=${encodeURIComponent(paymentLink)}`;
-      
-      setGeneratedLink(shareableLink);
+      // Use the direct payment link for sharing - it should work in both Farcaster and external browsers
+      setGeneratedLink(paymentLink);
       
       // Store payment request data
       const paymentData = {
