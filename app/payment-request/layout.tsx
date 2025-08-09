@@ -62,7 +62,11 @@ export const metadata: Metadata = {
 export default function PaymentRequestLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  return children;
+  return (
+    <>
+      {children}
+    </>
+  )
 }

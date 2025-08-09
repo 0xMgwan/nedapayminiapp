@@ -1899,11 +1899,11 @@ export default function FarcasterMiniApp() {
         protocolFeeParams = `&protocolFee=${feeInfo.feeRate}&feeTier=${encodeURIComponent(feeInfo.tier)}&protocolEnabled=true`;
       }
       
-      // Create Farcaster-compatible payment link with proper metadata
-      const farcasterPaymentLink = `${baseUrl}/pay/share?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
+      // Create direct payment-request URL (this works better with MiniApp launch)
+      const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
       
-      // Use the Farcaster-compatible link for sharing
-      setGeneratedLink(farcasterPaymentLink);
+      // Use the direct payment link for sharing
+      setGeneratedLink(paymentLink);
       
       // Store payment request data
       const storedPaymentData = {
@@ -1924,7 +1924,7 @@ export default function FarcasterMiniApp() {
       localStorage.setItem(`payment-${linkId}`, JSON.stringify(storedPaymentData));
       
       // Copy to clipboard
-      await navigator.clipboard.writeText(farcasterPaymentLink);
+      await navigator.clipboard.writeText(paymentLink);
       alert('✅ Payment link generated and copied to clipboard!');
       
     } catch (error) {
