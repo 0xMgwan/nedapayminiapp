@@ -1464,6 +1464,40 @@ export default function FarcasterMiniApp() {
     }
   }, [walletAddress, isConnected, currentRate]);
 
+  // Farcaster sharing functionality
+  const handleShareOnFarcaster = useCallback((shareableLink: string) => {
+    try {
+      // Create shareable text for Farcaster
+      const shareText = `💰 ${linkDescription || 'Payment Request'} - $${linkAmount || '0'} ${selectedStablecoin.baseToken}\n\nPay instantly with NedaPay! 🚀`;
+      
+      // Try to use Farcaster's native sharing if available
+      if (typeof window !== 'undefined' && (window as any).parent) {
+        // Post message to parent frame (Farcaster client)
+        (window as any).parent.postMessage({
+          type: 'createCast',
+          data: {
+            text: shareText,
+            embeds: [shareableLink] // Use the shareable link with embed metadata
+          }
+        }, '*');
+        
+        alert('🚀 Shared to Farcaster! The payment link will display with a rich preview.');
+      } else {
+        // Fallback: Copy share text and link to clipboard
+        const fullShareText = `${shareText}\n\n${shareableLink}`;
+        navigator.clipboard.writeText(fullShareText).then(() => {
+          alert('💰 Share text copied to clipboard!\n\nPaste it in Farcaster to share your payment link with a rich preview.');
+        });
+      }
+    } catch (error) {
+      console.error('Failed to share on Farcaster:', error);
+      // Fallback: Copy link to clipboard
+      navigator.clipboard.writeText(shareableLink).then(() => {
+        alert('Payment link copied to clipboard!');
+      });
+    }
+  }, [linkAmount, linkDescription, selectedStablecoin]);
+
   // Swap functionality
   const fetchSwapQuote = useCallback(async () => {
     if (!swapAmount || !swapFromToken || !swapToToken) {
@@ -1867,7 +1901,10 @@ export default function FarcasterMiniApp() {
       // Create payment request URL that will show the payment modal
       const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
       
-      setGeneratedLink(paymentLink);
+      // Create shareable URL with Farcaster embed metadata
+      const shareableLink = `${baseUrl}/api/share?amount=${linkAmount}&currency=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&link=${encodeURIComponent(paymentLink)}`;
+      
+      setGeneratedLink(shareableLink);
       
       // Store payment request data
       const paymentData = {
@@ -3253,12 +3290,20 @@ export default function FarcasterMiniApp() {
           <div className="bg-slate-800/50 rounded-lg p-2 font-mono text-xs text-gray-300 break-all">
             {generatedLink}
           </div>
-          <button
-            onClick={() => navigator.clipboard.writeText(generatedLink)}
-            className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-xs"
-          >
-            📋 Copy Link
-          </button>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => navigator.clipboard.writeText(generatedLink)}
+              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-xs"
+            >
+              📋 Copy Link
+            </button>
+            <button
+              onClick={() => handleShareOnFarcaster(generatedLink)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg transition-colors text-xs"
+            >
+              🚀 Share on FC
+            </button>
+          </div>
         </div>
       )}
     </div>
