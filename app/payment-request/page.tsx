@@ -68,6 +68,16 @@ function PaymentRequestPageContent() {
       document.title = `NedaPay - Pay $${paymentData.amount} ${paymentData.token}`;
       
       // Update or add meta tags for Farcaster
+      const updateFarcasterMetaTag = (name: string, content: string) => {
+        let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('name', name);
+          document.head.appendChild(meta);
+        }
+        meta.content = content;
+      };
+
       const updateMetaTag = (property: string, content: string) => {
         let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
         if (!meta) {
@@ -95,8 +105,8 @@ function PaymentRequestPageContent() {
         }
       };
 
-      updateMetaTag('fc:miniapp', JSON.stringify(miniappData));
-      updateMetaTag('fc:frame', JSON.stringify({
+      updateFarcasterMetaTag('fc:miniapp', JSON.stringify(miniappData));
+      updateFarcasterMetaTag('fc:frame', JSON.stringify({
         ...miniappData,
         button: {
           ...miniappData.button,

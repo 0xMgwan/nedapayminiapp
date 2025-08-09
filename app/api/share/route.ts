@@ -60,7 +60,18 @@ export async function GET(request: NextRequest) {
   <meta name="twitter:description" content="Pay $${amount} ${currency} instantly with NedaPay on Base" />
   <meta name="twitter:image" content="${baseUrl}/api/og/payment?amount=${amount}&currency=${currency}&description=${encodeURIComponent(description)}" />
   
-  
+  <script>
+    // Redirect to payment page immediately for direct access
+    // This ensures that when someone clicks the link, they go straight to the payment page
+    if (window.location !== window.parent.location) {
+      // We're in a frame (like Farcaster), let the frame handle the launch
+      console.log('In frame context - letting frame handle launch');
+    } else {
+      // Direct access - redirect to payment page
+      console.log('Direct access - redirecting to payment page');
+      window.location.href = '${link}';
+    }
+  </script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -90,26 +101,26 @@ export async function GET(request: NextRequest) {
     .currency {
       font-size: 1.2rem;
       opacity: 0.8;
-      margin-bottom: 20px;
     }
     .description {
-      font-size: 1.1rem;
-      margin-bottom: 30px;
+      font-size: 1rem;
+      margin: 20px 0;
+      opacity: 0.9;
     }
-    .launch-btn {
-      background: linear-gradient(45deg, #667eea, #764ba2);
-      border: none;
+    .button {
+      background: linear-gradient(45deg, #4CAF50, #45a049);
       color: white;
+      border: none;
       padding: 15px 30px;
-      border-radius: 50px;
       font-size: 1.1rem;
-      font-weight: bold;
+      border-radius: 25px;
       cursor: pointer;
       text-decoration: none;
       display: inline-block;
+      margin-top: 20px;
       transition: transform 0.2s;
     }
-    .launch-btn:hover {
+    .button:hover {
       transform: scale(1.05);
     }
   </style>
@@ -120,12 +131,8 @@ export async function GET(request: NextRequest) {
     <div class="amount">$${amount}</div>
     <div class="currency">${currency}</div>
     <div class="description">${description}</div>
-    <a href="${link || baseUrl}" class="launch-btn">
-      🚀 Pay with NedaPay
-    </a>
-    <p style="margin-top: 30px; opacity: 0.7; font-size: 0.9rem;">
-      Instant crypto payments on Base network
-    </p>
+    <p>Redirecting to payment page...</p>
+    <a href="${link}" class="button">Pay Now</a>
   </div>
 </body>
 </html>`;
