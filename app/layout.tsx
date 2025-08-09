@@ -11,7 +11,8 @@ const URL = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
 const PROJECT_NAME = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay';
 
 export async function generateMetadata(): Promise<Metadata> {
-  return {
+  // Default metadata for main app
+  const defaultMetadata = {
     title: PROJECT_NAME,
     description: 'Pay, Accept, Swap and On/Offramp your Stablecoins to Fiat in seconds.',
     keywords: ['NedaPay', 'Farcaster', 'MiniApp', 'Base', 'USDC', 'Crypto Payments', 'Stablecoins'],
@@ -38,7 +39,6 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [`${URL}/og-image.png`],
     },
     other: {
-
       // Primary frame metadata for Farcaster MiniApp (modern format)
       'fc:miniapp': JSON.stringify({
         version: '1',
@@ -85,6 +85,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     manifest: `${URL}/.well-known/farcaster.json`,
   };
+
+  return defaultMetadata;
 }
 
 export default function RootLayout({

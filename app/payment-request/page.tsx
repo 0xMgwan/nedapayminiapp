@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
-import Head from 'next/head';
+
 import { stablecoins } from "../data/stablecoins";
 import { ethers } from 'ethers';
 import QRCode from 'qrcode';
@@ -629,59 +629,9 @@ function PaymentRequestPageContent() {
     );
   }
 
-  // Generate dynamic metadata for Farcaster sharing
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : `${baseUrl}/payment-request`;
-  
-  const miniappData = {
-    version: '1',
-    imageUrl: `${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(paymentData.description || 'Payment Request')}`,
-    button: {
-      title: `💰 Pay $${paymentData.amount} ${paymentData.token}`,
-      action: {
-        type: 'launch_miniapp',
-        name: 'NedaPay',
-        url: currentUrl,
-        splashImageUrl: `${baseUrl}/splash.png`,
-        splashBackgroundColor: '#1e293b'
-      }
-    }
-  };
-
   return (
-    <>
-      <Head>
-        <title>NedaPay - Pay ${paymentData.amount} ${paymentData.token}</title>
-        <meta name="description" content={`${paymentData.description || 'Payment Request'} - Pay $${paymentData.amount} ${paymentData.token} instantly with NedaPay on Base`} />
-        
-        {/* Farcaster MiniApp metadata */}
-        <meta name="fc:miniapp" content={JSON.stringify(miniappData)} />
-        <meta name="fc:frame" content={JSON.stringify({
-          ...miniappData,
-          button: {
-            ...miniappData.button,
-            action: {
-              ...miniappData.button.action,
-              type: 'launch_frame'
-            }
-          }
-        })} />
-        
-        {/* Open Graph metadata */}
-        <meta property="og:title" content={`NedaPay - Pay $${paymentData.amount} ${paymentData.token}`} />
-        <meta property="og:description" content={`${paymentData.description || 'Payment Request'} - Pay $${paymentData.amount} ${paymentData.token} instantly with NedaPay on Base`} />
-        <meta property="og:image" content={`${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(paymentData.description || 'Payment Request')}`} />
-        <meta property="og:url" content={currentUrl} />
-        
-        {/* Twitter Card metadata */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`NedaPay - Pay $${paymentData.amount} ${paymentData.token}`} />
-        <meta name="twitter:description" content={`${paymentData.description || 'Payment Request'} - Pay $${paymentData.amount} ${paymentData.token} instantly with NedaPay on Base`} />
-        <meta name="twitter:image" content={`${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(paymentData.description || 'Payment Request')}`} />
-      </Head>
-      
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-2xl w-full max-w-sm p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-2xl w-full max-w-sm p-6">
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-white mb-1">Payment Request</h1>
         </div>
@@ -823,8 +773,7 @@ function PaymentRequestPageContent() {
       </div>
       
       {showSuccessModal && <SuccessModal />}
-      </div>
-    </>
+    </div>
   );
 }
 
