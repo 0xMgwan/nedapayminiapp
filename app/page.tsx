@@ -76,61 +76,52 @@ export default function FarcasterMiniApp() {
   const isSmartWalletEnvironment = useMemo(() => {
     if (typeof window === 'undefined') return false;
     
-    // Check for MiniKit SDK presence (most reliable indicator)
-    if (typeof (window as any).MiniKit !== 'undefined') {
-      console.log('🎯 Detected Farcaster environment: MiniKit SDK present');
-      return true;
-    }
-    
-    // Check for Farcaster-specific URL patterns
     const url = window.location.href.toLowerCase();
     const referrer = document.referrer.toLowerCase();
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
     
-    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-    const isWebView = navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView');
+    // Check for official Farcaster MiniApp URLs
+    const isFarcasterOfficial = url.includes('warpcast.com/~/') || 
+                               url.includes('farcaster.xyz/miniapp') ||
+                               url.includes('farcaster.xyz/miniapps') ||
+                               url.includes('fc_frame=') ||
+                               url.includes('fc_miniapp=') ||
+                               referrer.includes('warpcast.com') ||
+                               referrer.includes('farcaster.xyz');
     
-    const farcasterIndicators = [
-      // Official Farcaster MiniApp URLs
-      url.includes('farcaster.xyz/miniapps'),
-      url.includes('warpcast.com'),
-      url.includes('farcaster.com'),
-      // URL parameters that indicate Farcaster
-      url.includes('fc_frame='),
-      url.includes('fc_miniapp='),
-      // Referrer checks
-      referrer.includes('farcaster'),
-      referrer.includes('warpcast'),
-      // User agent checks for Farcaster mobile app
-      navigator.userAgent.includes('Farcaster'),
-      navigator.userAgent.includes('Warpcast'),
-      // Enhanced mobile Farcaster detection
-      (isMobile && (
-        url.includes('farcaster') || 
-        referrer.includes('farcaster') ||
-        // Mobile app specific patterns
-        navigator.userAgent.includes('FarcasterMobile') ||
-        navigator.userAgent.includes('WarpcastMobile') ||
-        // Check for mobile webview in Farcaster context
-        (isWebView && (
-          url.includes('farcaster') ||
-          referrer.includes('farcaster') ||
-          // Check if ethereum is not available (common in mobile apps)
-          typeof (window as any).ethereum === 'undefined'
-        ))
-      )),
-      // Additional mobile-specific checks
-      (isMobile && isWebView && !window.location.hostname.includes('vercel.app') && !window.location.hostname.includes('localhost'))
-    ];
+    // Check for MiniKit SDK presence
+    const hasMiniKit = typeof (window as any).MiniKit !== 'undefined';
     
-    const isDetected = farcasterIndicators.some(indicator => indicator);
+    // Check for mobile webview patterns
+    const isMobileWebview = userAgent.includes('wv') || 
+                           userAgent.includes('webview') ||
+                           (userAgent.includes('mobile') && !userAgent.includes('safari'));
     
-    if (isDetected) {
-      console.log('🎯 Detected Farcaster environment via URL/referrer patterns');
-    } else {
-      console.log('🌐 Detected main website environment');
-    }
+    // AGGRESSIVE mobile detection - if mobile and not our main site, assume Farcaster
+    const isMobileFarcaster = isMobile && (
+      isFarcasterOfficial ||
+      hasMiniKit ||
+      isMobileWebview ||
+      // If mobile and not our main domain, likely Farcaster
+      (!url.includes('nedapayminiapp.vercel.app') && !url.includes('localhost'))
+    );
     
-    return isDetected;
+    const result = isFarcasterOfficial || hasMiniKit || isMobileWebview || isMobileFarcaster;
+    
+    console.log('🔍 Environment Detection:', {
+      url: window.location.href,
+      referrer: document.referrer,
+      userAgent: navigator.userAgent,
+      isMobile,
+      isFarcasterOfficial,
+      hasMiniKit,
+      isMobileWebview,
+      isMobileFarcaster,
+      result
+    });
+    
+    return result;
   }, []);
 
   // Unified wallet state - uses appropriate auth method based on environment

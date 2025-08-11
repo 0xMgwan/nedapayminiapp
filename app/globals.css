@@ -7,9 +7,40 @@
   [class*="notification"],
   [class*="toast"],
   [class*="alert"],
-  [role="alert"],
-  [role="dialog"] {
+  [role="alert"] {
     display: none !important;
+  }
+}
+
+/* Mobile Privy UI orientation fix */
+@media (max-width: 768px) {
+  /* Force Privy modal to respect device orientation */
+  [role="dialog"],
+  [role="alertdialog"],
+  [data-testid*="privy"],
+  [class*="privy"] {
+    transform: none !important;
+    width: 100vw !important;
+    height: auto !important;
+    max-height: 90vh !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    border-radius: 16px !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure modal content respects portrait orientation */
+  [role="dialog"] > div,
+  [role="alertdialog"] > div,
+  [data-testid*="privy"] > div,
+  [class*="privy"] > div {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 24px !important;
+    box-sizing: border-box !important;
   }
 }
 
