@@ -162,14 +162,23 @@ export default function FarcasterMiniApp() {
     const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
     
     const autoConnectSmartWallet = async () => {
-      // More aggressive detection for mobile Farcaster environments
+      // SUPER aggressive detection for mobile Farcaster environments
+      const url = window.location.href.toLowerCase();
+      const referrer = document.referrer.toLowerCase();
+      const userAgent = navigator.userAgent;
+      
       const shouldAutoConnect = isSmartWalletEnvironment || 
         (isMobile && (
-          window.location.href.toLowerCase().includes('farcaster') ||
-          document.referrer.toLowerCase().includes('farcaster') ||
-          navigator.userAgent.includes('wv') ||
-          typeof (window as any).MiniKit !== 'undefined'
-        ));
+          url.includes('farcaster') ||
+          referrer.includes('farcaster') ||
+          userAgent.includes('wv') ||
+          userAgent.includes('WebView') ||
+          typeof (window as any).MiniKit !== 'undefined' ||
+          // Force auto-connect if we detect any mobile webview
+          (userAgent.includes('Mobile') && !url.includes('vercel.app') && !url.includes('localhost'))
+        )) ||
+        // Fallback: If we're on mobile and have connectors, try anyway
+        (isMobile && connectors && connectors.length > 0 && retryCount === 0);
         
       if (shouldAutoConnect && !isConnected && connectors && connectors.length > 0) {
         try {
@@ -239,6 +248,62 @@ export default function FarcasterMiniApp() {
     const timer = setTimeout(autoConnectSmartWallet, initialDelay);
     return () => clearTimeout(timer);
   }, [isSmartWalletEnvironment, isConnected, connectors, connect]);
+
+  // Mobile Privy UI fix - Force modal visibility
+  useEffect(() => {
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Monitor for Privy modal creation and force visibility
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              
+              // Check if this is a Privy modal
+              if (
+                element.querySelector('[data-testid*="privy"]') ||
+                element.querySelector('[class*="privy"]') ||
+                element.querySelector('[role="dialog"]') ||
+                element.querySelector('[role="alertdialog"]') ||
+                element.id?.includes('privy') ||
+                element.className?.includes('privy')
+              ) {
+                console.log('🔧 Fixing Privy modal for mobile...');
+                
+                // Apply mobile fixes
+                const modal = element.querySelector('[role="dialog"], [role="alertdialog"], [data-testid*="privy"], [class*="privy"]') || element;
+                if (modal) {
+                  (modal as HTMLElement).style.cssText = `
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    z-index: 99999 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    background: rgba(0, 0, 0, 0.5) !important;
+                  `;
+                }
+              }
+            }
+          });
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+      
+      return () => observer.disconnect();
+    }
+  }, []);
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [recipientName, setRecipientName] = useState('');
