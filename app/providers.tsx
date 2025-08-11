@@ -17,6 +17,9 @@ export function Providers(props: { children: ReactNode }) {
             logo: 'https://nedapayminiapp.vercel.app/NEDApayLogo.png',
             showWalletLoginFirst: false,
             walletChainType: 'ethereum-only',
+            // Mobile-specific UI improvements
+            landingHeader: 'Connect to NedaPay',
+            loginMessage: 'Connect your wallet to start using NedaPay',
           },
           embeddedWallets: {
             createOnLogin: 'users-without-wallets',

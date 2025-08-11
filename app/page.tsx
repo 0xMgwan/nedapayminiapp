@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
@@ -72,28 +72,53 @@ export default function FarcasterMiniApp() {
   const { authenticated: privyAuthenticated, user: privyUser, login: privyLogin, logout: privyLogout, ready: privyReady } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   
-  // Detect if we're in a smart wallet environment (Farcaster MiniApp) - enhanced mobile detection
-  const isSmartWalletEnvironment = typeof window !== 'undefined' && (
-    // Direct URL indicators
-    window.location.href.includes('farcaster') ||
-    window.location.href.includes('warpcast') ||
-    window.location.href.includes('base.org') ||
-    // Referrer indicators
-    document.referrer.includes('farcaster') ||
-    document.referrer.includes('warpcast') ||
-    // MiniKit SDK presence
-    (typeof (window as any).MiniKit !== 'undefined') ||
-    // Mobile Farcaster specific detection
-    (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) && (
-      window.location.href.includes('farcaster') ||
-      document.referrer.includes('farcaster') ||
-      window.location.hostname.includes('farcaster') ||
-      // Check for Farcaster mobile app user agent patterns
-      navigator.userAgent.includes('Farcaster') ||
-      // Check if we're in a webview (common for mobile apps)
-      (navigator.userAgent.includes('wv') && !window.ethereum)
-    ))
-  );
+  // Detect if we're in a smart wallet environment (Farcaster MiniApp) - enhanced detection
+  const isSmartWalletEnvironment = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check for MiniKit SDK presence (most reliable indicator)
+    if (typeof (window as any).MiniKit !== 'undefined') {
+      console.log('🎯 Detected Farcaster environment: MiniKit SDK present');
+      return true;
+    }
+    
+    // Check for Farcaster-specific URL patterns
+    const url = window.location.href.toLowerCase();
+    const referrer = document.referrer.toLowerCase();
+    
+    const farcasterIndicators = [
+      // Official Farcaster MiniApp URLs
+      url.includes('farcaster.xyz/miniapps'),
+      url.includes('warpcast.com'),
+      url.includes('farcaster.com'),
+      // URL parameters that indicate Farcaster
+      url.includes('fc_frame='),
+      url.includes('fc_miniapp='),
+      // Referrer checks
+      referrer.includes('farcaster'),
+      referrer.includes('warpcast'),
+      // User agent checks for Farcaster mobile app
+      navigator.userAgent.includes('Farcaster'),
+      navigator.userAgent.includes('Warpcast'),
+      // Check if we're in a mobile webview with Farcaster context
+      (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) && (
+        url.includes('farcaster') || 
+        referrer.includes('farcaster') ||
+        // Check for webview without ethereum (common in mobile apps)
+        (navigator.userAgent.includes('wv') && typeof (window as any).ethereum === 'undefined')
+      ))
+    ];
+    
+    const isDetected = farcasterIndicators.some(indicator => indicator);
+    
+    if (isDetected) {
+      console.log('🎯 Detected Farcaster environment via URL/referrer patterns');
+    } else {
+      console.log('🌐 Detected main website environment');
+    }
+    
+    return isDetected;
+  }, []);
 
   // Unified wallet state - uses appropriate auth method based on environment
   const walletAddress = isSmartWalletEnvironment ? address : (privyWallets[0]?.address || null);
@@ -117,33 +142,59 @@ export default function FarcasterMiniApp() {
     });
   }, [isSmartWalletEnvironment, walletAddress, isWalletConnected, privyAuthenticated]);
 
-  // Auto-connect smart wallet in Farcaster environment
+  // Auto-connect smart wallet in Farcaster environment with retry logic
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 3;
+    
     const autoConnectSmartWallet = async () => {
       if (isSmartWalletEnvironment && !isConnected && connectors && connectors.length > 0) {
         try {
-          console.log('🔄 Auto-connecting smart wallet in Farcaster environment...');
+          console.log(`🔄 Auto-connecting smart wallet in Farcaster environment (attempt ${retryCount + 1}/${maxRetries})...`);
           console.log('Available connectors:', connectors.map(c => c.name));
+          console.log('Environment details:', {
+            url: window.location.href,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            hasMiniKit: typeof (window as any).MiniKit !== 'undefined',
+            hasEthereum: typeof (window as any).ethereum !== 'undefined'
+          });
           
-          // Smart connector selection for Farcaster
-          const preferredConnector = connectors.find(c => 
+          // Smart connector selection for Farcaster - try multiple strategies
+          let preferredConnector = connectors.find(c => 
             c.name.toLowerCase().includes('coinbase') || 
-            c.name.toLowerCase().includes('smart') ||
-            c.name.toLowerCase().includes('miniapp') ||
-            c.name.toLowerCase().includes('embedded')
-          ) || connectors[0];
+            c.name.toLowerCase().includes('smart')
+          );
+          
+          if (!preferredConnector) {
+            preferredConnector = connectors.find(c => 
+              c.name.toLowerCase().includes('miniapp') ||
+              c.name.toLowerCase().includes('embedded') ||
+              c.name.toLowerCase().includes('wallet')
+            );
+          }
+          
+          if (!preferredConnector) {
+            preferredConnector = connectors[0];
+          }
           
           console.log('🔗 Auto-connecting with:', preferredConnector.name);
           await connect({ connector: preferredConnector });
+          console.log('✅ Auto-connect successful!');
         } catch (error) {
-          console.error('❌ Auto-connect failed:', error);
-          // Don't show alert for auto-connect failures, just log
+          console.error(`❌ Auto-connect attempt ${retryCount + 1} failed:`, error);
+          
+          // Retry with delay if we haven't exceeded max retries
+          if (retryCount < maxRetries - 1) {
+            retryCount++;
+            setTimeout(autoConnectSmartWallet, 2000 * retryCount); // Exponential backoff
+          }
         }
       }
     };
 
-    // Delay auto-connect slightly to ensure environment detection is stable
-    const timer = setTimeout(autoConnectSmartWallet, 1000);
+    // Initial delay to ensure environment detection is stable
+    const timer = setTimeout(autoConnectSmartWallet, 1500);
     return () => clearTimeout(timer);
   }, [isSmartWalletEnvironment, isConnected, connectors, connect]);
 
