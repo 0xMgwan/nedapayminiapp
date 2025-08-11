@@ -15,9 +15,42 @@ export function Providers(props: { children: ReactNode }) {
             theme: 'dark',
             accentColor: '#676FFF',
             logo: 'https://nedapayminiapp.vercel.app/NEDApayLogo.png',
+            showWalletLoginFirst: false,
+            walletChainType: 'ethereum-only',
           },
           embeddedWallets: {
             createOnLogin: 'users-without-wallets',
+            requireUserPasswordOnCreate: false,
+            showWalletUIs: true,
+          },
+          loginMethods: ['email', 'sms', 'wallet'],
+          supportedChains: [
+            {
+              id: 8453, // Base mainnet
+              name: 'Base',
+              network: 'base',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: {
+                default: { http: ['https://mainnet.base.org'] },
+                public: { http: ['https://mainnet.base.org'] },
+              },
+              blockExplorers: {
+                default: { name: 'BaseScan', url: 'https://basescan.org' },
+              },
+            },
+          ],
+          defaultChain: {
+            id: 8453,
+            name: 'Base',
+            network: 'base',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: {
+              default: { http: ['https://mainnet.base.org'] },
+              public: { http: ['https://mainnet.base.org'] },
+            },
+            blockExplorers: {
+              default: { name: 'BaseScan', url: 'https://basescan.org' },
+            },
           },
         }}
       >

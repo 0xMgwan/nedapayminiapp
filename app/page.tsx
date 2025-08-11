@@ -116,6 +116,37 @@ export default function FarcasterMiniApp() {
       timestamp: new Date().toISOString()
     });
   }, [isSmartWalletEnvironment, walletAddress, isWalletConnected, privyAuthenticated]);
+
+  // Auto-connect smart wallet in Farcaster environment
+  useEffect(() => {
+    const autoConnectSmartWallet = async () => {
+      if (isSmartWalletEnvironment && !isConnected && connectors && connectors.length > 0) {
+        try {
+          console.log('🔄 Auto-connecting smart wallet in Farcaster environment...');
+          console.log('Available connectors:', connectors.map(c => c.name));
+          
+          // Smart connector selection for Farcaster
+          const preferredConnector = connectors.find(c => 
+            c.name.toLowerCase().includes('coinbase') || 
+            c.name.toLowerCase().includes('smart') ||
+            c.name.toLowerCase().includes('miniapp') ||
+            c.name.toLowerCase().includes('embedded')
+          ) || connectors[0];
+          
+          console.log('🔗 Auto-connecting with:', preferredConnector.name);
+          await connect({ connector: preferredConnector });
+        } catch (error) {
+          console.error('❌ Auto-connect failed:', error);
+          // Don't show alert for auto-connect failures, just log
+        }
+      }
+    };
+
+    // Delay auto-connect slightly to ensure environment detection is stable
+    const timer = setTimeout(autoConnectSmartWallet, 1000);
+    return () => clearTimeout(timer);
+  }, [isSmartWalletEnvironment, isConnected, connectors, connect]);
+
   const [phoneNumber, setPhoneNumber] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [tillNumber, setTillNumber] = useState('');
