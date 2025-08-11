@@ -6,6 +6,7 @@ import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
@@ -67,6 +68,10 @@ export default function FarcasterMiniApp() {
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useConnectorClient();
   
+  // Privy hooks for main website authentication
+  const { authenticated: privyAuthenticated, user: privyUser, login: privyLogin, logout: privyLogout, ready: privyReady } = usePrivy();
+  const { wallets: privyWallets } = useWallets();
+  
   // Detect if we're in a smart wallet environment (Farcaster MiniApp) - enhanced mobile detection
   const isSmartWalletEnvironment = typeof window !== 'undefined' && (
     // Direct URL indicators
@@ -90,6 +95,11 @@ export default function FarcasterMiniApp() {
     ))
   );
 
+  // Unified wallet state - uses appropriate auth method based on environment
+  const walletAddress = isSmartWalletEnvironment ? address : (privyWallets[0]?.address || null);
+  const isWalletConnected = isSmartWalletEnvironment ? isConnected : (privyAuthenticated && privyWallets.length > 0);
+  const isWalletReady = isSmartWalletEnvironment ? true : privyReady;
+
   // Debug component initialization
   useEffect(() => {
     console.log('FarcasterMiniApp component initializing:', {
@@ -99,9 +109,13 @@ export default function FarcasterMiniApp() {
       isSmartWalletEnvironment,
       hasMiniKit: typeof (window as any).MiniKit !== 'undefined',
       hasWindowEthereum: typeof (window as any).ethereum !== 'undefined',
+      walletAddress,
+      isWalletConnected,
+      privyAuthenticated,
+      privyWalletsCount: privyWallets.length,
       timestamp: new Date().toISOString()
     });
-  }, [isSmartWalletEnvironment]);
+  }, [isSmartWalletEnvironment, walletAddress, isWalletConnected, privyAuthenticated]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [tillNumber, setTillNumber] = useState('');
@@ -179,7 +193,7 @@ export default function FarcasterMiniApp() {
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
-    if (!isConnected || !address) return null;
+    if (!isWalletConnected || !walletAddress) return null;
     
     // MiniKit automatically connects to Farcaster smart wallet when available
     // Return a simplified wallet object for compatibility with existing code
@@ -190,8 +204,6 @@ export default function FarcasterMiniApp() {
       getEthereumProvider: () => walletClient
     };
   })();
-  
-  const walletAddress = connectedWallet?.address;
   
   // Debug MiniKit wallet info
   useEffect(() => {
@@ -469,11 +481,11 @@ export default function FarcasterMiniApp() {
       }
       
       // Only attempt auto-connection if MiniKit is ready and no connection errors
-      if (isFrameReady && !isConnected && !connectError && connectors.length > 0) {
+      if (isFrameReady && !isWalletConnected && !connectError && connectors.length > 0) {
         console.log('🔗 Attempting smart wallet auto-connection...');
         // Use a timeout to prevent immediate popup blocking
         setTimeout(() => {
-          if (!isConnected) {
+          if (!isWalletConnected) {
             try {
               connect({ connector: connectors[0] });
             } catch (error) {
@@ -1067,7 +1079,7 @@ export default function FarcasterMiniApp() {
         console.log('❌ Wallet client not immediately available, attempting to get fresh client...');
         console.log('🔍 Connection status:', { isConnected, address: address?.slice(0, 6) + '...' });
         
-        if (!isConnected || !address) {
+        if (!isWalletConnected || !walletAddress) {
           throw new Error('Wallet not connected. Please connect your wallet first.');
         }
         
@@ -1577,7 +1589,7 @@ export default function FarcasterMiniApp() {
   }, [swapAmount, swapFromToken, swapToToken, isConnected]);
 
   const executeSwap = useCallback(async () => {
-    if (!swapAmount || !swapFromToken || !swapToToken || !swapQuote || !isConnected || !address) {
+    if (!swapAmount || !swapFromToken || !swapToToken || !swapQuote || !isWalletConnected || !walletAddress) {
       throw new Error('Missing swap parameters');
     }
 
@@ -1882,7 +1894,7 @@ export default function FarcasterMiniApp() {
   }, [swapAmount, swapFromToken, swapToToken, fetchSwapQuote]);
 
   const handleGeneratePaymentLink = useCallback(async () => {
-    if (!linkAmount || !isConnected || !walletAddress) {
+    if (!linkAmount || !isWalletConnected || !walletAddress) {
       alert('Please connect wallet and enter amount');
       return;
     }
@@ -3162,13 +3174,13 @@ export default function FarcasterMiniApp() {
             isConnected ? 'bg-green-400' : 'bg-yellow-400'
           }`}></span>
           <span className="text-xs font-medium">
-            {isConnected 
+            {isWalletConnected 
               ? `✅ Wallet Connected - Ready to Generate Links` 
               : `⚠️ Connect Wallet to Generate Links`
             }
           </span>
         </div>
-        {isConnected && walletAddress && (
+        {isWalletConnected && walletAddress && (
           <div className="text-xs text-gray-400 mt-1 font-mono">
             {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
           </div>
@@ -3273,32 +3285,34 @@ export default function FarcasterMiniApp() {
 
       {/* Generate Link Button */}
       <button 
-        onClick={isConnected ? handleGeneratePaymentLink : () => {
+        onClick={isWalletConnected ? handleGeneratePaymentLink : () => {
           if (isSmartWalletEnvironment) {
             console.log('⚠️ Smart wallet environment - connection should happen automatically');
-          } else {
-            console.log('💻 Desktop environment - manual connection may be needed');
-            // Only attempt connection on desktop
+            // In Farcaster, try to connect to available connectors
             if (connectors.length > 0) {
               connect({ connector: connectors[0] });
             }
+          } else {
+            console.log('💻 Main website - using Privy login');
+            // On main website, use Privy login
+            privyLogin();
           }
         }}
-        disabled={!isConnected || !linkAmount}
+        disabled={!isWalletConnected || !linkAmount}
         className={`w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm border-2 ${
-          isConnected && linkAmount
+          isWalletConnected && linkAmount
             ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 shadow-lg border-blue-400/30 hover:border-blue-300/50' 
             : 'bg-gray-600 text-gray-300 cursor-not-allowed border-gray-600/30'
         }`}
       >
-        {isConnected ? (
+        {isWalletConnected ? (
           <>
             🔗 Generate Payment Link
           </>
         ) : (
           <>
             <WalletIcon className="w-4 h-4" />
-            Connect Wallet First
+            {isSmartWalletEnvironment ? 'Connect Wallet' : 'Login with Privy'}
           </>
         )}
       </button>
@@ -3680,13 +3694,13 @@ export default function FarcasterMiniApp() {
               isConnected ? 'bg-green-400' : 'bg-yellow-400'
             }`}></span>
             <span className="text-sm font-medium">
-              {isConnected 
+              {isWalletConnected 
                 ? `✅ Wallet Connected - Ready to Create Invoices` 
                 : `⚠️ Connect Wallet to Create Invoices`
               }
             </span>
           </div>
-          {isConnected && walletAddress && (
+          {isWalletConnected && walletAddress && (
             <div className="text-xs text-gray-400 mt-1 font-mono">
               {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
             </div>
@@ -3697,14 +3711,14 @@ export default function FarcasterMiniApp() {
         <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={() => {
-              if (isConnected) {
+              if (isWalletConnected) {
                 setInvoiceView('create');
               } else {
                 alert('Please connect your wallet first');
               }
             }}
             className={`p-3 rounded-xl border-2 transition-all duration-300 ${
-              isConnected
+              isWalletConnected
                 ? 'bg-blue-600/20 border-blue-600/30 hover:bg-blue-600/30 text-blue-400'
                 : 'bg-gray-600/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
             }`}
@@ -3717,14 +3731,14 @@ export default function FarcasterMiniApp() {
           
           <button 
             onClick={() => {
-              if (isConnected) {
+              if (isWalletConnected) {
                 setInvoiceView('list');
               } else {
                 alert('Please connect your wallet first');
               }
             }}
             className={`p-3 rounded-xl border-2 transition-all duration-300 ${
-              isConnected
+              isWalletConnected
                 ? 'bg-purple-600/20 border-purple-600/30 hover:bg-purple-600/30 text-purple-400'
                 : 'bg-gray-600/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
             }`}
@@ -4009,15 +4023,15 @@ export default function FarcasterMiniApp() {
         {/* Swap Button */}
         <button
           onClick={executeSwap}
-          disabled={!isConnected || !swapAmount || !swapToToken || swapIsLoading}
+          disabled={!isWalletConnected || !swapAmount || !swapToToken || swapIsLoading}
           className={`w-full py-3 rounded-2xl font-bold text-base transition-all border-2 ${
-            isConnected && swapAmount && swapToToken && !swapIsLoading
+            isWalletConnected && swapAmount && swapToToken && !swapIsLoading
               ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 hover:border-blue-400 transform hover:scale-[1.02]'
               : 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
           }`}
         >
-          {!isConnected ? (
-            'Connect Wallet'
+          {!isWalletConnected ? (
+            isSmartWalletEnvironment ? 'Connect Wallet' : 'Login with Privy'
           ) : swapIsLoading ? (
             <div className="flex items-center justify-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -4075,40 +4089,36 @@ export default function FarcasterMiniApp() {
             </div>
           </div>
           
-          {/* Wallet Button - Always show wallet icon */}
-          {!isConnected ? (
+          {/* Wallet Button - Environment-aware authentication */}
+          {!isWalletConnected ? (
             <button
               onClick={async () => {
                 try {
                   console.log('🔗 Wallet button clicked!');
                   console.log('Environment:', isSmartWalletEnvironment ? 'Farcaster/MiniApp' : 'Website');
-                  console.log('Available connectors:', connectors?.map(c => c.name));
                   
-                  if (connectors && connectors.length > 0) {
-                    // Smart connector selection based on environment
-                    let preferredConnector;
+                  if (isSmartWalletEnvironment) {
+                    // Farcaster environment - use wagmi connectors
+                    console.log('Available connectors:', connectors?.map(c => c.name));
                     
-                    if (isSmartWalletEnvironment) {
-                      // Farcaster environment - prefer MiniApp or Coinbase connectors
-                      preferredConnector = connectors.find(c => 
+                    if (connectors && connectors.length > 0) {
+                      // Smart connector selection for Farcaster
+                      const preferredConnector = connectors.find(c => 
                         c.name.toLowerCase().includes('coinbase') || 
                         c.name.toLowerCase().includes('smart') ||
                         c.name.toLowerCase().includes('miniapp')
                       ) || connectors[0];
+                      
+                      console.log('Using connector:', preferredConnector.name);
+                      await connect({ connector: preferredConnector });
                     } else {
-                      // Website environment - prefer MetaMask, Coinbase, or WalletConnect
-                      preferredConnector = connectors.find(c => 
-                        c.name.toLowerCase().includes('metamask') ||
-                        c.name.toLowerCase().includes('coinbase') ||
-                        c.name.toLowerCase().includes('walletconnect')
-                      ) || connectors[0];
+                      console.error('❌ No connectors available');
+                      alert('No wallet connectors available in this environment');
                     }
-                    
-                    console.log('Using connector:', preferredConnector.name);
-                    await connect({ connector: preferredConnector });
                   } else {
-                    console.error('❌ No connectors available');
-                    alert('Please install a wallet extension like MetaMask or Coinbase Wallet');
+                    // Main website - use Privy login
+                    console.log('🌐 Using Privy login for main website');
+                    privyLogin();
                   }
                 } catch (error) {
                   console.error('❌ Failed to connect wallet:', error);
@@ -4126,14 +4136,14 @@ export default function FarcasterMiniApp() {
               <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
             </button>
           ) : (
-            isSmartWalletEnvironment ? (
-              // Farcaster environment - show same clean connected state
-              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-green-400 text-xs font-medium">Connected</span>
-                <span className="text-gray-400 text-xs font-mono">
-                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
-                </span>
+            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-green-400 text-xs font-medium">
+                {isSmartWalletEnvironment ? 'Connected' : 'Privy'}
+              </span>
+              <span className="text-gray-400 text-xs font-mono">
+                {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
+              </span>
                 <button
                   onClick={async () => {
                     if (walletAddress) {
@@ -4161,7 +4171,13 @@ export default function FarcasterMiniApp() {
                 </button>
                 {/* Disconnect button */}
                 <button
-                  onClick={() => disconnect()}
+                  onClick={() => {
+                    if (isSmartWalletEnvironment) {
+                      disconnect();
+                    } else {
+                      privyLogout();
+                    }
+                  }}
                   className="text-white hover:text-red-400 transition-colors ml-2"
                   title="Disconnect wallet"
                 >
@@ -4170,52 +4186,8 @@ export default function FarcasterMiniApp() {
                   </svg>
                 </button>
               </div>
-            ) : (
-              // Website environment - show same clean connected state
-              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  <span className="text-green-400 text-xs font-medium">Connected</span>
-                  <span className="text-gray-400 text-xs font-mono">
-                    {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
-                  </span>
-                  <button
-                    onClick={async () => {
-                      if (walletAddress) {
-                        try {
-                          await navigator.clipboard.writeText(walletAddress);
-                          setAddressCopied(true);
-                          setTimeout(() => setAddressCopied(false), 2000);
-                        } catch (err) {
-                          console.error('Failed to copy address:', err);
-                        }
-                      }
-                    }}
-                    className="text-white hover:text-blue-400 transition-colors ml-1"
-                    title={addressCopied ? "Copied!" : "Copy address"}
-                  >
-                    {addressCopied ? (
-                      <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                    )}
-                  </button>
-                  {/* Disconnect button */}
-                  <button
-                    onClick={() => disconnect()}
-                    className="text-white hover:text-red-400 transition-colors ml-2"
-                    title="Disconnect wallet"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
-              </div>
             )
-          )}
+          }
         </div>
 
         {/* Floating Rates Ticker */}
