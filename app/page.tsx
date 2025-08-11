@@ -155,155 +155,71 @@ export default function FarcasterMiniApp() {
     });
   }, [isSmartWalletEnvironment, walletAddress, isWalletConnected, privyAuthenticated]);
 
-  // Auto-connect smart wallet in Farcaster environment with enhanced mobile support
+  // Auto-connect smart wallet in Farcaster environment - MOBILE FOCUSED
   useEffect(() => {
     let retryCount = 0;
-    const maxRetries = 5; // Increased retries for mobile
+    const maxRetries = 3;
     const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
     
     const autoConnectSmartWallet = async () => {
-      // SUPER aggressive detection for mobile Farcaster environments
-      const url = window.location.href.toLowerCase();
-      const referrer = document.referrer.toLowerCase();
-      const userAgent = navigator.userAgent;
+      // Simple but effective detection - focus on what works
+      const shouldAutoConnect = isSmartWalletEnvironment;
       
-      const shouldAutoConnect = isSmartWalletEnvironment || 
-        (isMobile && (
-          url.includes('farcaster') ||
-          referrer.includes('farcaster') ||
-          userAgent.includes('wv') ||
-          userAgent.includes('WebView') ||
-          typeof (window as any).MiniKit !== 'undefined' ||
-          // Force auto-connect if we detect any mobile webview
-          (userAgent.includes('Mobile') && !url.includes('vercel.app') && !url.includes('localhost'))
-        )) ||
-        // Fallback: If we're on mobile and have connectors, try anyway
-        (isMobile && connectors && connectors.length > 0 && retryCount === 0);
+      console.log('🔍 Auto-connect check:', {
+        isMobile,
+        isSmartWalletEnvironment,
+        shouldAutoConnect,
+        isConnected,
+        connectorsCount: connectors?.length || 0,
+        retryCount
+      });
         
       if (shouldAutoConnect && !isConnected && connectors && connectors.length > 0) {
         try {
           console.log(`🔄 Auto-connecting smart wallet (attempt ${retryCount + 1}/${maxRetries})...`);
-          console.log('Mobile detection:', isMobile);
-          console.log('Environment detection:', isSmartWalletEnvironment);
-          console.log('Available connectors:', connectors.map(c => c.name));
-          console.log('Environment details:', {
-            url: window.location.href,
-            referrer: document.referrer,
-            userAgent: navigator.userAgent,
-            hasMiniKit: typeof (window as any).MiniKit !== 'undefined',
-            hasEthereum: typeof (window as any).ethereum !== 'undefined',
-            isWebView: navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView')
-          });
+          console.log('📱 Mobile device:', isMobile);
+          console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
           
-          // Enhanced connector selection for mobile Farcaster
-          let preferredConnector;
-          
-          // First try: Look for Coinbase/Smart wallet connectors
-          preferredConnector = connectors.find(c => 
+          // Simple connector selection - prioritize what works
+          let preferredConnector = connectors.find(c => 
             c.name.toLowerCase().includes('coinbase') || 
             c.name.toLowerCase().includes('smart')
-          );
+          ) || connectors[0];
           
-          // Second try: Look for mobile-specific connectors
-          if (!preferredConnector) {
-            preferredConnector = connectors.find(c => 
-              c.name.toLowerCase().includes('mobile') ||
-              c.name.toLowerCase().includes('app') ||
-              c.name.toLowerCase().includes('miniapp')
-            );
-          }
+          console.log('🎯 Selected connector:', preferredConnector.name);
           
-          // Third try: Look for embedded/wallet connectors
-          if (!preferredConnector) {
-            preferredConnector = connectors.find(c => 
-              c.name.toLowerCase().includes('embedded') ||
-              c.name.toLowerCase().includes('wallet') ||
-              c.name.toLowerCase().includes('injected')
-            );
-          }
-          
-          // Fallback: Use first available connector
-          if (!preferredConnector) {
-            preferredConnector = connectors[0];
-          }
-          
-          console.log('🔗 Auto-connecting with:', preferredConnector.name);
+          // Force connection
           await connect({ connector: preferredConnector });
           console.log('✅ Auto-connect successful!');
+          
         } catch (error) {
           console.error(`❌ Auto-connect attempt ${retryCount + 1} failed:`, error);
           
-          // More aggressive retry for mobile
+          // Retry logic
           if (retryCount < maxRetries - 1) {
             retryCount++;
-            const delay = isMobile ? 1000 * retryCount : 2000 * retryCount; // Faster retries on mobile
+            const delay = 2000; // 2 second delay
+            console.log(`⏳ Retrying in ${delay}ms...`);
             setTimeout(autoConnectSmartWallet, delay);
+          } else {
+            console.log('❌ All auto-connect attempts failed');
           }
         }
+      } else {
+        console.log('⏭️ Skipping auto-connect:', {
+          shouldAutoConnect,
+          isConnected,
+          hasConnectors: !!(connectors && connectors.length > 0)
+        });
       }
     };
 
-    // Shorter initial delay for mobile
-    const initialDelay = isMobile ? 800 : 1500;
-    const timer = setTimeout(autoConnectSmartWallet, initialDelay);
+    // Wait for environment detection to stabilize
+    const timer = setTimeout(autoConnectSmartWallet, 2000);
     return () => clearTimeout(timer);
   }, [isSmartWalletEnvironment, isConnected, connectors, connect]);
 
-  // Mobile Privy UI fix - Force modal visibility
-  useEffect(() => {
-    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-      // Monitor for Privy modal creation and force visibility
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as Element;
-              
-              // Check if this is a Privy modal
-              if (
-                element.querySelector('[data-testid*="privy"]') ||
-                element.querySelector('[class*="privy"]') ||
-                element.querySelector('[role="dialog"]') ||
-                element.querySelector('[role="alertdialog"]') ||
-                element.id?.includes('privy') ||
-                element.className?.includes('privy')
-              ) {
-                console.log('🔧 Fixing Privy modal for mobile...');
-                
-                // Apply mobile fixes
-                const modal = element.querySelector('[role="dialog"], [role="alertdialog"], [data-testid*="privy"], [class*="privy"]') || element;
-                if (modal) {
-                  (modal as HTMLElement).style.cssText = `
-                    position: fixed !important;
-                    top: 0 !important;
-                    left: 0 !important;
-                    right: 0 !important;
-                    bottom: 0 !important;
-                    width: 100vw !important;
-                    height: 100vh !important;
-                    z-index: 99999 !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    background: rgba(0, 0, 0, 0.5) !important;
-                  `;
-                }
-              }
-            }
-          });
-        });
-      });
-      
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-      
-      return () => observer.disconnect();
-    }
-  }, []);
+
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [recipientName, setRecipientName] = useState('');

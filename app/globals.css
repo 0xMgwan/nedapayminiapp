@@ -13,70 +13,7 @@
   }
 }
 
-/* Mobile Privy UI fixes - More aggressive targeting */
-@media (max-width: 768px) {
-  /* Target all possible Privy modal selectors */
-  [data-privy-modal],
-  [data-privy-dialog],
-  [data-testid*="privy"],
-  [class*="privy"],
-  [id*="privy"],
-  div[role="dialog"],
-  div[role="alertdialog"],
-  .privy-modal,
-  .privy-dialog,
-  #privy-modal,
-  #privy-dialog {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 99999 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(4px) !important;
-  }
-  
-  /* Privy modal content - more specific targeting */
-  [data-privy-modal] > div,
-  [data-privy-dialog] > div,
-  [data-testid*="privy"] > div,
-  [class*="privy"] > div,
-  [id*="privy"] > div,
-  div[role="dialog"] > div,
-  div[role="alertdialog"] > div,
-  .privy-modal > div,
-  .privy-dialog > div,
-  #privy-modal > div,
-  #privy-dialog > div {
-    max-width: 90vw !important;
-    max-height: 85vh !important;
-    width: auto !important;
-    height: auto !important;
-    margin: auto !important;
-    background: white !important;
-    border-radius: 12px !important;
-    padding: 20px !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-  }
-  
-  /* Force all modal overlays to be visible */
-  [data-radix-portal],
-  [data-radix-popper-content-wrapper],
-  .radix-portal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    z-index: 99999 !important;
-  }
-}
+
 
 :root {
   /* Radix UI theme colors */
