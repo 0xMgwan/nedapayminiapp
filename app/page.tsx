@@ -86,6 +86,9 @@ export default function FarcasterMiniApp() {
     const url = window.location.href.toLowerCase();
     const referrer = document.referrer.toLowerCase();
     
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const isWebView = navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView');
+    
     const farcasterIndicators = [
       // Official Farcaster MiniApp URLs
       url.includes('farcaster.xyz/miniapps'),
@@ -100,13 +103,23 @@ export default function FarcasterMiniApp() {
       // User agent checks for Farcaster mobile app
       navigator.userAgent.includes('Farcaster'),
       navigator.userAgent.includes('Warpcast'),
-      // Check if we're in a mobile webview with Farcaster context
-      (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) && (
+      // Enhanced mobile Farcaster detection
+      (isMobile && (
         url.includes('farcaster') || 
         referrer.includes('farcaster') ||
-        // Check for webview without ethereum (common in mobile apps)
-        (navigator.userAgent.includes('wv') && typeof (window as any).ethereum === 'undefined')
-      ))
+        // Mobile app specific patterns
+        navigator.userAgent.includes('FarcasterMobile') ||
+        navigator.userAgent.includes('WarpcastMobile') ||
+        // Check for mobile webview in Farcaster context
+        (isWebView && (
+          url.includes('farcaster') ||
+          referrer.includes('farcaster') ||
+          // Check if ethereum is not available (common in mobile apps)
+          typeof (window as any).ethereum === 'undefined'
+        ))
+      )),
+      // Additional mobile-specific checks
+      (isMobile && isWebView && !window.location.hostname.includes('vercel.app') && !window.location.hostname.includes('localhost'))
     ];
     
     const isDetected = farcasterIndicators.some(indicator => indicator);
@@ -142,38 +155,65 @@ export default function FarcasterMiniApp() {
     });
   }, [isSmartWalletEnvironment, walletAddress, isWalletConnected, privyAuthenticated]);
 
-  // Auto-connect smart wallet in Farcaster environment with retry logic
+  // Auto-connect smart wallet in Farcaster environment with enhanced mobile support
   useEffect(() => {
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5; // Increased retries for mobile
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
     
     const autoConnectSmartWallet = async () => {
-      if (isSmartWalletEnvironment && !isConnected && connectors && connectors.length > 0) {
+      // More aggressive detection for mobile Farcaster environments
+      const shouldAutoConnect = isSmartWalletEnvironment || 
+        (isMobile && (
+          window.location.href.toLowerCase().includes('farcaster') ||
+          document.referrer.toLowerCase().includes('farcaster') ||
+          navigator.userAgent.includes('wv') ||
+          typeof (window as any).MiniKit !== 'undefined'
+        ));
+        
+      if (shouldAutoConnect && !isConnected && connectors && connectors.length > 0) {
         try {
-          console.log(`🔄 Auto-connecting smart wallet in Farcaster environment (attempt ${retryCount + 1}/${maxRetries})...`);
+          console.log(`🔄 Auto-connecting smart wallet (attempt ${retryCount + 1}/${maxRetries})...`);
+          console.log('Mobile detection:', isMobile);
+          console.log('Environment detection:', isSmartWalletEnvironment);
           console.log('Available connectors:', connectors.map(c => c.name));
           console.log('Environment details:', {
             url: window.location.href,
             referrer: document.referrer,
             userAgent: navigator.userAgent,
             hasMiniKit: typeof (window as any).MiniKit !== 'undefined',
-            hasEthereum: typeof (window as any).ethereum !== 'undefined'
+            hasEthereum: typeof (window as any).ethereum !== 'undefined',
+            isWebView: navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView')
           });
           
-          // Smart connector selection for Farcaster - try multiple strategies
-          let preferredConnector = connectors.find(c => 
+          // Enhanced connector selection for mobile Farcaster
+          let preferredConnector;
+          
+          // First try: Look for Coinbase/Smart wallet connectors
+          preferredConnector = connectors.find(c => 
             c.name.toLowerCase().includes('coinbase') || 
             c.name.toLowerCase().includes('smart')
           );
           
+          // Second try: Look for mobile-specific connectors
           if (!preferredConnector) {
             preferredConnector = connectors.find(c => 
-              c.name.toLowerCase().includes('miniapp') ||
-              c.name.toLowerCase().includes('embedded') ||
-              c.name.toLowerCase().includes('wallet')
+              c.name.toLowerCase().includes('mobile') ||
+              c.name.toLowerCase().includes('app') ||
+              c.name.toLowerCase().includes('miniapp')
             );
           }
           
+          // Third try: Look for embedded/wallet connectors
+          if (!preferredConnector) {
+            preferredConnector = connectors.find(c => 
+              c.name.toLowerCase().includes('embedded') ||
+              c.name.toLowerCase().includes('wallet') ||
+              c.name.toLowerCase().includes('injected')
+            );
+          }
+          
+          // Fallback: Use first available connector
           if (!preferredConnector) {
             preferredConnector = connectors[0];
           }
@@ -184,17 +224,19 @@ export default function FarcasterMiniApp() {
         } catch (error) {
           console.error(`❌ Auto-connect attempt ${retryCount + 1} failed:`, error);
           
-          // Retry with delay if we haven't exceeded max retries
+          // More aggressive retry for mobile
           if (retryCount < maxRetries - 1) {
             retryCount++;
-            setTimeout(autoConnectSmartWallet, 2000 * retryCount); // Exponential backoff
+            const delay = isMobile ? 1000 * retryCount : 2000 * retryCount; // Faster retries on mobile
+            setTimeout(autoConnectSmartWallet, delay);
           }
         }
       }
     };
 
-    // Initial delay to ensure environment detection is stable
-    const timer = setTimeout(autoConnectSmartWallet, 1500);
+    // Shorter initial delay for mobile
+    const initialDelay = isMobile ? 800 : 1500;
+    const timer = setTimeout(autoConnectSmartWallet, initialDelay);
     return () => clearTimeout(timer);
   }, [isSmartWalletEnvironment, isConnected, connectors, connect]);
 
