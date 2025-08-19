@@ -229,8 +229,8 @@ export default function FarcasterMiniApp() {
   const [currencies, setCurrencies] = useState<Array<{ code: string; name: string; symbol: string }>>([]);
   const [floatingRates, setFloatingRates] = useState<{ [key: string]: RateData }>({});
   const [institutions, setInstitutions] = useState<Array<{ name: string; code: string; type: string }>>([]);
-  const [sendCurrency, setSendCurrency] = useState<'local' | 'usdc'>('local');
-  const [payCurrency, setPayCurrency] = useState<'local' | 'usdc'>('local');
+  const [sendCurrency, setSendCurrency] = useState<'local' | 'usdc'>('usdc');
+  const [payCurrency, setPayCurrency] = useState<'local' | 'usdc'>('usdc');
   const [selectedSendToken, setSelectedSendToken] = useState('USDC');
   const [selectedPayToken, setSelectedPayToken] = useState('USDC');
   const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
@@ -2250,38 +2250,6 @@ export default function FarcasterMiniApp() {
         <div className="flex justify-between items-center mb-1">
           <label className="text-xs text-gray-400">Enter Amount</label>
           <div className="flex gap-1">
-            <button 
-              onClick={() => setSendCurrency('local')}
-              className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group ${
-                sendCurrency === 'local' 
-                  ? 'bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 text-white shadow-xl shadow-orange-500/30 transform scale-110 border-2 border-orange-400/50' 
-                  : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-orange-400/30 active:scale-95'
-              }`}
-            >
-              {/* Animated background */}
-              {sendCurrency === 'local' && (
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-400/20 animate-pulse" />
-              )}
-              
-              {/* Hover glow */}
-              <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                sendCurrency === 'local' 
-                  ? 'opacity-100 bg-orange-400/10' 
-                  : 'opacity-0 group-hover:opacity-100 bg-orange-400/5'
-              }`} />
-              
-              <span className={`relative z-10 transition-all duration-300 ${
-                sendCurrency === 'local' ? 'drop-shadow-lg' : 'group-hover:tracking-wider'
-              }`}>
-                🏛️ {selectedCountry.currency}
-              </span>
-              
-              {/* Active indicator */}
-              {sendCurrency === 'local' && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-bounce" />
-              )}
-            </button>
-            
             <div className="relative">
               <div className="relative">
                 <button
@@ -2289,11 +2257,7 @@ export default function FarcasterMiniApp() {
                     setSendCurrency('usdc');
                     setShowSendTokenDropdown(!showSendTokenDropdown);
                   }}
-                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between ${
-                    sendCurrency === 'usdc' 
-                      ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
-                      : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
-                  }`}
+                  className="relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 border-2 border-blue-400/50"
                 >
                   <div className="flex items-center gap-2">
                     {selectedSendToken === 'USDC' ? (
@@ -2857,38 +2821,6 @@ export default function FarcasterMiniApp() {
         <div className="flex justify-between items-center mb-1.5">
           <label className="text-xs text-gray-400">Enter Amount</label>
           <div className="flex gap-2">
-            <button 
-              onClick={() => setPayCurrency('local')}
-              className={`relative px-4 py-2 text-xs rounded-xl font-bold transition-all duration-300 ease-out overflow-hidden group ${
-                payCurrency === 'local' 
-                  ? 'bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 text-white shadow-xl shadow-orange-500/30 transform scale-110 border-2 border-orange-400/50' 
-                  : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-orange-400/30 active:scale-95'
-              }`}
-            >
-              {/* Animated background */}
-              {payCurrency === 'local' && (
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-400/20 animate-pulse" />
-              )}
-              
-              {/* Hover glow */}
-              <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                payCurrency === 'local' 
-                  ? 'opacity-100 bg-orange-400/10' 
-                  : 'opacity-0 group-hover:opacity-100 bg-orange-400/5'
-              }`} />
-              
-              <span className={`relative z-10 transition-all duration-300 ${
-                payCurrency === 'local' ? 'drop-shadow-lg' : 'group-hover:tracking-wider'
-              }`}>
-                🏛️ {selectedCountry.currency}
-              </span>
-              
-              {/* Active indicator */}
-              {payCurrency === 'local' && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-bounce" />
-              )}
-            </button>
-            
             <div className="relative">
               <div className="relative">
                 <button
@@ -2896,11 +2828,7 @@ export default function FarcasterMiniApp() {
                     setPayCurrency('usdc');
                     setShowPayTokenDropdown(!showPayTokenDropdown);
                   }}
-                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between ${
-                    payCurrency === 'usdc' 
-                      ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 transform scale-110 border-2 border-blue-400/50' 
-                      : 'bg-slate-700/80 text-white hover:bg-slate-600/90 hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-blue-400/30'
-                  }`}
+                  className="relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 border-2 border-blue-400/50"
                 >
                   <div className="flex items-center gap-2">
                     {selectedPayToken === 'USDC' ? (
