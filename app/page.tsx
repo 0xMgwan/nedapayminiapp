@@ -2122,7 +2122,7 @@ export default function FarcasterMiniApp() {
       
       // Add notification for successful send
       addNotification(
-        `Successfully sent ${amount} ${selectedSendToken} to ${phoneNumber}`,
+        `Successfully sent ${amount} ${selectedSendToken} to ${recipientName || phoneNumber}`,
         'send'
       );
       
@@ -2194,7 +2194,7 @@ export default function FarcasterMiniApp() {
       
       // Add notification for successful payment
       addNotification(
-        `Successfully paid ${amount} ${selectedPayToken} to ${paymentType === 'bill' ? 'paybill' : 'till'} ${tillNumber}`,
+        `Successfully paid ${amount} ${selectedPayToken} to ${recipientName || (paymentType === 'bill' ? 'paybill' : 'till')} ${tillNumber}`,
         'pay'
       );
       
