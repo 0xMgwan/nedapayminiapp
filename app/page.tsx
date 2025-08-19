@@ -2268,13 +2268,13 @@ export default function FarcasterMiniApp() {
 
       {/* Recipient Name */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Recipient Name (or Basename/ENS)</label>
+        <label className="block text-xs text-gray-400 mb-1">Recipient Name (or Account Number)</label>
         <div className="relative">
           <input
             type="text"
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
-            placeholder="john.base.eth or 0x123..."
+            placeholder="John Doe"
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {recipientName && recipientName.includes('.') && (
@@ -4160,8 +4160,8 @@ export default function FarcasterMiniApp() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-2">
       <div className="max-w-sm mx-auto">
         {/* Top Header with Wallet */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-3 w-full">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Image 
               src="/NEDApayLogo.png" 
               alt="NedaPay" 
@@ -4175,8 +4175,8 @@ export default function FarcasterMiniApp() {
             </div>
           </div>
           
-          {/* Wallet Section - Right aligned */}
-          <div className="flex items-center gap-2">
+          {/* Wallet Section - Right aligned with proper spacing */}
+          <div className="flex items-center gap-2 flex-shrink min-w-0">
             {!isWalletConnected ? (
             <button
               onClick={async () => {
@@ -4236,20 +4236,18 @@ export default function FarcasterMiniApp() {
             </button>
           ) : (
             <>
-              {/* Wallet Status - Compact */}
-              <div className="flex items-center gap-1 bg-slate-800/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-green-500/30 max-w-xs">
+              {/* Wallet Status - Properly sized */}
+              <div className="flex items-center gap-1 bg-slate-800/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-green-500/30">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-green-400 text-xs font-medium">
-                  Connected
-                </span>
-                <div className="text-gray-400 text-xs font-mono truncate">
+                <span className="text-green-400 text-xs font-medium">Connected</span>
+                <div className="text-white text-xs font-mono">
                   {walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
-                      <Name className="text-gray-400 text-xs font-mono">
-                        {walletAddress.slice(0, 4)}...{walletAddress.slice(-3)}
+                      <Name className="text-white text-xs font-mono">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                       </Name>
                     </Identity>
-                  ) : '...'}
+                  ) : '0xF939...84f1'}
                 </div>
                 <button
                   onClick={async () => {
