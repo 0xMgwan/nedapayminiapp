@@ -22,5 +22,8 @@
     "ogTitle": "NedaPay",
     "ogDescription": "Send money instantly across Africa using USDC on Base",
     "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
+  },
+  "baseBuilder": {
+    "allowedAddresses": ["0x9BdBE169075470C1C0751FD15c1101B74c0ba0F4"]
   }
 }
