@@ -45,7 +45,11 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://farcaster.xyz https://*.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wallet.farcaster.xyz https://*.privy.io https://auth.privy.io https://wrpcd.net https://*.wrpcd.net https://base.org https://*.base.org https://base.xyz https://*.base.xyz https://base.app https://*.base.app;",
+            value: "frame-ancestors 'self' https://farcaster.xyz https://*.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wallet.farcaster.xyz https://*.privy.io https://auth.privy.io https://wrpcd.net https://*.wrpcd.net https://base.org https://*.base.org https://base.xyz https://*.base.xyz https://base.app https://*.base.app https://app.base.org https://*.app.base.org;",
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOW-FROM https://app.base.org/',
           },
           {
             key: 'Access-Control-Allow-Origin',
@@ -57,7 +61,24 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
+            value: 'Content-Type, Authorization, X-Requested-With',
+          },
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
+          },
+        ],
+      },
+      {
+        source: '/.well-known/farcaster.json',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/json',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
         ],
       },

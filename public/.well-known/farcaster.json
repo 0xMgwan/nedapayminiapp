@@ -9,21 +9,38 @@
     "name": "NedaPay",
     "subtitle": "Crypto payments across Africa",
     "description": "Send money instantly across Africa using USDC on Base. Convert crypto to local currencies in Kenya, Nigeria, Tanzania and more.",
-    "screenshotUrls": [],
+    "screenshotUrls": [
+      "https://nedapayminiapp.vercel.app/screenshot1.png"
+    ],
     "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
     "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
     "splashBackgroundColor": "#1e293b",
     "homeUrl": "https://nedapayminiapp.vercel.app",
     "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook",
     "primaryCategory": "finance",
-    "tags": [],
+    "tags": ["payments", "africa", "usdc", "remittances"],
     "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
     "tagline": "Simple cross-border payments",
-    "ogTitle": "NedaPay",
-    "ogDescription": "Send money instantly across Africa using USDC on Base",
+    "ogTitle": "NedaPay - Send Money to Africa with Crypto",
+    "ogDescription": "Instant cross-border payments to Africa using USDC on Base. Send money to Kenya, Nigeria, Tanzania and more.",
     "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
   },
   "baseBuilder": {
-    "allowedAddresses": ["0x9BdBE169075470C1C0751FD15c1101B74c0ba0F4"]
+    "allowedAddresses": ["0x9BdBE169075470C1C0751FD15c1101B74c0ba0F4"],
+    "appType": "miniapp",
+    "supportedNetworks": ["base"],
+    "supportedWallets": ["coinbase_wallet", "metamask"],
+    "launchOptions": {
+      "type": "miniapp",
+      "theme": "dark",
+      "features": ["wallet_connect"]
+    },
+    "metadata": {
+      "short_name": "NedaPay",
+      "orientation": "portrait",
+      "display": "standalone",
+      "theme_color": "#1e293b",
+      "background_color": "#1e293b"
+    }
   }
 }
