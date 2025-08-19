@@ -6,8 +6,7 @@ import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon, ArrowsRightLeftIcon, BellIcon } from '@heroicons/react/24/outline';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
@@ -68,9 +67,6 @@ export default function FarcasterMiniApp() {
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useConnectorClient();
   
-  // Privy hooks for main website authentication
-  const { authenticated: privyAuthenticated, user: privyUser, login: privyLogin, logout: privyLogout, ready: privyReady } = usePrivy();
-  const { wallets: privyWallets } = useWallets();
   
   // Detect if we're in a smart wallet environment (Farcaster MiniApp) - enhanced detection
   const isSmartWalletEnvironment = useMemo(() => {
@@ -124,10 +120,10 @@ export default function FarcasterMiniApp() {
     return result;
   }, []);
 
-  // Unified wallet state - uses appropriate auth method based on environment
-  const walletAddress = isSmartWalletEnvironment ? address : (privyWallets[0]?.address || null);
-  const isWalletConnected = isSmartWalletEnvironment ? isConnected : (privyAuthenticated && privyWallets.length > 0);
-  const isWalletReady = isSmartWalletEnvironment ? true : privyReady;
+  // Unified wallet state - simplified to use wagmi for all environments
+  const walletAddress = address;
+  const isWalletConnected = isConnected;
+  const isWalletReady = true;
 
   // Debug component initialization
   useEffect(() => {
@@ -140,11 +136,9 @@ export default function FarcasterMiniApp() {
       hasWindowEthereum: typeof (window as any).ethereum !== 'undefined',
       walletAddress,
       isWalletConnected,
-      privyAuthenticated,
-      privyWalletsCount: privyWallets.length,
       timestamp: new Date().toISOString()
     });
-  }, [isSmartWalletEnvironment, walletAddress, isWalletConnected, privyAuthenticated]);
+  }, [isSmartWalletEnvironment, walletAddress, isWalletConnected]);
 
   // Auto-connect smart wallet in Farcaster environment - MOBILE FOCUSED
   useEffect(() => {
@@ -153,6 +147,12 @@ export default function FarcasterMiniApp() {
     const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
     
     const autoConnectSmartWallet = async () => {
+      // Check if already connected
+      if (isConnected) {
+        console.log('✅ Already connected to wallet');
+        return;
+      }
+      
       // Simple but effective detection - focus on what works
       const shouldAutoConnect = isSmartWalletEnvironment;
       
@@ -165,35 +165,35 @@ export default function FarcasterMiniApp() {
         retryCount
       });
         
-      if (shouldAutoConnect && !isConnected && connectors && connectors.length > 0) {
+      if (shouldAutoConnect && connectors && connectors.length > 0 && !isConnected) {
+        console.log('🚀 Attempting auto-connect in smart wallet environment');
+        console.log('Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
+        
         try {
-          console.log(`🔄 Auto-connecting smart wallet (attempt ${retryCount + 1}/${maxRetries})...`);
-          console.log('📱 Mobile device:', isMobile);
-          console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
+          // For Farcaster MiniApp, find the farcaster connector specifically
+          const farcasterConnector = connectors.find(c => 
+            c.name.toLowerCase().includes('farcaster') ||
+            c.id.toLowerCase().includes('farcaster') ||
+            c.name.toLowerCase().includes('miniapp')
+          );
           
-          // Simple connector selection - prioritize what works
-          let preferredConnector = connectors.find(c => 
-            c.name.toLowerCase().includes('coinbase') || 
-            c.name.toLowerCase().includes('smart')
-          ) || connectors[0];
-          
-          console.log('🎯 Selected connector:', preferredConnector.name);
-          
-          // Force connection
-          await connect({ connector: preferredConnector });
-          console.log('✅ Auto-connect successful!');
+          if (farcasterConnector) {
+            console.log('🔌 Auto-connecting with Farcaster connector:', { 
+              name: farcasterConnector.name, 
+              id: farcasterConnector.id
+            });
+            
+            await connect({ connector: farcasterConnector });
+          } else {
+            console.log('⚠️ No Farcaster connector found for auto-connect');
+          }
           
         } catch (error) {
-          console.error(`❌ Auto-connect attempt ${retryCount + 1} failed:`, error);
-          
-          // Retry logic
-          if (retryCount < maxRetries - 1) {
-            retryCount++;
-            const delay = 2000; // 2 second delay
-            console.log(`⏳ Retrying in ${delay}ms...`);
-            setTimeout(autoConnectSmartWallet, delay);
-          } else {
-            console.log('❌ All auto-connect attempts failed');
+          console.error('❌ Auto-connect failed:', error);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`🔄 Retrying auto-connect (${retryCount}/${maxRetries}) in 2s...`);
+            setTimeout(autoConnectSmartWallet, 2000);
           }
         }
       } else {
@@ -282,6 +282,38 @@ export default function FarcasterMiniApp() {
   // Track user's preferred wallet selection
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
   const [addressCopied, setAddressCopied] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    message: string;
+    timestamp: string;
+    type: 'send' | 'pay' | 'deposit' | 'general';
+    read: boolean;
+  }>>([]);
+
+  // Function to add notification
+  const addNotification = useCallback((message: string, type: 'send' | 'pay' | 'deposit' | 'general' = 'general') => {
+    const newNotification = {
+      id: Date.now().toString(),
+      message,
+      timestamp: new Date().toLocaleString(),
+      type,
+      read: false
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  }, []);
+
+  // Function to mark notification as read
+  const markNotificationAsRead = useCallback((id: string) => {
+    setNotifications(prev => 
+      prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
+    );
+  }, []);
+
+  // Function to clear all notifications
+  const clearAllNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
 
   // Removed duplicate declarations - moved up before useEffect
   const minikit = useMiniKit();
@@ -2087,6 +2119,12 @@ export default function FarcasterMiniApp() {
       });
       setShowSuccessModal(true);
       
+      // Add notification for successful send
+      addNotification(
+        `Successfully sent ${amount} ${selectedSendToken} to ${phoneNumber}`,
+        'send'
+      );
+      
       // Refresh balance
       await fetchWalletBalance();
       
@@ -2152,6 +2190,12 @@ export default function FarcasterMiniApp() {
         type: 'pay'
       });
       setShowSuccessModal(true);
+      
+      // Add notification for successful payment
+      addNotification(
+        `Successfully paid ${amount} ${selectedPayToken} to ${paymentType === 'bill' ? 'paybill' : 'till'} ${tillNumber}`,
+        'pay'
+      );
       
       // Refresh balance
       await fetchWalletBalance();
@@ -2363,7 +2407,6 @@ export default function FarcasterMiniApp() {
                 className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
                 title="Refresh balance"
               >
-                🔄
               </button>
             </div>
           </div>
@@ -3317,9 +3360,10 @@ export default function FarcasterMiniApp() {
               connect({ connector: connectors[0] });
             }
           } else {
-            console.log('💻 Main website - using Privy login');
-            // On main website, use Privy login
-            privyLogin();
+            // Use wagmi connect for all environments
+            if (connectors && connectors.length > 0) {
+              connect({ connector: connectors[0] });
+            }
           }
         }}
         disabled={!isWalletConnected || !linkAmount}
@@ -3336,7 +3380,7 @@ export default function FarcasterMiniApp() {
         ) : (
           <>
             <WalletIcon className="w-4 h-4" />
-            {isSmartWalletEnvironment ? 'Connect Wallet' : 'Login with Privy'}
+            Connect Wallet
           </>
         )}
       </button>
@@ -4055,7 +4099,7 @@ export default function FarcasterMiniApp() {
           }`}
         >
           {!isWalletConnected ? (
-            isSmartWalletEnvironment ? 'Connect Wallet' : 'Login with Privy'
+            'Connect Wallet'
           ) : swapIsLoading ? (
             <div className="flex items-center justify-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -4120,29 +4164,41 @@ export default function FarcasterMiniApp() {
                 try {
                   console.log('🔗 Wallet button clicked!');
                   console.log('Environment:', isSmartWalletEnvironment ? 'Farcaster/MiniApp' : 'Website');
+                  console.log('Available connectors:', connectors?.map(c => ({ name: c.name, id: c.id })));
                   
-                  if (isSmartWalletEnvironment) {
-                    // Farcaster environment - use wagmi connectors
-                    console.log('Available connectors:', connectors?.map(c => c.name));
+                  if (connectors && connectors.length > 0) {
+                    let preferredConnector;
                     
-                    if (connectors && connectors.length > 0) {
-                      // Smart connector selection for Farcaster
-                      const preferredConnector = connectors.find(c => 
-                        c.name.toLowerCase().includes('coinbase') || 
-                        c.name.toLowerCase().includes('smart') ||
+                    if (isSmartWalletEnvironment) {
+                      // For Farcaster MiniApp, prioritize farcaster connector
+                      preferredConnector = connectors.find(c => 
+                        c.name.toLowerCase().includes('farcaster') ||
+                        c.id.toLowerCase().includes('farcaster') ||
                         c.name.toLowerCase().includes('miniapp')
-                      ) || connectors[0];
-                      
-                      console.log('Using connector:', preferredConnector.name);
-                      await connect({ connector: preferredConnector });
+                      );
                     } else {
-                      console.error('❌ No connectors available');
-                      alert('No wallet connectors available in this environment');
+                      // For normal web browser, prioritize web wallet connectors
+                      preferredConnector = connectors.find(c => 
+                        c.name.toLowerCase().includes('coinbase') ||
+                        c.name.toLowerCase().includes('metamask') ||
+                        c.name.toLowerCase().includes('walletconnect')
+                      );
                     }
+                    
+                    // Fallback to first available connector
+                    preferredConnector = preferredConnector || connectors[0];
+                    
+                    console.log('🔌 Connecting with:', { 
+                      name: preferredConnector.name, 
+                      id: preferredConnector.id,
+                      environment: isSmartWalletEnvironment ? 'Farcaster' : 'Web',
+                      totalConnectors: connectors.length
+                    });
+                    
+                    await connect({ connector: preferredConnector });
                   } else {
-                    // Main website - use Privy login
-                    console.log('🌐 Using Privy login for main website');
-                    privyLogin();
+                    console.error('❌ No connectors available');
+                    alert('No wallet connectors available in this environment');
                   }
                 } catch (error) {
                   console.error('❌ Failed to connect wallet:', error);
@@ -4160,14 +4216,16 @@ export default function FarcasterMiniApp() {
               <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
             </button>
           ) : (
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-green-400 text-xs font-medium">
-                {isSmartWalletEnvironment ? 'Connected' : 'Privy'}
-              </span>
-              <span className="text-gray-400 text-xs font-mono">
-                {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
-              </span>
+            <div className="flex items-center gap-2">
+              {/* Wallet Status */}
+              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-green-400 text-xs font-medium">
+                  Connected
+                </span>
+                <span className="text-gray-400 text-xs font-mono">
+                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
+                </span>
                 <button
                   onClick={async () => {
                     if (walletAddress) {
@@ -4196,11 +4254,7 @@ export default function FarcasterMiniApp() {
                 {/* Disconnect button */}
                 <button
                   onClick={() => {
-                    if (isSmartWalletEnvironment) {
-                      disconnect();
-                    } else {
-                      privyLogout();
-                    }
+                    disconnect();
                   }}
                   className="text-white hover:text-red-400 transition-colors ml-2"
                   title="Disconnect wallet"
@@ -4210,8 +4264,23 @@ export default function FarcasterMiniApp() {
                   </svg>
                 </button>
               </div>
-            )
-          }
+              
+              {/* Notification Icon */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300 hover:bg-slate-700/60"
+                >
+                  <BellIcon className="w-5 h-5 text-gray-400 hover:text-blue-400 transition-colors" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      {notifications.filter(n => !n.read).length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Floating Rates Ticker */}
@@ -4390,6 +4459,124 @@ export default function FarcasterMiniApp() {
       {/* Success Modal */}
       <SuccessModal />
       
+      {/* Notification Panel */}
+      {showNotifications && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" 
+            onClick={() => setShowNotifications(false)}
+          />
+          
+          {/* Notification Panel */}
+          <div className="fixed top-16 right-2 w-80 max-w-[calc(100vw-16px)] bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border border-slate-600/40 rounded-2xl shadow-2xl z-50 max-h-[65vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="p-3 border-b border-slate-600/20 flex justify-between items-center bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                  <BellIcon className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white text-sm">Notifications</h3>
+                  <p className="text-xs text-gray-400">Recent activity</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {notifications.length > 0 && (
+                  <button 
+                    className="text-xs text-blue-400 hover:text-blue-300 bg-blue-500/20 hover:bg-blue-500/30 px-2 py-1 rounded-lg transition-all font-medium"
+                    onClick={clearAllNotifications}
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors"
+                  onClick={() => setShowNotifications(false)}
+                >
+                  <svg className="w-3.5 h-3.5 text-gray-400 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Notifications List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center">
+                  <div className="bg-gradient-to-br from-slate-700/30 to-slate-800/30 rounded-xl p-4 border border-slate-600/20">
+                    <div className="bg-blue-500/20 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3 border border-blue-500/30">
+                      <BellIcon className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h4 className="text-white font-semibold mb-1 text-sm">No notifications yet</h4>
+                    <p className="text-gray-400 text-xs leading-relaxed">
+                      Send money or make payments to see your transaction history here.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-2">
+                  {notifications.map((notification, index) => (
+                    <div 
+                      key={notification.id} 
+                      className={`mb-2 rounded-xl border transition-all duration-300 cursor-pointer group ${
+                        !notification.read 
+                          ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 hover:from-blue-500/15 hover:to-purple-500/15' 
+                          : 'bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-slate-600/20 hover:from-slate-700/60 hover:to-slate-600/60'
+                      }`}
+                      onClick={() => markNotificationAsRead(notification.id)}
+                    >
+                      <div className="p-3">
+                        <div className="flex items-start gap-2">
+                          {/* Status Indicator & Icon */}
+                          <div className="flex-shrink-0 relative">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border text-sm ${
+                              notification.type === 'send' 
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : notification.type === 'pay'
+                                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                            }`}>
+                              {notification.type === 'send' ? '💸' : notification.type === 'pay' ? '💳' : '📄'}
+                            </div>
+                            {!notification.read && (
+                              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full border border-slate-800 animate-pulse"></div>
+                            )}
+                          </div>
+                          
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                                notification.type === 'send' 
+                                  ? 'bg-green-500/20 text-green-300'
+                                  : notification.type === 'pay'
+                                  ? 'bg-blue-500/20 text-blue-300'
+                                  : 'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {notification.type === 'send' ? 'Send' : notification.type === 'pay' ? 'Payment' : 'General'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {notification.timestamp}
+                              </span>
+                            </div>
+                            <div className={`text-xs leading-relaxed break-words ${
+                              !notification.read ? 'text-white font-medium' : 'text-gray-300'
+                            }`}>
+                              {notification.message}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );

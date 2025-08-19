@@ -5,16 +5,27 @@ import { MiniKitProvider as OnchainKitMiniKitProvider } from '@coinbase/onchaink
 import { base } from 'wagmi/chains';
 import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector';
 import { WagmiProvider, createConfig, http } from 'wagmi';
+import { coinbaseWallet, metaMask, walletConnect } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Create wagmi config with Farcaster MiniApp connector
+// Create wagmi config with multiple connectors for different environments
 export const config = createConfig({
   chains: [base],
   transports: {
     [base.id]: http(),
   },
   connectors: [
-    miniAppConnector()
+    // Farcaster MiniApp connector for Farcaster environment
+    miniAppConnector(),
+    // Web wallet connectors for normal browser environment
+    coinbaseWallet({
+      appName: 'NedaPay',
+      appLogoUrl: '/NEDApayLogo.png',
+    }),
+    metaMask(),
+    walletConnect({
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'default-project-id',
+    }),
   ]
 });
 
