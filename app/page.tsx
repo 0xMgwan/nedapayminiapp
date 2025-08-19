@@ -7,6 +7,7 @@ import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainki
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon, ArrowsRightLeftIcon, BellIcon } from '@heroicons/react/24/outline';
+import { base } from 'wagmi/chains';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
@@ -2267,14 +2268,21 @@ export default function FarcasterMiniApp() {
 
       {/* Recipient Name */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Recipient Name</label>
-        <input
-          type="text"
-          value={recipientName}
-          onChange={(e) => setRecipientName(e.target.value)}
-          placeholder="John Doe"
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <label className="block text-xs text-gray-400 mb-1">Recipient Name (or Basename/ENS)</label>
+        <div className="relative">
+          <input
+            type="text"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+            placeholder="john.base.eth or 0x123..."
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {recipientName && recipientName.includes('.') && (
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Resolving name..."></div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Phone Number */}
@@ -2578,7 +2586,17 @@ export default function FarcasterMiniApp() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-xs">{successData.type === 'send' ? 'Recipient' : 'Till Number'}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-white font-mono text-sm">{successData.recipient}</span>
+                  <div className="text-white font-mono text-sm">
+                    {successData.recipient.startsWith('0x') ? (
+                      <Identity address={successData.recipient as `0x${string}`} chain={base}>
+                        <Name className="text-white font-mono text-sm">
+                          {successData.recipient}
+                        </Name>
+                      </Identity>
+                    ) : (
+                      successData.recipient
+                    )}
+                  </div>
                   <span className="text-gray-500 text-xs">{recipientName || 'Mobile Money'}</span>
                 </div>
               </div>
@@ -4143,22 +4161,23 @@ export default function FarcasterMiniApp() {
       <div className="max-w-sm mx-auto">
         {/* Top Header with Wallet */}
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Image 
               src="/NEDApayLogo.png" 
               alt="NedaPay" 
-              width={40} 
-              height={40} 
+              width={32} 
+              height={32} 
               className="rounded-lg"
             />
             <div>
-              <h1 className="text-white font-bold text-lg">NedaPay</h1>
+              <h1 className="text-white font-bold text-base">NedaPay</h1>
               <p className="text-gray-400 text-xs">Mini App</p>
             </div>
           </div>
           
-          {/* Wallet Button - Environment-aware authentication */}
-          {!isWalletConnected ? (
+          {/* Wallet Section - Right aligned */}
+          <div className="flex items-center gap-2">
+            {!isWalletConnected ? (
             <button
               onClick={async () => {
                 try {
@@ -4216,16 +4235,22 @@ export default function FarcasterMiniApp() {
               <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
             </button>
           ) : (
-            <div className="flex items-center gap-2">
-              {/* Wallet Status */}
-              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-green-500/30">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <>
+              {/* Wallet Status - Compact */}
+              <div className="flex items-center gap-1 bg-slate-800/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-green-500/30 max-w-xs">
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-green-400 text-xs font-medium">
                   Connected
                 </span>
-                <span className="text-gray-400 text-xs font-mono">
-                  {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` : '...'}
-                </span>
+                <div className="text-gray-400 text-xs font-mono truncate">
+                  {walletAddress ? (
+                    <Identity address={walletAddress as `0x${string}`} chain={base}>
+                      <Name className="text-gray-400 text-xs font-mono">
+                        {walletAddress.slice(0, 4)}...{walletAddress.slice(-3)}
+                      </Name>
+                    </Identity>
+                  ) : '...'}
+                </div>
                 <button
                   onClick={async () => {
                     if (walletAddress) {
@@ -4238,7 +4263,7 @@ export default function FarcasterMiniApp() {
                       }
                     }
                   }}
-                  className="text-white hover:text-blue-400 transition-colors ml-1"
+                  className="text-white hover:text-blue-400 transition-colors"
                   title={addressCopied ? "Copied!" : "Copy address"}
                 >
                   {addressCopied ? (
@@ -4256,7 +4281,7 @@ export default function FarcasterMiniApp() {
                   onClick={() => {
                     disconnect();
                   }}
-                  className="text-white hover:text-red-400 transition-colors ml-2"
+                  className="text-white hover:text-red-400 transition-colors"
                   title="Disconnect wallet"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4265,22 +4290,23 @@ export default function FarcasterMiniApp() {
                 </button>
               </div>
               
-              {/* Notification Icon */}
+              {/* Notification Icon - Compact */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300 hover:bg-slate-700/60"
+                  className="relative p-1.5 bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300 hover:bg-slate-700/60"
                 >
-                  <BellIcon className="w-5 h-5 text-gray-400 hover:text-blue-400 transition-colors" />
+                  <BellIcon className="w-4 h-4 text-gray-400 hover:text-blue-400 transition-colors" />
                   {notifications.filter(n => !n.read).length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
                       {notifications.filter(n => !n.read).length}
                     </span>
                   )}
                 </button>
               </div>
-            </div>
+            </>
           )}
+          </div>
         </div>
 
         {/* Floating Rates Ticker */}
