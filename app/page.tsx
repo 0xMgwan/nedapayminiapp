@@ -2167,9 +2167,15 @@ export default function FarcasterMiniApp() {
       // Show loading state
       setIsSwipeComplete(true);
       
+      // Validate that institution is selected for payments
+      if (!selectedInstitution) {
+        alert('Please select a payment provider');
+        return;
+      }
+      
       // Prepare recipient data for Paycrest API (correct format)
       const recipient = {
-        institution: paymentType === 'bill' ? 'paybill' : 'till', // Different institution based on payment type
+        institution: selectedInstitution, // Use actual selected institution
         accountIdentifier: paymentType === 'bill' ? businessNumber : tillNumber,
         accountName: paymentType === 'bill' ? 'Paybill Payment' : 'Till Payment',
         memo: `Pay ${payCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' ' + selectedPayToken} to ${paymentType === 'bill' ? 'paybill ' + tillNumber + ' account ' + businessNumber : 'till ' + tillNumber}`
@@ -2759,6 +2765,26 @@ export default function FarcasterMiniApp() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Institution Selection */}
+      <div className="space-y-2">
+        <label className="block text-xs text-gray-300 font-medium mb-1">Select Payment Provider</label>
+        <div className="relative">
+          <select 
+            value={selectedInstitution}
+            onChange={(e) => setSelectedInstitution(e.target.value)}
+            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
+          >
+            <option value="">Choose payment provider...</option>
+            {institutions.map((institution) => (
+              <option key={institution.code} value={institution.code}>
+                {institution.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       {/* Payment Type Buttons */}
