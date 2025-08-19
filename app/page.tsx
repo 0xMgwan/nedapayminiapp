@@ -4264,8 +4264,11 @@ export default function FarcasterMiniApp() {
             <>
               {/* Wallet Status - Properly sized */}
               <div className="flex items-center gap-1 bg-slate-800/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-green-500/30">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-green-400 text-xs font-medium">Connected</span>
+                <div className="relative">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75" />
+                  <div className="absolute inset-0 w-2 h-2 bg-green-400/50 rounded-full animate-pulse" />
+                </div>
                 <div className="text-white text-xs font-mono">
                   {walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
