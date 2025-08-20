@@ -21,8 +21,8 @@
     "tags": ["payments", "africa", "usdc", "remittances"],
     "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
     "tagline": "Simple cross-border payments",
-    "ogTitle": "NedaPay - Send Money to Africa",
-    "ogDescription": "Instant cross-border payments to Africa using USDC on Base.",
+    "ogTitle": "NedaPay - Send Money Globally",
+    "ogDescription": "Instant cross-border payments with local stablecoins.",
     "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
   },
   "baseBuilder": {
