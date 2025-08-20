@@ -26,7 +26,8 @@ export async function GET() {
       "tagline": "Simple cross-border payments",
       "ogTitle": "NedaPay - Send Money Globally",
       "ogDescription": "Instant cross-border payments with local stablecoins.",
-      "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
+      "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
+      "castShareUrl": "https://nedapayminiapp.vercel.app"
     },
     "frame": {
       "version": "1",
