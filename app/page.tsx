@@ -2061,69 +2061,22 @@ export default function FarcasterMiniApp() {
       // Store in localStorage for now (in production, this would be stored in a database)
       localStorage.setItem(`payment-${linkId}`, JSON.stringify(storedPaymentData));
       
-      // Try to use SDK's openUrl if available, otherwise fallback to clipboard
+      // Set the generated link in state first to update UI
+      setGeneratedLink(paymentLink);
+      
+      // Then copy to clipboard
       try {
-        console.log('🔗 Attempting to share payment link:', paymentLink);
+        console.log('🔗 Copying payment link to clipboard:', paymentLink);
         
-        // Check if we're in a MiniKit environment (Farcaster/Base)
-        const minikit = (window as any).MiniKit;
-        if (minikit && minikit.share) {
-          console.log('📱 Using MiniKit share API');
-          await minikit.share({
-            url: paymentLink,
-            text: `Payment Request: ${linkAmount} ${selectedStablecoin.baseToken}${linkDescription ? ` - ${linkDescription}` : ''}`
-          });
-          alert('✅ Payment link shared successfully!');
+        // Try modern clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(paymentLink);
+          // Don't show alert since UI will show the link
           return;
         }
 
-        // Check for Base app specific sharing
-        const miniAppBridge = window.miniAppBridge as any;
-        if (miniAppBridge && miniAppBridge.share) {
-          console.log('🔗 Using Base app share API');
-          await miniAppBridge.share({
-            url: paymentLink,
-            title: `Payment Request for ${linkAmount} ${selectedStablecoin.baseToken}`,
-            text: linkDescription || 'You have received a payment request'
-          });
-          alert('✅ Payment link shared successfully!');
-          return;
-        }
-
-        // Check for MiniPay
-        const ethereum = window.ethereum as {
-          isMiniPay?: boolean;
-          request: (request: { method: string; params?: any[] }) => Promise<any>;
-        } | undefined;
-
-        if (ethereum?.isMiniPay) {
-          console.log('💳 Using MiniPay share');
-          await ethereum.request({
-            method: 'metamask_openUrl',
-            params: [paymentLink]
-          });
-          alert('✅ Payment link shared successfully!');
-          return;
-        }
-
-        // Try Web Share API with permission check
-        if (navigator.share && navigator.canShare) {
-          const shareData = {
-            title: `Payment Request for ${linkAmount} ${selectedStablecoin.baseToken}`,
-            text: linkDescription || 'You have received a payment request',
-            url: paymentLink
-          };
-          
-          if (navigator.canShare(shareData)) {
-            console.log('📤 Using Web Share API');
-            await navigator.share(shareData);
-            alert('✅ Payment link shared successfully!');
-            return;
-          }
-        }
-
-        // Fallback to manual copy with better UX
-        console.log('📋 Falling back to manual copy');
+        // Fallback to manual copy method
+        console.log('📋 Using fallback copy method');
         
         // Create a temporary text area for copying
         const textArea = document.createElement('textarea');
@@ -2136,23 +2089,24 @@ export default function FarcasterMiniApp() {
         textArea.select();
         
         try {
-          document.execCommand('copy');
+          const successful = document.execCommand('copy');
           document.body.removeChild(textArea);
-          alert('✅ Payment link copied to clipboard!\n\nYou can now paste and share it anywhere.');
+          
+          if (!successful) {
+            // Show the link directly if copy failed
+            prompt('Copy this payment link:', paymentLink);
+          }
         } catch (copyError) {
           document.body.removeChild(textArea);
           // Show the link directly if all else fails
           prompt('Copy this payment link:', paymentLink);
         }
 
-      } catch (shareError) {
-        console.error('Share error:', shareError);
+      } catch (error) {
+        console.error('Copy error:', error);
         // Final fallback - show the link in a prompt
         prompt('Copy this payment link:', paymentLink);
       }
-      
-      // Set the generated link in state
-      setGeneratedLink(paymentLink);
       
     } catch (error) {
       console.error('Failed to generate payment link:', error);
