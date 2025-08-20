@@ -28,6 +28,17 @@ export async function GET() {
       "ogDescription": "Instant cross-border payments with local stablecoins.",
       "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
     },
+    "frame": {
+      "version": "1",
+      "name": "NedaPay",
+      "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+      "homeUrl": "https://nedapayminiapp.vercel.app",
+      "imageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
+      "buttonTitle": "💰 Open NedaPay",
+      "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
+      "splashBackgroundColor": "#1e293b",
+      "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook"
+    },
     "baseBuilder": {
       "allowedAddresses": ["0x9BdBE16907547C1C0751FD15c1101B74cC0ba0F4"],
       "appType": "miniapp",
