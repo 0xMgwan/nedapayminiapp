@@ -29,7 +29,7 @@ export async function GET() {
       "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
     },
     "baseBuilder": {
-      "allowedAddresses": ["0x9BdBE169075470C1C0751FD15c1101B74c0ba0F4"],
+      "allowedAddresses": ["0x9BdBE16907547C1C0751FD15c1101B74cC0ba0F4"],
       "appType": "miniapp",
       "supportedNetworks": ["base"],
       "supportedWallets": ["coinbase_wallet", "metamask"],
