@@ -20,5 +20,27 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "accountAssociation": {
+    "header": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9",
+    "payload": "eyJkb21haW4iOiJuZWRhcGF5bWluaWFwcC52ZXJjZWwuYXBwIiwidGltZXN0YW1wIjoxNzM0Njg4ODAwfQ",
+    "signature": "signature_placeholder"
+  },
+  "frame": {
+    "version": "next",
+    "imageUrl": "https://nedapayminiapp.vercel.app/icon.png",
+    "button": {
+      "title": "Launch NedaPay",
+      "action": {
+        "type": "launch_frame",
+        "name": "NedaPay",
+        "url": "https://nedapayminiapp.vercel.app",
+        "splashImageUrl": "https://nedapayminiapp.vercel.app/icon.png",
+        "splashBackgroundColor": "#1e293b"
+      }
+    }
+  },
+  "baseBuilder": {
+    "allowedAddresses": ["0x9BdBE16907547C1C0751FD15c1101B74cC0ba0F4"]
+  }
 }
