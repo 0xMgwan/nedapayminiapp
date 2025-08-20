@@ -2040,11 +2040,8 @@ export default function FarcasterMiniApp() {
         protocolFeeParams = `&protocolFee=${feeInfo.feeRate}&feeTier=${encodeURIComponent(feeInfo.tier)}&protocolEnabled=true`;
       }
       
-      // Create direct payment-request URL (MiniApp recognizes actual app pages better)
+      // Create universal payment link
       const paymentLink = `${baseUrl}/payment-request?id=${linkId}&amount=${linkAmount}&token=${selectedStablecoin.baseToken}&description=${encodeURIComponent(linkDescription)}&merchant=${walletAddress}${protocolFeeParams}`;
-      
-      // Use the direct payment link for sharing
-      setGeneratedLink(paymentLink);
       
       // Store payment request data
       const storedPaymentData = {
@@ -2064,13 +2061,46 @@ export default function FarcasterMiniApp() {
       // Store in localStorage for now (in production, this would be stored in a database)
       localStorage.setItem(`payment-${linkId}`, JSON.stringify(storedPaymentData));
       
-      // Copy to clipboard
-      await navigator.clipboard.writeText(paymentLink);
-      alert('✅ Payment link generated and copied to clipboard!');
+      // Try to use SDK's openUrl if available, otherwise fallback to clipboard
+      try {
+        const ethereum = window.ethereum as {
+          isMiniPay?: boolean;
+          request: (request: { method: string; params?: any[] }) => Promise<any>;
+        } | undefined;
+
+        if (ethereum?.isMiniPay) {
+          // For MiniPay
+          await ethereum.request({
+            method: 'metamask_openUrl',
+            params: [paymentLink]
+          });
+        } else if (window.miniAppBridge) {
+          // For Base app
+          await window.miniAppBridge.openUrl(paymentLink);
+        } else if (navigator.share) {
+          // For mobile browsers with Web Share API
+          await navigator.share({
+            title: `Payment Request for ${linkAmount} ${selectedStablecoin.baseToken}`,
+            text: linkDescription || 'You have received a payment request',
+            url: paymentLink
+          });
+        } else {
+          // Fallback to clipboard
+          await navigator.clipboard.writeText(paymentLink);
+          alert('✅ Payment link copied to clipboard!');
+        }
+      } catch (shareError) {
+        console.log('Sharing not supported, falling back to clipboard');
+        await navigator.clipboard.writeText(paymentLink);
+        alert('✅ Payment link copied to clipboard!');
+      }
+      
+      // Set the generated link in state
+      setGeneratedLink(paymentLink);
       
     } catch (error) {
       console.error('Failed to generate payment link:', error);
-      alert('❌ Failed to generate payment link');
+      alert('❌ Failed to generate payment link: ' + (error as Error).message);
     }
   }, [linkAmount, isConnected, walletAddress, selectedStablecoin, linkDescription]);
 

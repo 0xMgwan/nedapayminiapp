@@ -100,7 +100,14 @@ function PaymentRequestPageContent() {
             name: 'NedaPay',
             url: currentUrl, // This should be the full URL with all payment parameters
             splashImageUrl: `${baseUrl}/splash.png`,
-            splashBackgroundColor: '#1e293b'
+            splashBackgroundColor: '#1e293b',
+            // Base app specific metadata
+            baseApp: {
+              supportedNetworks: ['base'],
+              supportedWallets: ['coinbase_wallet', 'metamask'],
+              theme: 'dark',
+              features: ['wallet_connect']
+            }
           }
         }
       };
@@ -135,6 +142,13 @@ function PaymentRequestPageContent() {
       updateMetaTag('og:description', `${safeDescription} - Pay $${paymentData.amount} ${paymentData.token} instantly with NedaPay on Base`);
       updateMetaTag('og:image', `${baseUrl}/api/og/payment?amount=${paymentData.amount}&currency=${paymentData.token}&description=${encodeURIComponent(safeDescription)}`);
       updateMetaTag('og:url', currentUrl);
+      
+      // Base app specific meta tags
+      updateMetaTag('base:network', 'base');
+      updateMetaTag('base:app', 'nedapay');
+      updateMetaTag('base:type', 'payment');
+      updateMetaTag('base:amount', paymentData.amount);
+      updateMetaTag('base:currency', paymentData.token);
 
       // Create and update Farcaster MiniApp metadata
       const farcasterMiniappData = {
