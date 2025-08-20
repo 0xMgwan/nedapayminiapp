@@ -2451,6 +2451,7 @@ export default function FarcasterMiniApp() {
                 className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
                 title="Refresh balance"
               >
+                <ArrowPathIcon className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -3037,7 +3038,7 @@ export default function FarcasterMiniApp() {
                   className="text-gray-400 hover:text-blue-400 transition-colors p-1 rounded hover:bg-slate-700/50"
                   title="Refresh balance"
                 >
-                  🔄
+                  <ArrowPathIcon className="w-3 h-3" />
                 </button>
               </div>
             </div>
