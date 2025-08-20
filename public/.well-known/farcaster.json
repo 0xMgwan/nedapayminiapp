@@ -21,8 +21,8 @@
     "tags": ["payments", "africa", "usdc", "remittances"],
     "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
     "tagline": "Simple cross-border payments",
-    "ogTitle": "NedaPay - Send Money to Africa with Crypto",
-    "ogDescription": "Instant cross-border payments to Africa using USDC on Base. Send money to Kenya, Nigeria, Tanzania and more.",
+    "ogTitle": "NedaPay - Send Money to Africa",
+    "ogDescription": "Instant cross-border payments to Africa using USDC on Base.",
     "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
   },
   "baseBuilder": {
