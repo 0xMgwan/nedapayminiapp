@@ -11,7 +11,7 @@ export async function GET() {
       "version": "1",
       "name": "NedaPay",
       "subtitle": "Crypto payments across Africa",
-      "description": "Send money instantly across Africa using USDC on Base. Convert crypto to local currencies in Kenya, Nigeria, Tanzania and more.",
+      "description": "Instant cross-border payments with local stablecoins.",
       "screenshotUrls": [
         "https://nedapayminiapp.vercel.app/screenshot1.png"
       ],
