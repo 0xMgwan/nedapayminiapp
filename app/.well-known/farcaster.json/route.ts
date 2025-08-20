@@ -1,0 +1,57 @@
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  const farcasterConfig = {
+    "accountAssociation": {
+      "header": "eyJmaWQiOjg2OTUyNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweEY5N0NFZkRiNTIzMzFiZDk3YWUyMDY5NjQ0NjcxMTNkMGQ3QjM2MjkifQ",
+      "payload": "eyJkb21haW4iOiJuZWRhcGF5bWluaWFwcC52ZXJjZWwuYXBwIn0",
+      "signature": "MHgxMzE0YjJjM2ZlYjljNjIxYzkzZjA1MDk4OWU4M2FkYjFjNDEwM2QxMDllNWQwYjhjNWU4MmY0NmY4MWYyNWY2NjYwNGE0NzViN2Q1ZjU3MjIwZDdhNmE4YTU0ZDhjYjRiNzQyMTk0ZTJkN2MwZDRjZDUzOTVkNDI4ZGRiZjM3MTFi"
+    },
+    "miniapp": {
+      "version": "1",
+      "name": "NedaPay",
+      "subtitle": "Crypto payments across Africa",
+      "description": "Send money instantly across Africa using USDC on Base. Convert crypto to local currencies in Kenya, Nigeria, Tanzania and more.",
+      "screenshotUrls": [
+        "https://nedapayminiapp.vercel.app/screenshot1.png"
+      ],
+      "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+      "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
+      "splashBackgroundColor": "#1e293b",
+      "homeUrl": "https://nedapayminiapp.vercel.app",
+      "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook",
+      "primaryCategory": "finance",
+      "tags": ["payments", "africa", "usdc", "remittances"],
+      "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
+      "tagline": "Simple cross-border payments",
+      "ogTitle": "NedaPay - Send Money Globally",
+      "ogDescription": "Instant cross-border payments with local stablecoins.",
+      "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png"
+    },
+    "baseBuilder": {
+      "allowedAddresses": ["0x9BdBE169075470C1C0751FD15c1101B74c0ba0F4"],
+      "appType": "miniapp",
+      "supportedNetworks": ["base"],
+      "supportedWallets": ["coinbase_wallet", "metamask"],
+      "launchOptions": {
+        "type": "miniapp",
+        "theme": "dark",
+        "features": ["wallet_connect"]
+      },
+      "metadata": {
+        "short_name": "NedaPay",
+        "orientation": "portrait",
+        "display": "standalone",
+        "theme_color": "#1e293b",
+        "background_color": "#1e293b"
+      }
+    }
+  };
+
+  return NextResponse.json(farcasterConfig, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=3600'
+    }
+  });
+}
