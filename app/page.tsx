@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useMiniKit, useOpenUrl, useComposeCast, useViewProfile } from '@coinbase/onchainkit/minikit';
 import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
@@ -316,9 +316,15 @@ export default function FarcasterMiniApp() {
     setNotifications([]);
   }, []);
 
-  // Removed duplicate declarations - moved up before useEffect
+  // Base App navigation hooks (required for BaseApp compatibility)
   const minikit = useMiniKit();
-  const { setFrameReady, isFrameReady } = minikit;
+  const { setFrameReady, isFrameReady, context } = minikit;
+  const openUrl = useOpenUrl();
+  const composeCast = useComposeCast();
+  const viewProfile = useViewProfile();
+  
+  // Base App client detection (clientFid 309857 = Base App)
+  const isBaseApp = context?.client?.clientFid === 309857;
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
@@ -334,13 +340,15 @@ export default function FarcasterMiniApp() {
     };
   })();
   
-  // Debug MiniKit wallet info
+  // Debug MiniKit wallet info and Base App detection
   useEffect(() => {
     console.log('=== MINIKIT WALLET DEBUG ===');
     console.log('Is Connected:', isConnected);
     console.log('Address:', address);
     console.log('Connectors Available:', connectors.length);
     console.log('Wallet Client:', !!walletClient);
+    console.log('Is Base App:', isBaseApp);
+    console.log('Client FID:', context?.client?.clientFid);
     
     if (connectedWallet) {
       console.log('🔍 CONNECTED WALLET:', {
@@ -354,8 +362,12 @@ export default function FarcasterMiniApp() {
       console.log('No wallet connected');
       setWalletBalance('0.00');
     }
+    
+    if (isBaseApp) {
+      console.log('🏗️ Running in Base App - using Base App specific features');
+    }
     console.log('===================');
-  }, [connectedWallet, isConnected, address, connectors.length, walletClient]);
+  }, [connectedWallet, isConnected, address, connectors.length, walletClient, isBaseApp, context]);
   
   // MiniKit initialization - signal when app is ready
   useEffect(() => {
