@@ -51,10 +51,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'of:button:1:target': URL,
     },
     icons: {
-      icon: '/favicon.png',
-      apple: '/icon.png',
+      icon: '/icon-512.png',
+      apple: '/icon-512.png',
     },
-    manifest: `${URL}/.well-known/farcaster.json`,
+    manifest: `${URL}/manifest.json`,
   };
 
   return defaultMetadata;

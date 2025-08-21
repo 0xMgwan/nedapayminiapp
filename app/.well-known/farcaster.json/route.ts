@@ -15,7 +15,7 @@ export async function GET() {
       "screenshotUrls": [
         "https://nedapayminiapp.vercel.app/screenshot1.png"
       ],
-      "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+      "iconUrl": "https://nedapayminiapp.vercel.app/icon-512.png",
       "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
       "splashBackgroundColor": "#1e293b",
       "homeUrl": "https://nedapayminiapp.vercel.app",
@@ -32,7 +32,7 @@ export async function GET() {
     "frame": {
       "version": "1",
       "name": "NedaPay",
-      "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+      "iconUrl": "https://nedapayminiapp.vercel.app/icon-512.png",
       "homeUrl": "https://nedapayminiapp.vercel.app",
       "imageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
       "buttonTitle": "💰 Open NedaPay",
