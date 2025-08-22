@@ -29,6 +29,51 @@ interface Country {
   comingSoon?: boolean;
 }
 
+// Mobile number validation function
+const validateMobileNumber = (phoneNumber: string, countryCode: string): { isValid: boolean; message?: string } => {
+  if (!phoneNumber) return { isValid: false, message: 'Phone number is required' };
+  
+  // Remove any non-digit characters
+  const cleanNumber = phoneNumber.replace(/\D/g, '');
+  
+  switch (countryCode) {
+    case 'NG': // Nigeria
+      if (cleanNumber.length !== 10) return { isValid: false, message: 'Nigerian numbers must be 10 digits' };
+      if (!['070', '080', '081', '090', '091'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Nigerian mobile prefix' };
+      }
+      break;
+    case 'KE': // Kenya
+      if (cleanNumber.length !== 9) return { isValid: false, message: 'Kenyan numbers must be 9 digits' };
+      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Kenyan mobile prefix' };
+      }
+      break;
+    case 'GH': // Ghana
+      if (cleanNumber.length !== 9) return { isValid: false, message: 'Ghanaian numbers must be 9 digits' };
+      if (!['020', '023', '024', '025', '026', '027', '028', '050', '054', '055', '056', '057', '059'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Ghanaian mobile prefix' };
+      }
+      break;
+    case 'TZ': // Tanzania
+      if (cleanNumber.length !== 9) return { isValid: false, message: 'Tanzanian numbers must be 9 digits' };
+      if (!['061', '062', '065', '067', '068', '069', '071', '073', '074', '075', '076', '077', '078'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Tanzanian mobile prefix' };
+      }
+      break;
+    case 'UG': // Uganda
+      if (cleanNumber.length !== 9) return { isValid: false, message: 'Ugandan numbers must be 9 digits' };
+      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Ugandan mobile prefix' };
+      }
+      break;
+    default:
+      return { isValid: true }; // Allow other countries without specific validation
+  }
+  
+  return { isValid: true };
+};
+
 const countries: Country[] = [
   { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234' },
   { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES', countryCode: '+254' },
@@ -2343,16 +2388,46 @@ export default function FarcasterMiniApp() {
         </div>
       </div>
 
-      {/* Phone Number */}
+      {/* Phone Number with Country Code */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Enter Mobile or Account Number (Start with country code)</label>
-        <input
-          type="text"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-          placeholder={`${selectedCountry.countryCode || '+255'}789123456`}
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <label className="block text-xs text-gray-400 mb-1">Mobile Number</label>
+        <div className="relative flex">
+          <div className="flex items-center bg-slate-600 text-white px-3 py-2 rounded-l-lg border-r border-slate-500 text-sm font-medium">
+            <span className="mr-1">{selectedCountry.flag}</span>
+            <span>{selectedCountry.countryCode || '+255'}</span>
+          </div>
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => {
+              // Remove any non-digit characters and format
+              const value = e.target.value.replace(/\D/g, '');
+              setPhoneNumber(value);
+            }}
+            placeholder="789123456"
+            className="flex-1 bg-slate-700 text-white rounded-r-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : 10}
+          />
+        </div>
+        {phoneNumber && (
+          <div className="mt-1 text-xs text-gray-400">
+            Full number: {selectedCountry.countryCode || '+255'}{phoneNumber}
+          </div>
+        )}
+        {phoneNumber && (() => {
+          const validation = validateMobileNumber(phoneNumber, selectedCountry.code);
+          return !validation.isValid ? (
+            <div className="mt-1 text-xs text-red-400 flex items-center">
+              <span className="mr-1">⚠️</span>
+              {validation.message}
+            </div>
+          ) : (
+            <div className="mt-1 text-xs text-green-400 flex items-center">
+              <span className="mr-1">✓</span>
+              Valid mobile number
+            </div>
+          );
+        })()}
       </div>
 
       {/* Amount Input with Currency Switching */}
@@ -3278,14 +3353,44 @@ export default function FarcasterMiniApp() {
 
       {/* Phone Number / Account Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1.5">Phone Number / Account Number</label>
-        <input
-          type="text"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-          placeholder="Enter phone number or account number..."
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-        />
+        <label className="block text-xs text-gray-400 mb-1.5">Mobile Number / Account Number</label>
+        <div className="relative flex">
+          <div className="flex items-center bg-slate-600 text-white px-3 py-2.5 rounded-l-lg border-r border-slate-500 text-sm font-medium">
+            <span className="mr-1">{selectedCountry.flag}</span>
+            <span>{selectedCountry.countryCode || '+255'}</span>
+          </div>
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => {
+              // Remove any non-digit characters and format
+              const value = e.target.value.replace(/\D/g, '');
+              setPhoneNumber(value);
+            }}
+            placeholder="789123456 or account number"
+            className="flex-1 bg-slate-700 text-white rounded-r-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : 10}
+          />
+        </div>
+        {phoneNumber && (
+          <div className="mt-1 text-xs text-gray-400">
+            Full number: {selectedCountry.countryCode || '+255'}{phoneNumber}
+          </div>
+        )}
+        {phoneNumber && (() => {
+          const validation = validateMobileNumber(phoneNumber, selectedCountry.code);
+          return !validation.isValid ? (
+            <div className="mt-1 text-xs text-red-400 flex items-center">
+              <span className="mr-1">⚠️</span>
+              {validation.message}
+            </div>
+          ) : (
+            <div className="mt-1 text-xs text-green-400 flex items-center">
+              <span className="mr-1">✓</span>
+              Valid mobile number
+            </div>
+          );
+        })()}
       </div>
 
       {/* Wallet Address */}
