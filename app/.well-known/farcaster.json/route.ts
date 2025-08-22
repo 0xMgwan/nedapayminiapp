@@ -8,14 +8,14 @@ export async function GET() {
       "signature": "MHgxMzE0YjJjM2ZlYjljNjIxYzkzZjA1MDk4OWU4M2FkYjFjNDEwM2QxMDllNWQwYjhjNWU4MmY0NmY4MWYyNWY2NjYwNGE0NzViN2Q1ZjU3MjIwZDdhNmE4YTU0ZDhjYjRiNzQyMTk0ZTJkN2MwZDRjZDUzOTVkNDI4ZGRiZjM3MTFi"
     },
     "miniapp": {
-      "version": "1",
+      "version": "2",
       "name": "NedaPay",
       "subtitle": "Crypto payments across Africa",
       "description": "Instant cross-border payments with local stablecoins.",
       "screenshotUrls": [
         "https://nedapayminiapp.vercel.app/screenshot1.png"
       ],
-      "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+      "iconUrl": "https://nedapayminiapp.vercel.app/icon-192.png",
       "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
       "splashBackgroundColor": "#1e293b",
       "homeUrl": "https://nedapayminiapp.vercel.app",
@@ -32,7 +32,7 @@ export async function GET() {
     "frame": {
       "version": "1",
       "name": "NedaPay",
-      "iconUrl": "https://nedapayminiapp.vercel.app/icon.png",
+      "iconUrl": "https://nedapayminiapp.vercel.app/icon-192.png",
       "homeUrl": "https://nedapayminiapp.vercel.app",
       "imageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
       "buttonTitle": "💰 Open NedaPay",
