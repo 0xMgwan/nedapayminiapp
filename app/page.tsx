@@ -278,6 +278,7 @@ export default function FarcasterMiniApp() {
   const [linkDescription, setLinkDescription] = useState('');
   const [selectedStablecoin, setSelectedStablecoin] = useState(stablecoins[0]);
   const [generatedLink, setGeneratedLink] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
   const [paymentType, setPaymentType] = useState<'goods' | 'bill'>('goods');
 
   const [isLoadingRate, setIsLoadingRate] = useState(false);
@@ -3604,18 +3605,16 @@ export default function FarcasterMiniApp() {
           <div className="bg-slate-800/50 rounded-lg p-2 font-mono text-xs text-gray-300 break-all">
             {generatedLink}
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="mt-2">
             <button
-              onClick={() => navigator.clipboard.writeText(generatedLink)}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-xs"
+              onClick={() => {
+                navigator.clipboard.writeText(generatedLink);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-xs border-2 border-green-500 hover:border-green-400"
             >
-              📋 Copy Link
-            </button>
-            <button
-              onClick={() => handleShareOnFarcaster(generatedLink)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg transition-colors text-xs"
-            >
-              🚀 Share on FC
+              {linkCopied ? '✅ Copied!' : '📋 Copy Link'}
             </button>
           </div>
         </div>
