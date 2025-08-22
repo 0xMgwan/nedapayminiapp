@@ -67,6 +67,18 @@ const validateMobileNumber = (phoneNumber: string, countryCode: string): { isVal
         return { isValid: false, message: 'Invalid Ugandan mobile prefix' };
       }
       break;
+    case 'CI': // Ivory Coast
+      if (cleanNumber.length !== 8) return { isValid: false, message: 'Ivorian numbers must be 8 digits' };
+      if (!['01', '02', '03', '05', '06', '07', '08', '09'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Ivorian mobile prefix' };
+      }
+      break;
+    case 'BJ': // Benin
+      if (cleanNumber.length !== 8) return { isValid: false, message: 'Beninese numbers must be 8 digits' };
+      if (!['90', '91', '92', '93', '94', '95', '96', '97', '98', '99'].some(prefix => cleanNumber.startsWith(prefix))) {
+        return { isValid: false, message: 'Invalid Beninese mobile prefix' };
+      }
+      break;
     default:
       return { isValid: true }; // Allow other countries without specific validation
   }
@@ -80,10 +92,8 @@ const countries: Country[] = [
   { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233' },
   { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS', countryCode: '+255' },
   { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX', countryCode: '+256' },
-  { name: 'Rwanda', code: 'RW', flag: '🇷🇼', currency: 'RWF', countryCode: '+250' },
-  { name: 'China', code: 'CN', flag: '🇨🇳', currency: 'CNY', countryCode: '+86', comingSoon: true },
-  { name: 'Indonesia', code: 'ID', flag: '🇮🇩', currency: 'IDR', countryCode: '+62', comingSoon: true },
-  { name: 'UAE', code: 'AE', flag: '🇦🇪', currency: 'AED', countryCode: '+971', comingSoon: true },
+  { name: 'Ivory Coast', code: 'CI', flag: '🇨🇮', currency: 'XOF', countryCode: '+225' },
+  { name: 'Benin', code: 'BJ', flag: '🇧🇯', currency: 'XOF', countryCode: '+229' },
 ];
 
 interface Currency {
@@ -511,9 +521,6 @@ export default function FarcasterMiniApp() {
   const fetchRate = useCallback(async (currency: string) => {
     if (!currency || currency === 'USDC') return;
     
-    // Define fallback rates for common currencies
-    // Removed fallback rates - using only real Paycrest API data
-    
     try {
       setIsLoadingRate(true);
       console.log(`💱 Fetching rate for ${currency}...`);
@@ -534,8 +541,8 @@ export default function FarcasterMiniApp() {
     } catch (error: any) {
       console.warn(`⚠️ Failed to fetch rate for ${currency}:`, error?.message || error);
       
-      // No fallback - only show real API data
-      setCurrentRate('API Error');
+      // Only show real API data - no fallbacks
+      setCurrentRate('Rate unavailable');
       console.log(`❌ Could not fetch real rate for ${currency} - API unavailable`);
     } finally {
       setIsLoadingRate(false);
@@ -2406,7 +2413,7 @@ export default function FarcasterMiniApp() {
             }}
             placeholder="789123456"
             className="flex-1 bg-slate-700 text-white rounded-r-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : 10}
+            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : selectedCountry.code === 'CI' ? 8 : selectedCountry.code === 'BJ' ? 8 : 10}
           />
         </div>
         {phoneNumber && (
@@ -3369,7 +3376,7 @@ export default function FarcasterMiniApp() {
             }}
             placeholder="789123456 or account number"
             className="flex-1 bg-slate-700 text-white rounded-r-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : 10}
+            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : selectedCountry.code === 'CI' ? 8 : selectedCountry.code === 'BJ' ? 8 : 10}
           />
         </div>
         {phoneNumber && (
