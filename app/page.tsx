@@ -2205,11 +2205,16 @@ export default function FarcasterMiniApp() {
       }
       
       // Prepare recipient data for Paycrest API (correct format)
+      // Format phone number with country code (remove + and any non-digits, then prepend country code)
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+      const countryCodeNumber = selectedCountry.countryCode?.replace('+', '') || '';
+      const fullPhoneNumber = countryCodeNumber + cleanPhoneNumber;
+      
       const recipient = {
         institution: selectedInstitution,
-        accountIdentifier: phoneNumber,
+        accountIdentifier: fullPhoneNumber,
         accountName: 'Mobile Money Account',
-        memo: `Send ${sendCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' ' + selectedSendToken} to ${phoneNumber}`
+        memo: `Send ${sendCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' ' + selectedSendToken} to ${fullPhoneNumber}`
       };
       
       // Execute Paycrest API transaction
