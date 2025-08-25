@@ -2607,12 +2607,12 @@ export default function FarcasterMiniApp() {
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
                 <ArrowRightIcon className="w-4 h-4 text-green-600" />
               </div>
-              <span className="text-white font-medium text-sm">
+              <span className="text-white font-bold text-sm">
                 {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Sending...' : 'Swipe to Send'}
               </span>
             </div>
             
-            <div className="text-white text-sm font-medium">
+            <div className="text-white text-sm font-bold">
               {sendCurrency === 'local' 
                 ? `${amount || '0'} ${selectedCountry.currency}`
                 : `${amount || '0'} ${selectedSendToken}`
@@ -3197,12 +3197,12 @@ export default function FarcasterMiniApp() {
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
                 <CurrencyDollarIcon className="w-4 h-4 text-blue-600" />
               </div>
-              <span className="text-white font-semibold text-sm">
+              <span className="text-white font-bold text-sm">
                 {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Processing...' : 'Swipe to Pay'}
               </span>
             </div>
             
-            <div className="text-white text-sm font-semibold">
+            <div className="text-white text-sm font-bold">
               {payCurrency === 'local' 
                 ? `${amount || '0'} ${selectedCountry.currency}`
                 : `${amount || '0'} ${selectedPayToken}`
