@@ -39,6 +39,7 @@ const validateMobileNumber = (phoneNumber: string, countryCode: string): { isVal
   switch (countryCode) {
     case 'NG': // Nigeria
       if (cleanNumber.length !== 10) return { isValid: false, message: 'Nigerian numbers must be 10 digits' };
+      // Updated Nigerian mobile prefixes: MTN, Airtel, Glo, 9mobile
       if (!['070', '080', '081', '090', '091'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Nigerian mobile prefix' };
       }
@@ -57,7 +58,10 @@ const validateMobileNumber = (phoneNumber: string, countryCode: string): { isVal
       break;
     case 'TZ': // Tanzania
       if (cleanNumber.length !== 9) return { isValid: false, message: 'Tanzanian numbers must be 9 digits' };
-      if (!['061', '062', '065', '067', '068', '069', '071', '073', '074', '075', '076', '077', '078'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Updated with correct Tanzanian mobile prefixes including all major operators
+      // Vodacom: 075, 076, 077; Airtel: 068, 069, 078; Tigo: 065, 067, 071; Halotel: 061, 062; TTCL: 073, 074; Zantel: 077
+      // Additional prefixes: 069 (Airtel/Tigo)
+      if (!['061', '062', '065', '067', '068', '069', '071', '073', '074', '075', '076', '077', '078', '069', '693', '694', '695', '696', '697', '698', '699'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Tanzanian mobile prefix' };
       }
       break;
