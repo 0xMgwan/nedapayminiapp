@@ -332,6 +332,7 @@ export default function FarcasterMiniApp() {
 
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [successData, setSuccessData] = useState<{
     orderId: string;
     hash?: string;
@@ -2218,11 +2219,14 @@ export default function FarcasterMiniApp() {
       };
       
       // Execute Paycrest API transaction
+      setIsConfirming(true); // Show confirming state
       const result = await executePaycrestTransaction(sendCurrency, amount, recipient);
       
       if (!result) {
         throw new Error('Transaction failed - no result returned');
       }
+      
+      setIsConfirming(false); // Hide confirming state
       
       // Transaction successful - show animated modal
       setSuccessData({
@@ -2245,6 +2249,9 @@ export default function FarcasterMiniApp() {
       
     } catch (error: any) {
       console.error('Send transaction failed:', error);
+      setIsConfirming(false); // Hide confirming state on error
+      setIsSwipeComplete(false);
+      setSwipeProgress(0);
       let errorMessage = 'Send failed: ';
       
       if (error.message.includes('Paycrest API error')) {
@@ -2296,18 +2303,21 @@ export default function FarcasterMiniApp() {
       };
       
       // Execute Paycrest API transaction
+      setIsConfirming(true); // Show confirming state
       const result = await executePaycrestTransaction(payCurrency, amount, recipient);
       
       if (!result) {
         throw new Error('Transaction failed - no result returned');
       }
       
+      setIsConfirming(false); // Hide confirming state
+      
       // Transaction successful - show animated modal
       setSuccessData({
         orderId: result.orderId,
         hash: result.hash,
         amount: payCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} ${selectedPayToken}`,
-        recipient: tillNumber,
+        recipient: paymentType === 'till' ? tillNumber : businessNumber,
         type: 'pay'
       });
       setShowSuccessModal(true);
@@ -2323,6 +2333,7 @@ export default function FarcasterMiniApp() {
       
     } catch (error: any) {
       console.error('Pay transaction failed:', error);
+      setIsConfirming(false); // Hide confirming state on error
       let errorMessage = 'Payment failed: ';
       
       if (error.message.includes('Paycrest API error')) {
@@ -2607,7 +2618,7 @@ export default function FarcasterMiniApp() {
                 <ArrowRightIcon className="w-4 h-4 text-green-600" />
               </div>
               <span className="text-white font-medium text-sm">
-                {isSwipeComplete ? '✅ Sending...' : 'Swipe to Send'}
+                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Sending...' : 'Swipe to Send'}
               </span>
             </div>
             
@@ -3197,7 +3208,7 @@ export default function FarcasterMiniApp() {
                 <CurrencyDollarIcon className="w-4 h-4 text-blue-600" />
               </div>
               <span className="text-white font-semibold text-sm">
-                {isSwipeComplete ? '✅ Processing...' : 'Swipe to Pay'}
+                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Processing...' : 'Swipe to Pay'}
               </span>
             </div>
             
