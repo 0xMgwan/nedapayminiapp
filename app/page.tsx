@@ -39,47 +39,52 @@ const validateMobileNumber = (phoneNumber: string, countryCode: string): { isVal
   switch (countryCode) {
     case 'NG': // Nigeria
       if (cleanNumber.length !== 10) return { isValid: false, message: 'Nigerian numbers must be 10 digits' };
-      // Updated Nigerian mobile prefixes: MTN, Airtel, Glo, 9mobile
-      if (!['070', '080', '081', '090', '091'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Comprehensive Nigerian mobile prefixes: MTN, Airtel, Glo, 9mobile - includes 070-099 and 700-799 ranges
+      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079', '080', '081', '082', '083', '084', '085', '086', '087', '088', '089', '090', '091', '092', '093', '094', '095', '096', '097', '098', '099', '700', '701', '702', '703', '704', '705', '706', '707', '708', '709', '710', '711', '712', '713', '714', '715', '716', '717', '718', '719', '720', '721', '722', '723', '724', '725', '726', '727', '728', '729', '730', '731', '732', '733', '734', '735', '736', '737', '738', '739', '740', '741', '742', '743', '744', '745', '746', '747', '748', '749', '750', '751', '752', '753', '754', '755', '756', '757', '758', '759', '760', '761', '762', '763', '764', '765', '766', '767', '768', '769', '770', '771', '772', '773', '774', '775', '776', '777', '778', '779', '780', '781', '782', '783', '784', '785', '786', '787', '788', '789', '790', '791', '792', '793', '794', '795', '796', '797', '798', '799'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Nigerian mobile prefix' };
       }
       break;
     case 'KE': // Kenya
       if (cleanNumber.length !== 9) return { isValid: false, message: 'Kenyan numbers must be 9 digits' };
-      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Updated Kenyan mobile prefixes: Safaricom (070-079, 011-019, 010, 020-029, 720-729), Airtel (073-075, 078, 010-019, 730-739), Telkom (077, 020-029)
+      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079', '011', '012', '013', '014', '015', '016', '017', '018', '019', '010', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029', '720', '721', '722', '723', '724', '725', '726', '727', '728', '729', '730', '731', '732', '733', '734', '735', '736', '737', '738', '739'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Kenyan mobile prefix' };
       }
       break;
     case 'GH': // Ghana
       if (cleanNumber.length !== 9) return { isValid: false, message: 'Ghanaian numbers must be 9 digits' };
-      if (!['020', '023', '024', '025', '026', '027', '028', '050', '054', '055', '056', '057', '059'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Comprehensive Ghanaian mobile prefixes: MTN (024, 054, 055, 059), Vodafone (020, 050), AirtelTigo (027, 057, 026, 056)
+      if (!['020', '021', '023', '024', '025', '026', '027', '028', '029', '050', '051', '052', '053', '054', '055', '056', '057', '058', '059'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Ghanaian mobile prefix' };
       }
       break;
     case 'TZ': // Tanzania
       if (cleanNumber.length !== 9) return { isValid: false, message: 'Tanzanian numbers must be 9 digits' };
-      // Updated with correct Tanzanian mobile prefixes including all major operators
-      // Vodacom: 075, 076, 077; Airtel: 068, 069, 078; Tigo: 065, 067, 071; Halotel: 061, 062; TTCL: 073, 074; Zantel: 077
-      // Additional prefixes: 069 (Airtel/Tigo)
-      if (!['061', '062', '065', '067', '068', '069', '071', '073', '074', '075', '076', '077', '078', '069', '693', '694', '695', '696', '697', '698', '699'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Updated with comprehensive Tanzanian mobile prefixes including all major operators
+      // Vodacom: 075, 076, 077, 078; Airtel: 068, 069, 078, 065, 067; Tigo: 065, 067, 071; Halotel: 061, 062; TTCL: 073, 074; Zantel: 077
+      // Additional newer prefixes: 780-789 range for all operators
+      if (!['061', '062', '065', '067', '068', '069', '071', '073', '074', '075', '076', '077', '078', '693', '694', '695', '696', '697', '698', '699', '780', '781', '782', '783', '784', '785', '786', '787', '788', '789'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Tanzanian mobile prefix' };
       }
       break;
     case 'UG': // Uganda
       if (cleanNumber.length !== 9) return { isValid: false, message: 'Ugandan numbers must be 9 digits' };
-      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Comprehensive Ugandan mobile prefixes: MTN (077, 078), Airtel (070, 075), Africell (079), UTL (071), others (072-076)
+      if (!['070', '071', '072', '073', '074', '075', '076', '077', '078', '079', '031', '032', '033', '034', '035', '036', '037', '038', '039', '020', '021', '022', '023', '024', '025', '026', '027', '028', '029'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Ugandan mobile prefix' };
       }
       break;
     case 'CI': // Ivory Coast
       if (cleanNumber.length !== 8) return { isValid: false, message: 'Ivorian numbers must be 8 digits' };
-      if (!['01', '02', '03', '05', '06', '07', '08', '09'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Comprehensive Ivorian mobile prefixes: Orange (07, 08, 09), MTN (05, 06), Moov (01, 02, 03)
+      if (!['01', '02', '03', '04', '05', '06', '07', '08', '09'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Ivorian mobile prefix' };
       }
       break;
     case 'BJ': // Benin
       if (cleanNumber.length !== 8) return { isValid: false, message: 'Beninese numbers must be 8 digits' };
-      if (!['90', '91', '92', '93', '94', '95', '96', '97', '98', '99'].some(prefix => cleanNumber.startsWith(prefix))) {
+      // Comprehensive Beninese mobile prefixes: MTN (90, 91, 96, 97), Moov (94, 95, 96, 97), Glo (98, 99), others (92, 93)
+      if (!['90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69'].some(prefix => cleanNumber.startsWith(prefix))) {
         return { isValid: false, message: 'Invalid Beninese mobile prefix' };
       }
       break;
@@ -2206,10 +2211,14 @@ export default function FarcasterMiniApp() {
       }
       
       // Prepare recipient data for Paycrest API (correct format)
-      // Format phone number with country code (remove + and any non-digits, then prepend country code)
+      // Clean phone number and check if it already includes country code
       const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
       const countryCodeNumber = selectedCountry.countryCode?.replace('+', '') || '';
-      const fullPhoneNumber = countryCodeNumber + cleanPhoneNumber;
+      
+      // Check if phone number already starts with country code
+      const fullPhoneNumber = cleanPhoneNumber.startsWith(countryCodeNumber) 
+        ? cleanPhoneNumber 
+        : countryCodeNumber + cleanPhoneNumber;
       
       const recipient = {
         institution: selectedInstitution,
@@ -2295,9 +2304,18 @@ export default function FarcasterMiniApp() {
       }
       
       // Prepare recipient data for Paycrest API (correct format)
+      // Clean till/business number and check if it already includes country code
+      const cleanTillNumber = tillNumber.replace(/\D/g, '');
+      const countryCodeNumber = selectedCountry.countryCode?.replace('+', '') || '';
+      
+      // Check if till number already starts with country code (for mobile numbers)
+      const formattedTillNumber = cleanTillNumber.startsWith(countryCodeNumber) 
+        ? cleanTillNumber 
+        : (cleanTillNumber.length > 6 ? countryCodeNumber + cleanTillNumber : cleanTillNumber);
+      
       const recipient = {
         institution: selectedInstitution, // Use actual selected institution
-        accountIdentifier: paymentType === 'bill' ? businessNumber : tillNumber,
+        accountIdentifier: paymentType === 'bill' ? businessNumber : formattedTillNumber,
         accountName: paymentType === 'bill' ? 'Paybill Payment' : 'Till Payment',
         memo: `Pay ${payCurrency === 'local' ? amount + ' ' + selectedCountry.currency : amount + ' ' + selectedPayToken} to ${paymentType === 'bill' ? 'paybill ' + tillNumber + ' account ' + businessNumber : 'till ' + tillNumber}`
       };
@@ -2317,7 +2335,7 @@ export default function FarcasterMiniApp() {
         orderId: result.orderId,
         hash: result.hash,
         amount: payCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} ${selectedPayToken}`,
-        recipient: paymentType === 'till' ? tillNumber : businessNumber,
+        recipient: paymentType === 'bill' ? businessNumber : tillNumber,
         type: 'pay'
       });
       setShowSuccessModal(true);
@@ -2399,7 +2417,7 @@ export default function FarcasterMiniApp() {
 
       {/* Recipient Name */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Recipient Name (or Account Number)</label>
+        <label className="block text-xs text-gray-400 mb-1">Recipient Name (or Account Name)</label>
         <div className="relative">
           <input
             type="text"
@@ -2416,46 +2434,18 @@ export default function FarcasterMiniApp() {
         </div>
       </div>
 
-      {/* Phone Number with Country Code */}
+      {/* Account / Mobile Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Mobile Number</label>
-        <div className="relative flex">
-          <div className="flex items-center bg-slate-600 text-white px-3 py-2 rounded-l-lg border-r border-slate-500 text-sm font-medium">
-            <span className="mr-1">{selectedCountry.flag}</span>
-            <span>{selectedCountry.countryCode || '+255'}</span>
-          </div>
+        <label className="block text-xs text-gray-400 mb-1">Account / Mobile Number (Start with country code)</label>
+        <div className="relative">
           <input
-            type="tel"
+            type="text"
             value={phoneNumber}
-            onChange={(e) => {
-              // Remove any non-digit characters and format
-              const value = e.target.value.replace(/\D/g, '');
-              setPhoneNumber(value);
-            }}
-            placeholder="789123456"
-            className="flex-1 bg-slate-700 text-white rounded-r-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : selectedCountry.code === 'CI' ? 8 : selectedCountry.code === 'BJ' ? 8 : 10}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="e.g., +255787032800 or 123456789"
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        {phoneNumber && (
-          <div className="mt-1 text-xs text-gray-400">
-            Full number: {selectedCountry.countryCode || '+255'}{phoneNumber}
-          </div>
-        )}
-        {phoneNumber && (() => {
-          const validation = validateMobileNumber(phoneNumber, selectedCountry.code);
-          return !validation.isValid ? (
-            <div className="mt-1 text-xs text-red-400 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {validation.message}
-            </div>
-          ) : (
-            <div className="mt-1 text-xs text-green-400 flex items-center">
-              <span className="mr-1">✓</span>
-              Valid mobile number
-            </div>
-          );
-        })()}
       </div>
 
       {/* Amount Input with Currency Switching */}
@@ -3379,46 +3369,18 @@ export default function FarcasterMiniApp() {
         </div>
       </div>
 
-      {/* Phone Number / Account Number */}
+      {/* Account / Mobile Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1.5">Mobile Number / Account Number</label>
-        <div className="relative flex">
-          <div className="flex items-center bg-slate-600 text-white px-3 py-2.5 rounded-l-lg border-r border-slate-500 text-sm font-medium">
-            <span className="mr-1">{selectedCountry.flag}</span>
-            <span>{selectedCountry.countryCode || '+255'}</span>
-          </div>
+        <label className="block text-xs text-gray-400 mb-1.5">Account / Mobile Number (Start with country code)</label>
+        <div className="relative">
           <input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => {
-              // Remove any non-digit characters and format
-              const value = e.target.value.replace(/\D/g, '');
-              setPhoneNumber(value);
-            }}
-            placeholder="789123456 or account number"
-            className="flex-1 bg-slate-700 text-white rounded-r-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-            maxLength={selectedCountry.code === 'NG' ? 10 : selectedCountry.code === 'KE' ? 9 : selectedCountry.code === 'GH' ? 9 : selectedCountry.code === 'TZ' ? 9 : selectedCountry.code === 'UG' ? 9 : selectedCountry.code === 'CI' ? 8 : selectedCountry.code === 'BJ' ? 8 : 10}
+            type="text"
+            value={tillNumber}
+            onChange={(e) => setTillNumber(e.target.value)}
+            placeholder="e.g., +255787032800 or 123456789"
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        {phoneNumber && (
-          <div className="mt-1 text-xs text-gray-400">
-            Full number: {selectedCountry.countryCode || '+255'}{phoneNumber}
-          </div>
-        )}
-        {phoneNumber && (() => {
-          const validation = validateMobileNumber(phoneNumber, selectedCountry.code);
-          return !validation.isValid ? (
-            <div className="mt-1 text-xs text-red-400 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {validation.message}
-            </div>
-          ) : (
-            <div className="mt-1 text-xs text-green-400 flex items-center">
-              <span className="mr-1">✓</span>
-              Valid mobile number
-            </div>
-          );
-        })()}
       </div>
 
       {/* Wallet Address */}
