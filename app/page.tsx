@@ -608,11 +608,37 @@ export default function FarcasterMiniApp() {
         ]);
         
         setCurrencies(supportedCurrencies);
-        setInstitutions(supportedInstitutions);
+        
+        // Filter out banks for Tanzania only - keep mobile money providers
+        let filteredInstitutions = selectedCountry.code === 'TZ' 
+          ? supportedInstitutions.filter(institution => 
+              institution.type === 'mobile_money' || 
+              !institution.name.toLowerCase().includes('bank')
+            )
+          : supportedInstitutions;
+        
+        // For Kenya, move M-Pesa to the top of the list
+        if (selectedCountry.code === 'KE') {
+          const mpesaIndex = filteredInstitutions.findIndex(institution => 
+            institution.name.toLowerCase().includes('mpesa') || 
+            institution.name.toLowerCase().includes('m-pesa')
+          );
+          
+          if (mpesaIndex > 0) {
+            const mpesa = filteredInstitutions[mpesaIndex];
+            filteredInstitutions = [
+              mpesa,
+              ...filteredInstitutions.slice(0, mpesaIndex),
+              ...filteredInstitutions.slice(mpesaIndex + 1)
+            ];
+          }
+        }
+        
+        setInstitutions(filteredInstitutions);
         
         // Set default institution if none selected
-        if (supportedInstitutions.length > 0 && !selectedInstitution) {
-          setSelectedInstitution(supportedInstitutions[0].code);
+        if (filteredInstitutions.length > 0 && !selectedInstitution) {
+          setSelectedInstitution(filteredInstitutions[0].code);
         }
         
         // Load initial floating rates for supported currencies (limit to prevent API spam)
