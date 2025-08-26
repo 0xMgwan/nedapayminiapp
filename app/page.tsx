@@ -344,6 +344,7 @@ export default function FarcasterMiniApp() {
     amount: string;
     recipient: string;
     type: 'send' | 'pay';
+    token: 'USDC' | 'USDT';
   } | null>(null);
   
   // Track user's preferred wallet selection
@@ -2322,7 +2323,8 @@ export default function FarcasterMiniApp() {
         hash: result.hash,
         amount: sendCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} ${selectedSendToken}`,
         recipient: phoneNumber,
-        type: 'send'
+        type: 'send',
+        token: selectedSendToken as 'USDC' | 'USDT'
       });
       setShowSuccessModal(true);
       
@@ -2415,7 +2417,8 @@ export default function FarcasterMiniApp() {
         hash: result.hash,
         amount: payCurrency === 'local' ? `${amount} ${selectedCountry.currency}` : `${amount} ${selectedPayToken}`,
         recipient: paymentType === 'bill' ? businessNumber : tillNumber,
-        type: 'pay'
+        type: 'pay',
+        token: selectedPayToken as 'USDC' | 'USDT'
       });
       setShowSuccessModal(true);
       
@@ -2830,7 +2833,11 @@ export default function FarcasterMiniApp() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-xs">Amount</span>
                 <div className="flex items-center gap-2">
-                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                  {successData.token === 'USDT' ? (
+                    <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
+                  ) : (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                  )}
                   <span className="text-white font-semibold">{successData.amount}</span>
                 </div>
               </div>
