@@ -1605,8 +1605,22 @@ export default function FarcasterMiniApp() {
       console.log('🔍 Looking for token:', selectedSendToken);
       console.log('🔍 Found token data:', selectedTokenData);
       
-      const network = selectedTokenData?.chainId === 42220 ? 'celo' : 'base';
-      const token = selectedTokenData?.baseToken || 'USDC';
+      // Ensure proper network detection based on token type
+      let network: 'base' | 'celo' = 'base'; // Default to base
+      let token: 'USDC' | 'USDT' = 'USDC'; // Default to USDC
+      
+      if (selectedTokenData) {
+        token = selectedTokenData.baseToken as 'USDC' | 'USDT';
+        // USDT is on Celo (chainId: 42220), USDC is on Base (chainId: 8453)
+        if (token === 'USDT') {
+          network = 'celo';
+        } else if (token === 'USDC') {
+          network = 'base';
+        } else {
+          // For other tokens, use chainId
+          network = selectedTokenData.chainId === 42220 ? 'celo' : 'base';
+        }
+      }
       
       // Prepare Paycrest API payload (same as main app)
       const paymentOrderPayload = {
