@@ -1585,7 +1585,7 @@ export default function FarcasterMiniApp() {
     }
   }, [isConnected, address]);
 
-  const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any) => {
+  const executePaycrestTransaction = useCallback(async (currency: 'local' | 'usdc', amount: string, recipient: any, flowType: 'send' | 'pay' = 'pay') => {
     if (!walletAddress || !isConnected) {
       throw new Error('Wallet not connected');
     }
@@ -1598,14 +1598,14 @@ export default function FarcasterMiniApp() {
       // For local currency, amount is in local currency; for USDC, amount is in USDC
       const paymentAmount = currency === 'local' ? amountNum : amountNum;
       
-      // Determine network and token based on selected token
+      // Determine network and token based on selected token and flow type
       // Use selectedPayToken for Pay flow, selectedSendToken for Send flow
       const selectedTokenData = stablecoins.find(token => 
-        token.baseToken === selectedPayToken
+        token.baseToken === (flowType === 'send' ? selectedSendToken : selectedPayToken)
       );
       
       console.log('🔍 All stablecoins:', stablecoins.map(s => ({ baseToken: s.baseToken, chainId: s.chainId })));
-      console.log('🔍 Looking for token:', selectedPayToken);
+      console.log('🔍 Looking for token:', flowType === 'send' ? selectedSendToken : selectedPayToken);
       console.log('🔍 Found token data:', selectedTokenData);
       
       // Ensure proper network detection based on token type
@@ -2311,7 +2311,7 @@ export default function FarcasterMiniApp() {
       
       // Execute Paycrest API transaction
       setIsConfirming(true); // Show confirming state
-      const result = await executePaycrestTransaction(sendCurrency, amount, recipient);
+      const result = await executePaycrestTransaction(sendCurrency, amount, recipient, 'send');
       
       if (!result) {
         throw new Error('Transaction failed - no result returned');
@@ -2405,7 +2405,7 @@ export default function FarcasterMiniApp() {
       
       // Execute Paycrest API transaction
       setIsConfirming(true); // Show confirming state
-      const result = await executePaycrestTransaction(payCurrency, amount, recipient);
+      const result = await executePaycrestTransaction(payCurrency, amount, recipient, 'pay');
       
       if (!result) {
         throw new Error('Transaction failed - no result returned');
