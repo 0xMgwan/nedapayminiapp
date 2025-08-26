@@ -521,14 +521,17 @@ export default function FarcasterMiniApp() {
   }, [walletBalance]);
 
   // Fetch real-time rate from Paycrest
-  const fetchRate = useCallback(async (currency: string) => {
+  const fetchRate = useCallback(async (currency: string, tokenOverride?: string) => {
     if (!currency || currency === 'USDC') return;
     
     try {
       setIsLoadingRate(true);
       console.log(`💱 Fetching rate for ${currency}...`);
       
-      const rate = await fetchTokenRate('USDC', 1, currency);
+      // Determine which token to use based on current tab
+      const currentToken = tokenOverride || (activeTab === 'send' ? selectedSendToken : selectedPayToken);
+      
+      const rate = await fetchTokenRate(currentToken as 'USDC' | 'USDT', 1, currency);
       setCurrentRate(rate);
       
       console.log(`✅ Rate fetched successfully for ${currency}: ${rate}`);
@@ -542,15 +545,12 @@ export default function FarcasterMiniApp() {
         }
       }));
     } catch (error: any) {
-      console.warn(`⚠️ Failed to fetch rate for ${currency}:`, error?.message || error);
-      
-      // Only show real API data - no fallbacks
-      setCurrentRate('Rate unavailable');
-      console.log(`❌ Could not fetch real rate for ${currency} - API unavailable`);
+      console.error(`❌ Failed to fetch rate for ${currency}:`, error?.message || 'API Error');
+      setCurrentRate('0');
     } finally {
       setIsLoadingRate(false);
     }
-  }, []);
+  }, [selectedSendToken, selectedPayToken, activeTab]);
 
   // Calculate fees and totals with proper currency handling
   const calculatePaymentDetails = useCallback(() => {
@@ -648,7 +648,7 @@ export default function FarcasterMiniApp() {
               await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            const rate = await fetchTokenRate('USDC', 1, currency.code);
+            const rate = await fetchTokenRate(selectedSendToken as 'USDC' | 'USDT', 1, currency.code);
             setFloatingRates(prev => ({
               ...prev,
               [currency.code]: {
@@ -671,10 +671,17 @@ export default function FarcasterMiniApp() {
     loadData();
   }, [selectedCountry, selectedInstitution]);
 
-  // Fetch rate when country changes
+  // Fetch rate when country or token changes
   useEffect(() => {
     fetchRate(selectedCountry.currency);
-  }, [selectedCountry, fetchRate]);
+  }, [selectedCountry, selectedSendToken, selectedPayToken, fetchRate]);
+
+  // Fetch rate when switching tabs to ensure correct token rate is displayed
+  useEffect(() => {
+    if (activeTab && selectedCountry.currency !== 'USDC') {
+      fetchRate(selectedCountry.currency);
+    }
+  }, [activeTab, fetchRate, selectedCountry.currency]);
 
   // MiniKit initialization (already declared above)
   
@@ -1589,15 +1596,17 @@ export default function FarcasterMiniApp() {
       const paymentAmount = currency === 'local' ? amountNum : amountNum;
       
       // Determine network and token based on selected token
+      // For Send tab, always use selectedSendToken regardless of currency type
       const selectedTokenData = stablecoins.find(token => 
-        token.baseToken === (currency === 'local' ? selectedSendToken : selectedPayToken)
+        token.baseToken === selectedSendToken
       );
       
       console.log('🔍 All stablecoins:', stablecoins.map(s => ({ baseToken: s.baseToken, chainId: s.chainId })));
-      console.log('🔍 Looking for token:', currency === 'local' ? selectedSendToken : selectedPayToken);
+      console.log('🔍 Looking for token:', selectedSendToken);
+      console.log('🔍 Found token data:', selectedTokenData);
       
       const network = selectedTokenData?.chainId === 42220 ? 'celo' : 'base';
-      const token = selectedTokenData?.baseToken === 'USDT' ? 'USDT' : 'USDC';
+      const token = selectedTokenData?.baseToken || 'USDC';
       
       // Prepare Paycrest API payload (same as main app)
       const paymentOrderPayload = {
@@ -1613,9 +1622,9 @@ export default function FarcasterMiniApp() {
       console.log('🔍 Debug - Selected Token Data:', selectedTokenData);
       console.log('🔍 Debug - Currency:', currency);
       console.log('🔍 Debug - Selected Send Token:', selectedSendToken);
-      console.log('🔍 Debug - Selected Pay Token:', selectedPayToken);
       console.log('🔍 Debug - Network:', network);
       console.log('🔍 Debug - Token:', token);
+      console.log('🔍 Debug - Chain ID:', selectedTokenData?.chainId);
       console.log('Initiating Paycrest payment order:', paymentOrderPayload);
 
       // Call Paycrest API (same as main app)
@@ -2649,7 +2658,7 @@ export default function FarcasterMiniApp() {
         </div>
 
         <div className="text-center text-xs text-gray-300 mb-4 font-semibold mt-3">
-          1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
+          1 {selectedSendToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
         </div>
 
         <div className="space-y-1 text-xs mb-4">
