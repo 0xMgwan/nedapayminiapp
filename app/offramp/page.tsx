@@ -384,7 +384,7 @@ const PaymentForm: React.FC = () => {
       }
 
       setSuccess(
-        `Payment order initiated! \nReference: ${reference}\nAmount: ${orderAmount}\nNetwork: base\nToken: USDC\nFee: ${senderFee}\nTransaction Fee: ${transactionFee}\nValid Until: ${validUntil}`
+        `Payment order initiated! \nReference: ${reference}\nAmount: ${orderAmount}\nNetwork: Base\nToken: USDC\nFee: ${senderFee}\nTransaction Fee: ${transactionFee}\nValid Until: ${validUntil}`
       );
       setError("");
     } catch (err) {

@@ -11,7 +11,7 @@ import { base } from 'wagmi/chains';
 import { ethers } from 'ethers';
 import { stablecoins } from './data/stablecoins';
 import { initiatePaymentOrder } from './utils/paycrest';
-import { executeUSDCTransaction, getUSDCBalance } from './utils/wallet';
+import { executeUSDCTransaction, executeTokenTransaction, getUSDCBalance, getTokenBalance } from './utils/wallet';
 import { fetchTokenRate, fetchSupportedCurrencies, fetchSupportedInstitutions } from './utils/paycrest';
 import { getAerodromeQuote, swapAerodrome, AERODROME_FACTORY_ADDRESS } from './utils/aerodrome';
 import { calculateDynamicFee, formatFeeInfo, isProtocolEnabled } from './utils/nedaPayProtocol';
@@ -486,17 +486,9 @@ export default function FarcasterMiniApp() {
         return;
       }
       
-      // Create provider and contract
-      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.base.org');
-      const tokenContract = new ethers.Contract(
-        tokenData.address,
-        ['function balanceOf(address owner) view returns (uint256)'],
-        provider
-      );
-      
-      const balance = await tokenContract.balanceOf(walletAddress);
-      const formattedBalance = ethers.utils.formatUnits(balance, tokenData.decimals || 6);
-      const displayBalance = parseFloat(formattedBalance).toFixed(tokenData.decimals === 2 ? 2 : 2);
+      // Use the new generic token balance function
+      const balance = await getTokenBalance(walletAddress, tokenData);
+      const displayBalance = parseFloat(balance).toFixed(tokenData.decimals === 2 ? 2 : 2);
       
       console.log('✅ Balance fetched:', displayBalance, selectedToken);
       setWalletBalance(displayBalance);
@@ -773,7 +765,8 @@ export default function FarcasterMiniApp() {
   // Proper Farcaster MiniApp transaction using wagmi hooks (per official docs)
   const executeFarcasterTransaction = useCallback(async (
     toAddress: string,
-    amount: number
+    amount: number,
+    tokenData?: any
   ): Promise<{ success: boolean; hash: string }> => {
     try {
       console.log('🎆 Executing Farcaster MiniApp transaction:', {
@@ -787,11 +780,13 @@ export default function FarcasterMiniApp() {
         throw new Error('Wallet not connected in Farcaster');
       }
 
-      // USDC contract on Base
-      const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      // Determine token contract and decimals
+      const isUSDT = tokenData?.baseToken === 'USDT';
+      const tokenContract = isUSDT ? '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2' : '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      const decimals = tokenData?.decimals || 6;
       
-      // Convert amount to USDC decimals (6 decimals)
-      const amountInUnits = BigInt(Math.floor(amount * 1000000));
+      // Convert amount to token decimals
+      const amountInUnits = BigInt(Math.floor(amount * Math.pow(10, decimals)));
       
       // Encode USDC transfer function call
       const transferData = `0xa9059cbb${toAddress.slice(2).padStart(64, '0')}${amountInUnits.toString(16).padStart(64, '0')}`;
@@ -801,7 +796,7 @@ export default function FarcasterMiniApp() {
       const { config } = await import('../providers/MiniKitProvider');
       
       const hash = await writeContract(config, {
-        address: USDC_CONTRACT as `0x${string}`,
+        address: tokenContract as `0x${string}`,
         abi: [
           {
             name: 'transfer',
@@ -1593,17 +1588,34 @@ export default function FarcasterMiniApp() {
       // For local currency, amount is in local currency; for USDC, amount is in USDC
       const paymentAmount = currency === 'local' ? amountNum : amountNum;
       
+      // Determine network and token based on selected token
+      const selectedTokenData = stablecoins.find(token => 
+        token.baseToken === (currency === 'local' ? selectedSendToken : selectedPayToken)
+      );
+      
+      console.log('🔍 All stablecoins:', stablecoins.map(s => ({ baseToken: s.baseToken, chainId: s.chainId })));
+      console.log('🔍 Looking for token:', currency === 'local' ? selectedSendToken : selectedPayToken);
+      
+      const network = selectedTokenData?.chainId === 42220 ? 'celo' : 'base';
+      const token = selectedTokenData?.baseToken === 'USDT' ? 'USDT' : 'USDC';
+      
       // Prepare Paycrest API payload (same as main app)
       const paymentOrderPayload = {
         amount: paymentAmount,
         rate: rate,
-        network: 'base' as const,
-        token: 'USDC' as const,
+        network: network as 'base' | 'celo',
+        token: token as 'USDC' | 'USDT',
         recipient: recipient,
         returnAddress: walletAddress,
         reference: `miniapp-${Date.now()}`
       };
 
+      console.log('🔍 Debug - Selected Token Data:', selectedTokenData);
+      console.log('🔍 Debug - Currency:', currency);
+      console.log('🔍 Debug - Selected Send Token:', selectedSendToken);
+      console.log('🔍 Debug - Selected Pay Token:', selectedPayToken);
+      console.log('🔍 Debug - Network:', network);
+      console.log('🔍 Debug - Token:', token);
       console.log('Initiating Paycrest payment order:', paymentOrderPayload);
 
       // Call Paycrest API (same as main app)
@@ -1616,11 +1628,27 @@ export default function FarcasterMiniApp() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Paycrest API error: ${errorData.message || 'Unknown error'}`);
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(`Paycrest API error: ${errorData.message || 'Unknown error'}`);
+        } catch (parseError) {
+          throw new Error(`Paycrest API error: ${response.status} - ${errorText}`);
+        }
       }
 
-      const paymentOrder = await response.json();
+      const responseText = await response.text();
+      console.log('📝 Raw API Response:', responseText);
+      
+      let paymentOrder;
+      try {
+        paymentOrder = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', parseError);
+        console.error('❌ Response text that failed to parse:', responseText);
+        throw new Error('Invalid response from server');
+      }
       console.log('Paycrest payment order created:', paymentOrder);
       
       // Now execute the actual blockchain transaction
@@ -1630,8 +1658,8 @@ export default function FarcasterMiniApp() {
       
       console.log('Executing blockchain transaction to:', paymentOrder.data.receiveAddress);
       
-      // Calculate USDC amount (always in USDC for blockchain)
-      const usdcAmount = currency === 'local' ? (paymentAmount / rate).toFixed(6) : paymentAmount.toFixed(6);
+      // Calculate token amount based on selected token
+      const tokenAmount = currency === 'local' ? (paymentAmount / rate).toFixed(selectedTokenData?.decimals || 6) : paymentAmount.toFixed(selectedTokenData?.decimals || 6);
       
       // Execute the blockchain transaction - handle walletClient being null
       console.log('🔍 Wallet state debug:', {
@@ -1665,10 +1693,11 @@ export default function FarcasterMiniApp() {
         const walletProvider = (window as any).ethereum;
         console.log('✅ Using window.ethereum provider');
         
-        const blockchainResult = await executeUSDCTransaction(
+        const blockchainResult = await executeTokenTransaction(
           paymentOrder.data.receiveAddress, 
-          parseFloat(usdcAmount), 
-          walletProvider
+          parseFloat(tokenAmount), 
+          walletProvider,
+          selectedTokenData
         );
         
         if (!blockchainResult.success) {
@@ -1679,7 +1708,7 @@ export default function FarcasterMiniApp() {
           success: true,
           orderId: paymentOrder.data?.id || 'unknown',
           paymentOrder: paymentOrder,
-          amount: usdcAmount,
+          amount: tokenAmount,
           hash: blockchainResult.hash
         };
       } else if (isConnected && address) {
@@ -1687,14 +1716,15 @@ export default function FarcasterMiniApp() {
         console.log('✅ Using smart wallet transaction (no window.ethereum)');
         const farcasterResult = await executeFarcasterTransaction(
           paymentOrder.data.receiveAddress,
-          parseFloat(usdcAmount)
+          parseFloat(tokenAmount),
+          selectedTokenData
         );
         
         return {
           success: true,
           orderId: paymentOrder.data?.id || 'unknown',
           paymentOrder: paymentOrder,
-          amount: usdcAmount,
+          amount: tokenAmount,
           hash: farcasterResult.hash
         };
       } else {
@@ -2491,6 +2521,8 @@ export default function FarcasterMiniApp() {
                   <div className="flex items-center gap-2">
                     {selectedSendToken === 'USDC' ? (
                       <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                    ) : selectedSendToken === 'USDT' ? (
+                      <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
                     ) : (
                       <span className="text-xs">
                         {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
@@ -2514,6 +2546,8 @@ export default function FarcasterMiniApp() {
                       >
                         {token.baseToken === 'USDC' ? (
                           <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                        ) : token.baseToken === 'USDT' ? (
+                          <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
                         ) : (
                           <span className="text-xs">{token.flag || '🌍'}</span>
                         )}
@@ -2565,10 +2599,24 @@ export default function FarcasterMiniApp() {
             )}
           </div>
           <div className="text-right">
-            {/* Base Network Label */}
+            {/* Network Label */}
             <div className="flex items-center justify-end gap-1 mb-1">
-              <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
-              <span className="text-white text-xs">Base</span>
+              {(() => {
+                const selectedTokenData = stablecoins.find(token => 
+                  token.baseToken === (sendCurrency === 'local' ? selectedSendToken : selectedSendToken)
+                );
+                const isUSDT = selectedTokenData?.baseToken === 'USDT';
+                return (
+                  <>
+                    <img 
+                      src={isUSDT ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
+                      alt={isUSDT ? "Celo" : "Base"} 
+                      className="w-3 h-3 rounded-full" 
+                    />
+                    <span className="text-white text-xs">{isUSDT ? "Celo" : "Base"}</span>
+                  </>
+                );
+              })()}
             </div>
             
             {/* Balance underneath Base */}
@@ -2580,8 +2628,10 @@ export default function FarcasterMiniApp() {
               >
                 {selectedSendToken === 'USDC' ? (
                   <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                ) : selectedSendToken === 'USDT' ? (
+                  <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
                 ) : (
-                  <span className="text-sm">
+                  <span className="text-xs">
                     {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
                   </span>
                 )}
@@ -2882,8 +2932,22 @@ export default function FarcasterMiniApp() {
       <div className="flex items-center justify-between">
         <h2 className="text-white text-lg font-medium">Pay</h2>
         <div className="flex items-center gap-2">
-          <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-4 h-4 rounded-full" />
-          <span className="text-white text-sm">Base</span>
+          {(() => {
+            const selectedTokenData = stablecoins.find(token => 
+              token.baseToken === (payCurrency === 'local' ? selectedPayToken : selectedPayToken)
+            );
+            const isUSDT = selectedTokenData?.baseToken === 'USDT';
+            return (
+              <>
+                <img 
+                  src={isUSDT ? "/assets/logos/celo-logo.png" : "/assets/logos/base-logo.jpg"} 
+                  alt={isUSDT ? "Celo" : "Base"} 
+                  className="w-4 h-4 rounded-full" 
+                />
+                <span className="text-white text-sm">{isUSDT ? "Celo" : "Base"}</span>
+              </>
+            );
+          })()}
         </div>
       </div>
 
@@ -3092,6 +3156,8 @@ export default function FarcasterMiniApp() {
                   <div className="flex items-center gap-2">
                     {selectedPayToken === 'USDC' ? (
                       <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                    ) : selectedPayToken === 'USDT' ? (
+                      <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
                     ) : (
                       <span className="text-xs">
                         {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
@@ -3115,6 +3181,8 @@ export default function FarcasterMiniApp() {
                       >
                         {token.baseToken === 'USDC' ? (
                           <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                        ) : token.baseToken === 'USDT' ? (
+                          <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
                         ) : (
                           <span className="text-xs">{token.flag || '🌍'}</span>
                         )}
@@ -3152,10 +3220,24 @@ export default function FarcasterMiniApp() {
           <div className="flex justify-between items-start">
             <span className="text-gray-400 text-sm">You'll pay</span>
             <div className="text-right">
-              {/* Base Network Label */}
+              {/* Network Label */}
               <div className="flex items-center justify-end gap-1 mb-1">
-                <img src="/assets/logos/base-logo.jpg" alt="Base" className="w-3 h-3 rounded-full" />
-                <span className="text-white text-xs">Base</span>
+                {(() => {
+                  const selectedTokenData = stablecoins.find(token => 
+                    token.baseToken === (payCurrency === 'local' ? selectedPayToken : selectedPayToken)
+                  );
+                  const isUSDT = selectedTokenData?.baseToken === 'USDT';
+                  return (
+                    <>
+                      <img 
+                        src={isUSDT ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
+                        alt={isUSDT ? "Celo" : "Base"} 
+                        className="w-3 h-3 rounded-full" 
+                      />
+                      <span className="text-white text-xs">{isUSDT ? "Celo" : "Base"}</span>
+                    </>
+                  );
+                })()}
               </div>
               
               {/* Balance underneath Base */}
@@ -3167,6 +3249,8 @@ export default function FarcasterMiniApp() {
                 >
                   {selectedPayToken === 'USDC' ? (
                     <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
+                  ) : selectedPayToken === 'USDT' ? (
+                    <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
                   ) : (
                     <span className="text-sm">
                       {stablecoins.find(token => token.baseToken === selectedPayToken)?.flag || '🌍'}
@@ -3524,6 +3608,8 @@ export default function FarcasterMiniApp() {
             <div className="flex items-center gap-2">
               {selectedStablecoin.baseToken === 'USDC' ? (
                 <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+              ) : selectedStablecoin.baseToken === 'USDT' ? (
+                <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
               ) : (
                 <span className="text-sm">{selectedStablecoin.flag || '🌍'}</span>
               )}
@@ -3545,6 +3631,8 @@ export default function FarcasterMiniApp() {
                 >
                   {token.baseToken === 'USDC' ? (
                     <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                  ) : token.baseToken === 'USDT' ? (
+                    <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
                   ) : (
                     <span className="text-sm">{token.flag || '🌍'}</span>
                   )}

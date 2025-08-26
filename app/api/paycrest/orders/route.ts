@@ -4,6 +4,8 @@ import { initiatePaymentOrder, Recipient, fetchAllOrders } from '../../../utils/
 interface PaymentOrderRequest {
   amount: number;
   rate: number;
+  network: 'base' | 'celo';
+  token: 'USDC' | 'USDT';
   recipient: Recipient;
   returnAddress?: string;
   reference?: string;
@@ -43,10 +45,12 @@ export async function POST(request: NextRequest) {
     console.log('Request headers:', request.headers);
     
     const body = await request.json() as PaymentOrderRequest;
-    console.log('Request body:', body);
+    console.log('🔍 API Debug - Request body received:', body);
+    console.log('🔍 API Debug - Network from body:', body.network);
+    console.log('🔍 API Debug - Token from body:', body.token);
 
     // Validate payload
-    if (!body.amount || !body.rate || !body.recipient) {
+    if (!body.amount || !body.rate || !body.recipient || !body.network || !body.token) {
       console.log('Missing required fields in request body');
       return NextResponse.json(
         { message: 'Missing required fields' },
@@ -57,8 +61,8 @@ export async function POST(request: NextRequest) {
     console.log('Attempting to initiate payment order with payload:', {
       amount: body.amount,
       rate: body.rate,
-      network: 'base',
-      token: 'USDC',
+      network: body.network,
+      token: body.token,
       recipient: body.recipient,
       returnAddress: body.returnAddress,
       reference: body.reference,
@@ -67,14 +71,24 @@ export async function POST(request: NextRequest) {
     const order = await initiatePaymentOrder({
       amount: body.amount,
       rate: body.rate,
-      network: 'base',
-      token: 'USDC',
+      network: body.network,
+      token: body.token,
       recipient: body.recipient,
       returnAddress: body.returnAddress,
       reference: body.reference,
     });
 
     console.log('Payment order initiated successfully:', order);
+    
+    // Ensure we return valid JSON
+    if (!order || typeof order !== 'object') {
+      console.error('Invalid order response:', order);
+      return NextResponse.json(
+        { message: 'Invalid response from payment service' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(order);
   } catch (error) {
     console.error('❌ Error initiating payment order:', error);

@@ -64,8 +64,8 @@ export interface Recipient {
 interface PaymentOrderPayload {
   amount: number;
   rate: number;
-  network: 'base';
-  token: 'USDC';
+  network: 'base' | 'celo';
+  token: 'USDC' | 'USDT';
   recipient: Recipient;
   returnAddress?: string;
   reference?: string;
@@ -187,9 +187,10 @@ function isRetryableError(error: any): boolean {
 }
 
 
-export async function fetchTokenRate(token: 'USDC', amount: number, fiat: string, providerId?: string): Promise<string> {
+export async function fetchTokenRate(token: 'USDC' | 'USDT', amount: number, fiat: string, providerId?: string): Promise<string> {
   const query = providerId ? `?provider_id=${providerId}` : '';
-  const response = await axios.get(`${PAYCREST_API_URL}/v1/rates/${token}/${amount}/${fiat}?network=base`, { headers });
+  const network = token === 'USDT' ? 'celo' : 'base';
+  const response = await axios.get(`${PAYCREST_API_URL}/v1/rates/${token}/${amount}/${fiat}?network=${network}`, { headers });
   return response.data.data;
 }
 

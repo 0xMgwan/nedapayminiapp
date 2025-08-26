@@ -142,5 +142,18 @@ export const stablecoins = [
     website: 'https://www.circle.com/usdc',
     chainId: 8453, // Base Mainnet
     decimals: 6
+  },
+  {
+    region: 'United States',
+    flag: '🇺🇸',
+    currency: 'USD',
+    baseToken: 'USDT',
+    name: 'Tether USD',
+    address: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e', // Celo Mainnet
+    issuer: 'Tether',
+    description: 'USD-backed stablecoin by Tether (Celo Mainnet)',
+    website: 'https://tether.to',
+    chainId: 42220, // Celo Mainnet
+    decimals: 6
   }
 ];
