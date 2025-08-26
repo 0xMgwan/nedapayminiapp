@@ -1599,13 +1599,13 @@ export default function FarcasterMiniApp() {
       const paymentAmount = currency === 'local' ? amountNum : amountNum;
       
       // Determine network and token based on selected token
-      // For Send tab, always use selectedSendToken regardless of currency type
+      // Use selectedPayToken for Pay flow, selectedSendToken for Send flow
       const selectedTokenData = stablecoins.find(token => 
-        token.baseToken === selectedSendToken
+        token.baseToken === selectedPayToken
       );
       
       console.log('🔍 All stablecoins:', stablecoins.map(s => ({ baseToken: s.baseToken, chainId: s.chainId })));
-      console.log('🔍 Looking for token:', selectedSendToken);
+      console.log('🔍 Looking for token:', selectedPayToken);
       console.log('🔍 Found token data:', selectedTokenData);
       
       // Ensure proper network detection based on token type
