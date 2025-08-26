@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from 'react';
 import { MiniKitProvider as OnchainKitMiniKitProvider } from '@coinbase/onchainkit/minikit';
-import { base } from 'wagmi/chains';
+import { base, celo } from 'wagmi/chains';
 import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { coinbaseWallet, metaMask, walletConnect } from 'wagmi/connectors';
@@ -10,9 +10,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create wagmi config with multiple connectors for different environments
 export const config = createConfig({
-  chains: [base],
+  chains: [base, celo],
   transports: {
     [base.id]: http(),
+    [celo.id]: http('https://forno.celo.org'),
   },
   connectors: [
     // Farcaster MiniApp connector for Farcaster environment

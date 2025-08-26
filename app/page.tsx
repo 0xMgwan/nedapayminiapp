@@ -788,10 +788,11 @@ export default function FarcasterMiniApp() {
         throw new Error('Wallet not connected in Farcaster');
       }
 
-      // Determine token contract and decimals
+      // Determine token contract and decimals based on network
       const isUSDT = tokenData?.baseToken === 'USDT';
-      const tokenContract = isUSDT ? '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2' : '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      const tokenContract = isUSDT ? '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e' : '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Celo USDT : Base USDC
       const decimals = tokenData?.decimals || 6;
+      const chainId = isUSDT ? 42220 : 8453; // Celo : Base
       
       // Convert amount to token decimals
       const amountInUnits = BigInt(Math.floor(amount * Math.pow(10, decimals)));
@@ -818,7 +819,8 @@ export default function FarcasterMiniApp() {
           }
         ],
         functionName: 'transfer',
-        args: [toAddress as `0x${string}`, amountInUnits]
+        args: [toAddress as `0x${string}`, amountInUnits],
+        chainId: chainId
       });
       
       console.log('✅ Farcaster transaction sent:', hash);
