@@ -297,7 +297,7 @@ export default function FarcasterMiniApp() {
   const [institutions, setInstitutions] = useState<Array<{ name: string; code: string; type: string }>>([]);
   const [sendCurrency, setSendCurrency] = useState<'local' | 'usdc'>('usdc');
   const [payCurrency, setPayCurrency] = useState<'local' | 'usdc'>('usdc');
-  const [selectedSendToken, setSelectedSendToken] = useState('USDT');
+  const [selectedSendToken, setSelectedSendToken] = useState('USDC');
   const [selectedPayToken, setSelectedPayToken] = useState('USDC');
   const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
   const [showPayTokenDropdown, setShowPayTokenDropdown] = useState(false);

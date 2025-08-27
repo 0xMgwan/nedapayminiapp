@@ -1,5 +1,19 @@
 // Stablecoins data from stablecoins.earth
 export const stablecoins = [
+  // USDC first as default option
+  {
+    region: 'United States',
+    flag: '🇺🇸',
+    currency: 'USD',
+    baseToken: 'USDC',
+    name: 'USD Coin',
+    address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base Mainnet
+    issuer: 'Circle',
+    description: 'USD-backed stablecoin by Circle (Base Mainnet)',
+    website: 'https://www.circle.com/usdc',
+    chainId: 8453, // Base Mainnet
+    decimals: 6
+  },
   // NOTE: TSHC removed due to invalid placeholder address
   {
     region: 'Nigeria',
@@ -129,19 +143,6 @@ export const stablecoins = [
     issuer: 'Etherfuse/Brale',
     description: 'Stablecoin pegged 1:1 to the Mexican Peso (MXN)',
     website: 'https://stablecoins.earth',
-  },
-  {
-    region: 'United States',
-    flag: '🇺🇸',
-    currency: 'USD',
-    baseToken: 'USDC',
-    name: 'USD Coin',
-    address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base Mainnet
-    issuer: 'Circle',
-    description: 'USD-backed stablecoin by Circle (Base Mainnet)',
-    website: 'https://www.circle.com/usdc',
-    chainId: 8453, // Base Mainnet
-    decimals: 6
   },
   {
     region: 'United States',
