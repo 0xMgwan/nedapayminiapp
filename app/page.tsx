@@ -317,6 +317,7 @@ export default function FarcasterMiniApp() {
   const [selectedPayToken, setSelectedPayToken] = useState('USDC');
   const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
   const [showPayTokenDropdown, setShowPayTokenDropdown] = useState(false);
+  const [showDepositTokenDropdown, setShowDepositTokenDropdown] = useState(false);
   const [isSwipeComplete, setIsSwipeComplete] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [walletBalance, setWalletBalance] = useState('0.00');
@@ -2480,23 +2481,54 @@ export default function FarcasterMiniApp() {
     <div className="space-y-2">
       {/* Country Selector */}
       <div className="relative">
-        <select 
-          value={selectedCountry.code}
-          onChange={(e) => {
-            const country = orderedCountries.find(c => c.code === e.target.value);
-            if (country && !country.comingSoon) {
-              setSelectedCountry(country);
-            }
-          }}
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <button
+          onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-3 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {orderedCountries.map((country) => (
-            <option key={country.code} value={country.code} disabled={country.comingSoon}>
-              {country.flag} {country.name} {country.comingSoon ? '(Coming soon)' : ''}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{selectedCountry.flag}</span>
+            <span className="text-white font-medium text-sm">{selectedCountry.name}</span>
+          </div>
+          <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${
+            isCountryDropdownOpen ? 'rotate-180' : ''
+          }`} />
+        </button>
+        
+        {/* Dropdown Menu */}
+        {isCountryDropdownOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64">
+            {sendCountries.map((country) => (
+              <button
+                key={country.code}
+                onClick={() => {
+                  if (!country.comingSoon) {
+                    setSelectedCountry(country);
+                    setIsCountryDropdownOpen(false);
+                  }
+                }}
+                disabled={country.comingSoon}
+                className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
+                  country.comingSoon 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:bg-slate-700'
+                } ${
+                  selectedCountry.code === country.code ? 'bg-blue-600/20' : ''
+                }`}
+              >
+                <span className="text-lg">{country.flag}</span>
+                <div className="flex flex-col">
+                  <span className="text-white font-medium text-sm">{country.name}</span>
+                  {country.comingSoon && (
+                    <span className="text-gray-400 text-xs">Coming soon</span>
+                  )}
+                </div>
+                {selectedCountry.code === country.code && (
+                  <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Send Money Button */}
@@ -3515,18 +3547,56 @@ export default function FarcasterMiniApp() {
 
       {/* Token Selector */}
       <div className="relative">
-        <select 
-          value={selectedToken.baseToken}
-          onChange={(e) => setSelectedToken(stablecoins.find(t => t.baseToken === e.target.value) || stablecoins[0])}
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <button
+          onClick={() => setShowDepositTokenDropdown(!showDepositTokenDropdown)}
+          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-3 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {stablecoins.map((token) => (
-            <option key={token.baseToken} value={token.baseToken}>
-              {token.flag} {token.baseToken} - {token.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-2">
+            {selectedToken.baseToken === 'USDC' ? (
+              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+            ) : selectedToken.baseToken === 'USDT' ? (
+              <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
+            ) : (
+              <span className="text-sm">{selectedToken.flag || '🌍'}</span>
+            )}
+            <span className="text-white font-medium text-sm">{selectedToken.baseToken} - {selectedToken.name}</span>
+          </div>
+          <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${
+            showDepositTokenDropdown ? 'rotate-180' : ''
+          }`} />
+        </button>
+        
+        {/* Dropdown Menu */}
+        {showDepositTokenDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64">
+            {stablecoins.map((token) => (
+              <button
+                key={token.baseToken}
+                onClick={() => {
+                  setSelectedToken(token);
+                  setShowDepositTokenDropdown(false);
+                }}
+                className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors hover:bg-slate-700 ${
+                  selectedToken.baseToken === token.baseToken ? 'bg-blue-600/20' : ''
+                }`}
+              >
+                {token.baseToken === 'USDC' ? (
+                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                ) : token.baseToken === 'USDT' ? (
+                  <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
+                ) : (
+                  <span className="text-sm">{token.flag || '🌍'}</span>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-white font-medium text-sm">{token.baseToken} - {token.name}</span>
+                </div>
+                {selectedToken.baseToken === token.baseToken && (
+                  <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick Amount Buttons */}
@@ -3698,7 +3768,7 @@ export default function FarcasterMiniApp() {
           </button>
           
           {showLinkCurrencyDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64">
               {stablecoins.map((token) => (
                 <button
                   key={token.baseToken}
@@ -3706,7 +3776,9 @@ export default function FarcasterMiniApp() {
                     setSelectedStablecoin(token);
                     setShowLinkCurrencyDropdown(false);
                   }}
-                  className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-sm transition-colors"
+                  className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors hover:bg-slate-700 ${
+                    selectedStablecoin.baseToken === token.baseToken ? 'bg-blue-600/20' : ''
+                  }`}
                 >
                   {token.baseToken === 'USDC' ? (
                     <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
@@ -3715,7 +3787,12 @@ export default function FarcasterMiniApp() {
                   ) : (
                     <span className="text-sm">{token.flag || '🌍'}</span>
                   )}
-                  <span className="text-white">{token.baseToken} - {token.name}</span>
+                  <div className="flex flex-col">
+                    <span className="text-white font-medium text-sm">{token.baseToken} - {token.name}</span>
+                  </div>
+                  {selectedStablecoin.baseToken === token.baseToken && (
+                    <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                  )}
                 </button>
               ))}
             </div>
