@@ -96,13 +96,13 @@ const validateMobileNumber = (phoneNumber: string, countryCode: string): { isVal
 };
 
 const countries: Country[] = [
-  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234' },
-  { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES', countryCode: '+254' },
-  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233' },
-  { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS', countryCode: '+255' },
-  { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX', countryCode: '+256' },
-  { name: 'Ivory Coast', code: 'CI', flag: '🇨🇮', currency: 'XOF', countryCode: '+225' },
-  { name: 'Benin', code: 'BJ', flag: '🇧🇯', currency: 'XOF', countryCode: '+229' },
+  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234', comingSoon: true },
+  { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES', countryCode: '+254', comingSoon: false },
+  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233', comingSoon: true },
+  { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS', countryCode: '+255', comingSoon: false },
+  { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX', countryCode: '+256', comingSoon: true },
+  { name: 'Ivory Coast', code: 'CI', flag: '🇨🇮', currency: 'XOF', countryCode: '+225', comingSoon: true },
+  { name: 'Benin', code: 'BJ', flag: '🇧🇯', currency: 'XOF', countryCode: '+229', comingSoon: true },
 ];
 
 interface Currency {
