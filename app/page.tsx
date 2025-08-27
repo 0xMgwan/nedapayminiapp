@@ -3036,7 +3036,7 @@ export default function FarcasterMiniApp() {
         
         {/* Dropdown Menu */}
         {isCountryDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64">
             {payCountries.map((country) => (
               <button
                 key={country.code}
@@ -3047,7 +3047,7 @@ export default function FarcasterMiniApp() {
                   }
                 }}
                 disabled={country.comingSoon}
-                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${
                   country.comingSoon 
                     ? 'opacity-50 cursor-not-allowed' 
                     : 'hover:bg-slate-700'
@@ -3055,9 +3055,9 @@ export default function FarcasterMiniApp() {
                   selectedCountry.code === country.code ? 'bg-blue-600/20' : ''
                 }`}
               >
-                <span className="text-2xl">{country.flag}</span>
+                <span className="text-lg">{country.flag}</span>
                 <div className="flex flex-col">
-                  <span className="text-white font-medium">{country.name}</span>
+                  <span className="text-white font-medium text-sm">{country.name}</span>
                   {country.comingSoon && (
                     <span className="text-gray-400 text-xs">Coming soon</span>
                   )}
