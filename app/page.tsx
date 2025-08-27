@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMiniKit, useOpenUrl, useComposeCast, useViewProfile } from '@coinbase/onchainkit/minikit';
 import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
 import { ChevronDownIcon, LinkIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, ArrowRightIcon, WalletIcon, DocumentTextIcon, ArrowsRightLeftIcon, BellIcon } from '@heroicons/react/24/outline';
 import { base } from 'wagmi/chains';
@@ -131,6 +131,7 @@ export default function FarcasterMiniApp() {
   const { connect, connectors, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
   const { data: walletClient } = useConnectorClient();
+  const { switchChain } = useSwitchChain();
   
   
   // Detect if we're in a smart wallet environment (Farcaster MiniApp) - enhanced detection
@@ -2579,13 +2580,11 @@ export default function FarcasterMiniApp() {
                           setSelectedSendToken(token.baseToken);
                           setShowSendTokenDropdown(false);
                           
-                          // Switch chain immediately when token is selected
-                          if (isConnected) {
+                          // Switch chain immediately when token is selected using hook
+                          if (isConnected && switchChain) {
                             try {
-                              const { switchChain } = await import('wagmi/actions');
-                              const { config } = await import('../providers/MiniKitProvider');
                               const targetChainId = token.baseToken === 'USDT' ? 42220 : 8453; // Celo : Base
-                              await switchChain(config, { chainId: targetChainId });
+                              await switchChain({ chainId: targetChainId });
                               console.log(`✅ Pre-switched to ${token.baseToken === 'USDT' ? 'Celo' : 'Base'} for ${token.baseToken}`);
                             } catch (error) {
                               console.log('⚠️ Pre-chain switch failed:', error);
@@ -3227,9 +3226,20 @@ export default function FarcasterMiniApp() {
                     {stablecoins.map((token) => (
                       <button
                         key={token.baseToken}
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedPayToken(token.baseToken);
                           setShowPayTokenDropdown(false);
+                          
+                          // Switch chain immediately when token is selected using hook
+                          if (isConnected && switchChain) {
+                            try {
+                              const targetChainId = token.baseToken === 'USDT' ? 42220 : 8453; // Celo : Base
+                              await switchChain({ chainId: targetChainId });
+                              console.log(`✅ Pre-switched to ${token.baseToken === 'USDT' ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                            } catch (error) {
+                              console.log('⚠️ Pre-chain switch failed:', error);
+                            }
+                          }
                         }}
                         className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors"
                       >
