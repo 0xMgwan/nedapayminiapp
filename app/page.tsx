@@ -95,15 +95,30 @@ const validateMobileNumber = (phoneNumber: string, countryCode: string): { isVal
   return { isValid: true };
 };
 
-const countries: Country[] = [
-  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234', comingSoon: true },
+// Countries for Send tab - all available
+const sendCountries: Country[] = [
+  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234', comingSoon: false },
   { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES', countryCode: '+254', comingSoon: false },
-  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233', comingSoon: true },
+  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233', comingSoon: false },
   { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS', countryCode: '+255', comingSoon: false },
+  { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX', countryCode: '+256', comingSoon: false },
+  { name: 'Ivory Coast', code: 'CI', flag: '🇨🇮', currency: 'XOF', countryCode: '+225', comingSoon: false },
+  { name: 'Benin', code: 'BJ', flag: '🇧🇯', currency: 'XOF', countryCode: '+229', comingSoon: false },
+];
+
+// Countries for Pay tab - Tanzania and Kenya first, others disabled
+const payCountries: Country[] = [
+  { name: 'Tanzania', code: 'TZ', flag: '🇹🇿', currency: 'TZS', countryCode: '+255', comingSoon: false },
+  { name: 'Kenya', code: 'KE', flag: '🇰🇪', currency: 'KES', countryCode: '+254', comingSoon: false },
+  { name: 'Nigeria', code: 'NG', flag: '🇳🇬', currency: 'NGN', countryCode: '+234', comingSoon: true },
+  { name: 'Ghana', code: 'GH', flag: '🇬🇭', currency: 'GHS', countryCode: '+233', comingSoon: true },
   { name: 'Uganda', code: 'UG', flag: '🇺🇬', currency: 'UGX', countryCode: '+256', comingSoon: true },
   { name: 'Ivory Coast', code: 'CI', flag: '🇨🇮', currency: 'XOF', countryCode: '+225', comingSoon: true },
   { name: 'Benin', code: 'BJ', flag: '🇧🇯', currency: 'XOF', countryCode: '+229', comingSoon: true },
 ];
+
+// Default to send countries for backward compatibility
+const countries: Country[] = sendCountries;
 
 interface Currency {
   code: string;
@@ -3022,7 +3037,7 @@ export default function FarcasterMiniApp() {
         {/* Dropdown Menu */}
         {isCountryDropdownOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
-            {orderedCountries.map((country) => (
+            {payCountries.map((country) => (
               <button
                 key={country.code}
                 onClick={() => {
