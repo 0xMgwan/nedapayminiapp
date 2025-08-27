@@ -297,7 +297,7 @@ export default function FarcasterMiniApp() {
   const [institutions, setInstitutions] = useState<Array<{ name: string; code: string; type: string }>>([]);
   const [sendCurrency, setSendCurrency] = useState<'local' | 'usdc'>('usdc');
   const [payCurrency, setPayCurrency] = useState<'local' | 'usdc'>('usdc');
-  const [selectedSendToken, setSelectedSendToken] = useState('USDC');
+  const [selectedSendToken, setSelectedSendToken] = useState('USDT');
   const [selectedPayToken, setSelectedPayToken] = useState('USDC');
   const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
   const [showPayTokenDropdown, setShowPayTokenDropdown] = useState(false);
@@ -801,8 +801,17 @@ export default function FarcasterMiniApp() {
       const transferData = `0xa9059cbb${toAddress.slice(2).padStart(64, '0')}${amountInUnits.toString(16).padStart(64, '0')}`;
       
       // Use wagmi's writeContract approach for Farcaster MiniApps
-      const { writeContract } = await import('wagmi/actions');
+      const { writeContract, switchChain } = await import('wagmi/actions');
       const { config } = await import('../providers/MiniKitProvider');
+      
+      // Switch to the correct chain before executing transaction
+      try {
+        await switchChain(config, { chainId: chainId });
+        console.log(`✅ Switched to chain ${chainId} (${isUSDT ? 'Celo' : 'Base'})`);
+      } catch (switchError) {
+        console.log('⚠️ Chain switch failed or not needed:', switchError);
+        // Continue anyway - some wallets handle this automatically
+      }
       
       const hash = await writeContract(config, {
         address: tokenContract as `0x${string}`,
