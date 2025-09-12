@@ -17,14 +17,17 @@ const resources = {
 };
 
 if (typeof window !== 'undefined') {
-  // Get language from localStorage or default to 'en'
+  // Get language from URL params first, then localStorage, or default to 'en'
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLang = urlParams.get('lang');
   const savedLanguage = localStorage.getItem('language') || 'en';
+  const initialLanguage = urlLang || savedLanguage;
   
   i18n
     .use(initReactI18next)
     .init({
       resources,
-      lng: savedLanguage, // use saved language
+      lng: initialLanguage, // use URL lang or saved language
       fallbackLng: 'en',
       
       interpolation: {

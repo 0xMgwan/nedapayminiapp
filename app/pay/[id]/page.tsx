@@ -22,13 +22,16 @@ export default function PayPage({ params }: { params: { id: string } }) {
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   
-  // Set language from localStorage on component mount
+  // Set language from URL params or localStorage on component mount
   useEffect(() => {
+    const urlLang = searchParams.get('lang');
     const savedLanguage = localStorage.getItem('language') || 'en';
-    if (i18n.language !== savedLanguage) {
-      i18n.changeLanguage(savedLanguage);
+    const targetLanguage = urlLang || savedLanguage;
+    
+    if (i18n.language !== targetLanguage) {
+      i18n.changeLanguage(targetLanguage);
     }
-  }, [i18n]);
+  }, [i18n, searchParams]);
   const [copied, setCopied] = useState(false);
   const [isValidLink, setIsValidLink] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");

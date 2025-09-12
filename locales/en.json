@@ -44,12 +44,18 @@
     "confirming": "Confirming...",
     "sending": "Sending...",
     "refundWarning": "Funds will be refunded to your wallet if the transaction fails",
+    "selectProvider": "Select Mobile Money Provider",
+    "recipientName": "Recipient Name (or Account Name)",
     "recipientPlaceholder": "John Doe",
+    "accountNumber": "Account / Phone Number (Start with country code)",
     "accountPlaceholder": "e.g., +255787032800 or 123456789",
+    "enterAmount": "Enter Amount",
     "youllPay": "You'll Pay",
+    "totalTzs": "Total Amount TZS",
     "amountInUsdc": "Amount in USDC",
     "fees": "Fees",
-    "totalTzs": "Total TZS"
+    "fundsRefunded": "Funds will be refunded to your wallet if the transaction fails",
+    "paymentCompletes": "Payments typically complete within 30 seconds"
   },
   "pay": {
     "title": "Pay Bill",
