@@ -2370,7 +2370,7 @@ export default function FarcasterMiniApp() {
       
       // Add notification for successful send
       addNotification(
-        `Successfully sent ${amount} ${selectedSendToken} to ${recipientName || phoneNumber}`,
+        t('notifications.successfullySent', { amount, token: selectedSendToken, recipient: recipientName || phoneNumber }),
         'send'
       );
       
@@ -2464,7 +2464,7 @@ export default function FarcasterMiniApp() {
       
       // Add notification for successful payment
       addNotification(
-        `Successfully paid ${amount} ${selectedPayToken} to ${recipientName || (paymentType === 'bill' ? 'paybill' : 'till')} ${tillNumber}`,
+        t('notifications.successfullyPaid', { amount, token: selectedPayToken, recipient: recipientName || (paymentType === 'bill' ? 'paybill' : 'till'), tillNumber }),
         'pay'
       );
       
@@ -2903,17 +2903,17 @@ export default function FarcasterMiniApp() {
 
           {/* Success Title */}
           <h2 className="text-xl font-bold text-white text-center mb-2">
-            {successData.type === 'send' ? '💸 Money Sent!' : '💳 Payment Complete!'}
+            {successData.type === 'send' ? `💸 ${t('success.moneySent')}` : `💳 ${t('success.paymentComplete')}`}
           </h2>
           <p className="text-gray-300 text-center text-sm mb-6">
-            Your transaction was successful
+            {t('success.transactionSuccessful')}
           </p>
 
           {/* Transaction Details */}
           <div className="space-y-3 mb-6">
             <div className="bg-slate-700/50 rounded-lg p-3">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 text-xs">Amount</span>
+                <span className="text-gray-400 text-xs">{t('success.amount')}</span>
                 <div className="flex items-center gap-2">
                   {successData.token === 'USDT' ? (
                     <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
@@ -2924,7 +2924,7 @@ export default function FarcasterMiniApp() {
                 </div>
               </div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 text-xs">{successData.type === 'send' ? 'Recipient' : 'Till Number'}</span>
+                <span className="text-gray-400 text-xs">{successData.type === 'send' ? t('success.recipient') : t('success.tillNumber')}</span>
                 <div className="flex flex-col items-end">
                   <div className="text-white font-mono text-sm">
                     {successData.recipient.startsWith('0x') ? (
@@ -2937,18 +2937,18 @@ export default function FarcasterMiniApp() {
                       successData.recipient
                     )}
                   </div>
-                  <span className="text-gray-500 text-xs">{recipientName || 'Mobile Money'}</span>
+                  <span className="text-gray-500 text-xs">{recipientName || t('success.mobileMoney')}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-xs">Order ID</span>
+                <span className="text-gray-400 text-xs">{t('success.orderId')}</span>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(successData.orderId);
                     // Show brief feedback
                     const btn = event?.target as HTMLElement;
                     const originalText = btn.textContent;
-                    btn.textContent = 'Copied!';
+                    btn.textContent = t('success.copied');
                     setTimeout(() => {
                       btn.textContent = originalText;
                     }, 1000);
@@ -2968,7 +2968,7 @@ export default function FarcasterMiniApp() {
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-blue-400 text-xs font-medium">Blockchain Transaction</span>
+                  <span className="text-blue-400 text-xs font-medium">{t('success.blockchainTransaction')}</span>
                 </div>
                 {successData.hash && (
                   <button
@@ -2977,7 +2977,7 @@ export default function FarcasterMiniApp() {
                       // Show brief feedback
                       const btn = event?.target as HTMLElement;
                       const originalText = btn.textContent;
-                      btn.textContent = 'Copied!';
+                      btn.textContent = t('success.copied');
                       setTimeout(() => {
                         btn.textContent = originalText;
                       }, 1000);
@@ -3011,7 +3011,7 @@ export default function FarcasterMiniApp() {
               }}
               className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105"
             >
-              ✨ Done
+              ✨ {t('success.done')}
             </button>
             <button
               onClick={() => {

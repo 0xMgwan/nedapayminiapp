@@ -147,14 +147,22 @@
     "title": "Notifications",
     "noNotifications": "No notifications",
     "markAllRead": "Mark All Read",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "successfullySent": "Successfully sent {{amount}} {{token}} to {{recipient}}",
+    "successfullyPaid": "Successfully paid {{amount}} {{token}} to {{recipient}} {{tillNumber}}"
   },
   "success": {
-    "transactionComplete": "Transaction Complete",
-    "orderCreated": "Order created successfully",
-    "paymentSent": "Payment sent successfully",
-    "viewTransaction": "View Transaction",
-    "shareReceipt": "Share Receipt"
+    "moneySent": "Money Sent!",
+    "paymentComplete": "Payment Complete!",
+    "transactionSuccessful": "Your transaction was successful",
+    "amount": "Amount",
+    "recipient": "Recipient",
+    "tillNumber": "Till Number",
+    "orderId": "Order ID",
+    "blockchainTransaction": "Blockchain Transaction",
+    "mobileMoney": "Mobile Money",
+    "copied": "Copied!",
+    "done": "Done"
   },
   "errors": {
     "networkError": "Network error occurred",

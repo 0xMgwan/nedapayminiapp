@@ -148,14 +148,22 @@
     "title": "Arifa",
     "noNotifications": "Hakuna arifa",
     "markAllRead": "Weka Zote Zimesomwa",
-    "clearAll": "Futa Zote"
+    "clearAll": "Futa Zote",
+    "successfullySent": "Umetuma kwa mafanikio {{amount}} {{token}} kwa {{recipient}}",
+    "successfullyPaid": "Umelipa kwa mafanikio {{amount}} {{token}} kwa {{recipient}} {{tillNumber}}"
   },
   "success": {
-    "transactionComplete": "Muamala Umekamilika",
-    "orderCreated": "Agizo limeundwa kwa mafanikio",
-    "paymentSent": "Malipo yametumwa kwa mafanikio",
-    "viewTransaction": "Ona Muamala",
-    "shareReceipt": "Shiriki Risiti"
+    "moneySent": "Fedha Zimetumwa!",
+    "paymentComplete": "Malipo Yamekamilika!",
+    "transactionSuccessful": "Muamala wako umefanikiwa",
+    "amount": "Kiasi",
+    "recipient": "Mpokeaji",
+    "tillNumber": "Nambari ya Till",
+    "orderId": "Nambari ya Agizo",
+    "blockchainTransaction": "Muamala wa Blockchain",
+    "mobileMoney": "Pesa za Simu",
+    "copied": "Kimenakiliwa!",
+    "done": "Imekamilika"
   },
   "errors": {
     "networkError": "Hitilafu ya mtandao imetokea",
