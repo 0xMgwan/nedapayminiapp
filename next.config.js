@@ -35,7 +35,10 @@ const nextConfig = {
     'next-themes',
     'ethers',
     '@biconomy/abstractjs',
-    '@biconomy/mexa'
+    '@biconomy/mexa',
+    '@walletconnect/ethereum-provider',
+    '@walletconnect/web3-provider',
+    '@walletconnect/modal'
   ],
   // Headers for Farcaster compatibility
   async headers() {

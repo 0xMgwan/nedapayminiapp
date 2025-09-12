@@ -13,6 +13,7 @@ import {
   CheckCircle,
   QrCode,
   Wallet,
+  Globe,
 } from "lucide-react";
 
 const PaymentQRCode = dynamicImport(() => import("./QRCode"), { ssr: false });
@@ -45,6 +46,11 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
   const merchantAddress = to && utils.isAddress(to) ? to : connectedAddress || "";
   const shortAddress = merchantAddress ? `${merchantAddress.slice(0, 6)}...${merchantAddress.slice(-4)}` : "";
+
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('language', lang);
+  };
 
   useEffect(() => {
     const validateLink = async () => {
@@ -115,6 +121,32 @@ export default function PayPage({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 space-y-4">
+        {/* Language Switcher */}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => handleLanguageChange('en')}
+              className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                i18n.language === 'en' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🇺🇸 EN
+            </button>
+            <button
+              onClick={() => handleLanguageChange('sw')}
+              className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                i18n.language === 'sw' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🇹🇿 SW
+            </button>
+          </div>
+        </div>
+        
         <div className="text-center space-y-3">
           <h1 className="text-2xl font-bold text-gray-900">{t('paymentLink.paymentRequest')}</h1>
         </div>
