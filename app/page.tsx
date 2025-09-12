@@ -631,13 +631,8 @@ export default function FarcasterMiniApp() {
         
         setCurrencies(supportedCurrencies);
         
-        // Filter out banks for Tanzania only - keep mobile money providers
-        let filteredInstitutions = selectedCountry.code === 'TZ' 
-          ? supportedInstitutions.filter(institution => 
-              institution.type === 'mobile_money' || 
-              !institution.name.toLowerCase().includes('bank')
-            )
-          : supportedInstitutions;
+        // Keep all institutions for all countries
+        let filteredInstitutions = supportedInstitutions;
         
         // For Kenya, move M-Pesa to the top of the list
         if (selectedCountry.code === 'KE') {
