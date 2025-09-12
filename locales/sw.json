@@ -182,7 +182,8 @@
     "toCompletePayment": "kukamilisha malipo.",
     "transactionConfirmation": "Uthibitisho wa muamala utaonekana kiotomatiki.",
     "validating": "Inathibitisha Kiungo cha Malipo...",
-    "invalidLink": "Kiungo cha Malipo si Sahihi"
+    "invalidLink": "Kiungo cha Malipo si Sahihi",
+    "scanWithWallet": "Changanua kwa programu ya mkoba"
   },
   "errors": {
     "networkError": "Hitilafu ya mtandao imetokea",

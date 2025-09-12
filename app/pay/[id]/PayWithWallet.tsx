@@ -8,6 +8,7 @@ import { utils } from "ethers";
 import { Toaster, toast } from 'react-hot-toast';
 import { pad } from "viem";
 import { useTranslation } from "react-i18next";
+import "../../../lib/i18n";
 
 const WalletConnectButton = dynamic(() => import("./WalletConnectButton"), {
   ssr: false,
@@ -33,7 +34,15 @@ export default function PayWithWallet({
   description?: string;
   linkId: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  
+  // Set language from localStorage on component mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    if (i18n.language !== savedLanguage) {
+      i18n.changeLanguage(savedLanguage);
+    }
+  }, [i18n]);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

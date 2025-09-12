@@ -1,9 +1,22 @@
 "use client";
+
 import { QRCodeSVG } from "qrcode.react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import "../../../lib/i18n";
 import { stablecoins } from "../../data/stablecoins";
 import { utils } from "ethers";
 
 export default function PaymentQRCode({ to, amount, currency, description }: { to: string; amount: string; currency: string; description?: string }) {
+  const { t, i18n } = useTranslation();
+  
+  // Set language from localStorage on component mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    if (i18n.language !== savedLanguage) {
+      i18n.changeLanguage(savedLanguage);
+    }
+  }, [i18n]);
   // Validate recipient address
   let isValidAddress = false;
   try {
@@ -50,7 +63,7 @@ export default function PaymentQRCode({ to, amount, currency, description }: { t
   return (
     <div className="flex flex-col items-center my-6">
       <QRCodeSVG value={qrValue} size={160} level="M" includeMargin />
-      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">Scan with wallet app</div>
+      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('paymentLink.scanWithWallet')}</div>
     </div>
   );
 }

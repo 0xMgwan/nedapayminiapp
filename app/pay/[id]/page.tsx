@@ -7,6 +7,7 @@ import dynamicImport from "next/dynamic";
 import { utils } from "ethers";
 import { useAccount } from "wagmi";
 import { useTranslation } from "react-i18next";
+import "../../../lib/i18n";
 import {
   ClipboardCopy,
   CheckCircle,
@@ -18,8 +19,16 @@ const PaymentQRCode = dynamicImport(() => import("./QRCode"), { ssr: false });
 const PayWithWallet = dynamicImport(() => import("./PayWithWallet"), { ssr: false });
 
 export default function PayPage({ params }: { params: { id: string } }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
+  
+  // Set language from localStorage on component mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    if (i18n.language !== savedLanguage) {
+      i18n.changeLanguage(savedLanguage);
+    }
+  }, [i18n]);
   const [copied, setCopied] = useState(false);
   const [isValidLink, setIsValidLink] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
