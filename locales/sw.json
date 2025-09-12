@@ -45,8 +45,9 @@
   },
   "send": {
     "title": "Tuma Pesa",
+    "subtitle": "Tuma USDC kwa pesa za simu haraka",
     "selectProvider": "Chagua Mtoa Huduma wa Mobile Money",
-    "chooseProvider": "Chagua mtoa huduma...",
+    "chooseProvider": "Chagua huduma...",
     "recipientName": "Jina la Mpokeaji (au Jina la Akaunti)",
     "recipientPlaceholder": "John Doe",
     "accountNumber": "Akaunti / Nambari ya Simu (Anza na msimbo wa nchi)",
@@ -57,6 +58,9 @@
     "fees": "Makato",
     "amountInUsdc": "Kiasi katika USDC",
     "swipeToSend": "Telezesha Kutuma",
+    "confirming": "Inathibitisha...",
+    "sending": "Inatuma...",
+    "refundWarning": "Fedha zitarudishwa kwenye mkoba wako ikiwa muamala utashindwa",
     "fundsRefunded": "Fedha zitarudishwa kwenye mkoba wako ikiwa muamala utashindwa",
     "paymentCompletes": "Malipo kwa kawaida yanakamilika katika sekunde 30"
   },
@@ -73,6 +77,8 @@
     "fees": "Makato",
     "amountInUsdc": "Kiasi katika USDC",
     "swipeToPay": "Telezesha Kulipa",
+    "confirming": "Inathibitisha...",
+    "processing": "Inachakata...",
     "dragToConfirm": "Buruta kulia kuthibitisha malipo",
     "paymentCompletes": "Malipo kwa kawaida yanakamilika katika sekunde 30"
   },
@@ -164,6 +170,19 @@
     "mobileMoney": "Pesa za Simu",
     "copied": "Kimenakiliwa!",
     "done": "Imekamilika"
+  },
+  "paymentLink": {
+    "paymentRequest": "Ombi la Malipo",
+    "amount": "Kiasi",
+    "description": "Maelezo",
+    "merchantWallet": "Mkoba wa Mfanyabiashara",
+    "scanToPay": "Changanua Kulipa",
+    "payWithWallet": "Lipa kwa Mkoba",
+    "sendExactly": "Tuma hasa",
+    "toCompletePayment": "kukamilisha malipo.",
+    "transactionConfirmation": "Uthibitisho wa muamala utaonekana kiotomatiki.",
+    "validating": "Inathibitisha Kiungo cha Malipo...",
+    "invalidLink": "Kiungo cha Malipo si Sahihi"
   },
   "errors": {
     "networkError": "Hitilafu ya mtandao imetokea",

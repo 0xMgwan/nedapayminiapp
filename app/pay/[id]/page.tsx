@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import dynamicImport from "next/dynamic";
 import { utils } from "ethers";
 import { useAccount } from "wagmi";
+import { useTranslation } from "react-i18next";
 import {
   ClipboardCopy,
   CheckCircle,
@@ -17,6 +18,7 @@ const PaymentQRCode = dynamicImport(() => import("./QRCode"), { ssr: false });
 const PayWithWallet = dynamicImport(() => import("./PayWithWallet"), { ssr: false });
 
 export default function PayPage({ params }: { params: { id: string } }) {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const [copied, setCopied] = useState(false);
   const [isValidLink, setIsValidLink] = useState(true);
@@ -68,7 +70,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
       <div className="min-h-screen bg-gray-800 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 space-y-4">
           <div className="text-center space-y-3">
-            <h1 className="text-2xl font-bold text-gray-900">Validating Payment Link...</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('paymentLink.validating')}</h1>
             <div className="flex justify-center">
               <svg className="animate-spin w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -90,7 +92,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
       <div className="min-h-screen bg-gray-800 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 space-y-4">
           <div className="text-center space-y-3">
-            <h1 className="text-2xl font-bold text-red-600">Invalid Payment Link</h1>
+            <h1 className="text-2xl font-bold text-red-600">{t('paymentLink.invalidLink')}</h1>
             <p className="text-sm text-gray-600">{errorMessage}</p>
           </div>
         </div>
@@ -102,11 +104,11 @@ export default function PayPage({ params }: { params: { id: string } }) {
     <div className="min-h-screen bg-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 space-y-4">
         <div className="text-center space-y-3">
-          <h1 className="text-2xl font-bold text-gray-900">Payment Request</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('paymentLink.paymentRequest')}</h1>
         </div>
 
         <div className="text-center bg-gray-50 p-4 rounded-xl">
-          <p className="text-sm text-gray-600 mb-1">Amount</p>
+          <p className="text-sm text-gray-600 mb-1">{t('paymentLink.amount')}</p>
           <p className="text-3xl font-bold text-gray-900">
             {amount} <span className="text-xl font-normal">{currency}</span>
           </p>
@@ -114,7 +116,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
         {description && (
           <div className="text-center bg-gray-50 p-4 rounded-xl">
-            <p className="text-sm text-gray-600 mb-1">Description</p>
+            <p className="text-sm text-gray-600 mb-1">{t('paymentLink.description')}</p>
             <p className="text-lg font-medium text-gray-900">
               {decodeURIComponent(description)}
             </p>
@@ -126,7 +128,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
             <div className="flex-1 flex items-center gap-2">
               <Wallet size={18} className="text-blue-500" />
               <span className="text-sm font-medium text-gray-700">
-                Merchant Wallet
+                {t('paymentLink.merchantWallet')}
               </span>
             </div>
             <div className="flex-1 text-center">
@@ -149,7 +151,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
         <div className="bg-gray-50 p-2 rounded-xl">
           <div className="flex items-center justify-center gap-1 mb-4">
             <QrCode size={18} className="text-blue-500" />
-            <h2 className="text-sm font-semibold text-gray-700">Scan to Pay</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{t('paymentLink.scanToPay')}</h2>
           </div>
           <div className="flex justify-center">
             <PaymentQRCode to={merchantAddress} amount={amount || ""} currency={currency || ""} description={description || ""} />
@@ -160,9 +162,9 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
         <div className="text-center text-sm text-gray-600 bg-amber-50 p-4 rounded-xl">
           <p className="mb-1">
-            Send exactly <span className="font-semibold text-blue-600">{amount} {currency}</span> to complete payment.
+            {t('paymentLink.sendExactly')} <span className="font-semibold text-blue-600">{amount} {currency}</span> {t('paymentLink.toCompletePayment')}
           </p>
-          <p>Transaction confirmation will appear automatically.</p>
+          <p>{t('paymentLink.transactionConfirmation')}</p>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { stablecoins } from "../../data/stablecoins";
 import { utils } from "ethers";
 import { Toaster, toast } from 'react-hot-toast';
 import { pad } from "viem";
+import { useTranslation } from "react-i18next";
 
 const WalletConnectButton = dynamic(() => import("./WalletConnectButton"), {
   ssr: false,
@@ -32,6 +33,7 @@ export default function PayWithWallet({
   description?: string;
   linkId: string;
 }) {
+  const { t } = useTranslation();
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -517,7 +519,7 @@ const createNotification = async (
             {txStatus === "idle" ? "Processing..." : message}
           </span>
         ) : (
-          `Pay with Wallet`
+          t('paymentLink.payWithWallet')
         )}
       </button>
 

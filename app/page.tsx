@@ -2787,7 +2787,7 @@ export default function FarcasterMiniApp() {
                 <ArrowRightIcon className="w-4 h-4 text-green-600" />
               </div>
               <span className="text-white font-bold text-sm">
-                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Sending...' : t('send.swipeToSend')}
+                {isConfirming ? `🔄 ${t('send.confirming')}` : isSwipeComplete ? `✅ ${t('send.sending')}` : t('send.swipeToSend')}
               </span>
             </div>
             
@@ -2874,7 +2874,7 @@ export default function FarcasterMiniApp() {
         
         {/* Helper Text */}
         <div className="text-center mt-2 text-xs text-gray-400">
-          Funds will be refunded to your wallet if the transaction fails
+          {t('send.refundWarning')}
         </div>
       </div>
     </div>
@@ -3426,7 +3426,7 @@ export default function FarcasterMiniApp() {
                 <CurrencyDollarIcon className="w-4 h-4 text-blue-600" />
               </div>
               <span className="text-white font-bold text-sm">
-                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Processing...' : t('pay.swipeToPay')}
+                {isConfirming ? `🔄 ${t('pay.confirming')}` : isSwipeComplete ? `✅ ${t('pay.processing')}` : t('pay.swipeToPay')}
               </span>
             </div>
             
@@ -3512,7 +3512,7 @@ export default function FarcasterMiniApp() {
         </div>
         
         <div className="text-center mt-2 text-sm text-gray-400 font-medium">
-          Drag right to confirm payment
+          {t('pay.dragToConfirm')}
         </div>
       </div>
     </div>
