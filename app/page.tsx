@@ -17,6 +17,9 @@ import { getAerodromeQuote, swapAerodrome, AERODROME_FACTORY_ADDRESS } from './u
 import { calculateDynamicFee, formatFeeInfo, isProtocolEnabled } from './utils/nedaPayProtocol';
 import { getNedaPayProtocolAddress } from './config/contracts';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import '../lib/i18n';
 
 type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'swap' | 'invoice';
 
@@ -136,10 +139,19 @@ interface RateData {
 
 export default function FarcasterMiniApp() {
   console.log('🚀 NedaPay MiniApp Loading...');
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('send');
   const [selectedToken, setSelectedToken] = useState(stablecoins[0]);
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
   const [amount, setAmount] = useState('');
+
+  // Initialize language from localStorage
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('nedapay-language');
+    if (savedLanguage && savedLanguage !== i18n.language) {
+      i18n.changeLanguage(savedLanguage);
+    }
+  }, [i18n]);
 
   // MiniKit and Wagmi hooks for smart wallet (Farcaster/Coinbase) - moved up
   const { address, isConnected } = useAccount();
@@ -2533,19 +2545,19 @@ export default function FarcasterMiniApp() {
 
       {/* Send Money Button */}
       <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors">
-        Send Money
+        {t('send.title')}
       </button>
 
       {/* Mobile Money Provider */}
       <div>
-        <label className="block text-xs text-gray-300 font-medium mb-1">Select Mobile Money Provider</label>
+        <label className="block text-xs text-gray-300 font-medium mb-1">{t('send.selectProvider')}</label>
         <div className="relative">
           <select 
             value={selectedInstitution}
             onChange={(e) => setSelectedInstitution(e.target.value)}
             className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
           >
-            <option value="">Choose provider...</option>
+            <option value="">{t('send.chooseProvider')}</option>
             {institutions.map((institution) => (
               <option key={institution.code} value={institution.code}>
                 {institution.name}
@@ -2558,13 +2570,13 @@ export default function FarcasterMiniApp() {
 
       {/* Recipient Name */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Recipient Name (or Account Name)</label>
+        <label className="block text-xs text-gray-400 mb-1">{t('send.recipientName')}</label>
         <div className="relative">
           <input
             type="text"
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
-            placeholder="John Doe"
+            placeholder={t('send.recipientPlaceholder')}
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {recipientName && recipientName.includes('.') && (
@@ -2577,13 +2589,13 @@ export default function FarcasterMiniApp() {
 
       {/* Account / Mobile Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Account / Mobile Number (Start with country code)</label>
+        <label className="block text-xs text-gray-400 mb-1">{t('send.accountNumber')}</label>
         <div className="relative">
           <input
             type="text"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="e.g., +255787032800 or 123456789"
+            placeholder={t('send.accountPlaceholder')}
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -2592,7 +2604,7 @@ export default function FarcasterMiniApp() {
       {/* Amount Input with Currency Switching */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <label className="text-xs text-gray-400">Enter Amount</label>
+          <label className="text-xs text-gray-400">{t('send.enterAmount')}</label>
           <div className="flex gap-1">
             <div className="relative">
               <div className="relative">
@@ -2682,7 +2694,7 @@ export default function FarcasterMiniApp() {
       <div className="space-y-1">
         <div className="flex justify-between items-start">
           <div>
-            <span className="text-gray-400 text-xs">You'll pay</span>
+            <span className="text-gray-400 text-xs">{t('send.youllPay')}</span>
             {/* Currency Conversion Display underneath You'll pay */}
             {amount && (
               <div className="mt-1 text-xs text-gray-400 font-medium">
@@ -2717,7 +2729,7 @@ export default function FarcasterMiniApp() {
             
             {/* Balance underneath Base */}
             <div className="text-xs text-gray-400 flex items-center justify-end gap-2">
-              <span>Balance:</span>
+              <span>{t('wallet.balance')}:</span>
               <button 
                 onClick={() => setAmount(walletBalance)}
                 className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
@@ -2745,20 +2757,20 @@ export default function FarcasterMiniApp() {
         </div>
 
         <div className="text-center text-xs text-gray-300 mb-4 font-semibold mt-3">
-          1 {selectedSendToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
+          1 {selectedSendToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • {t('send.paymentCompletes')}
         </div>
 
         <div className="space-y-1 text-xs mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-400">Total {selectedCountry.currency}</span>
+            <span className="text-gray-400">{t('send.totalTzs').replace('TZS', selectedCountry.currency)}</span>
             <span className="text-white">{paymentDetails.totalLocal} {selectedCountry.currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Fees</span>
+            <span className="text-gray-400">{t('send.fees')}</span>
             <span className="text-white">{paymentDetails.fee} {selectedCountry.currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Amount in {selectedSendToken}</span>
+            <span className="text-gray-400">{t('send.amountInUsdc').replace('USDC', selectedSendToken)}</span>
             <span className="text-white">{paymentDetails.usdcAmount} {selectedSendToken}</span>
           </div>
         </div>
@@ -2780,7 +2792,7 @@ export default function FarcasterMiniApp() {
                 <ArrowRightIcon className="w-4 h-4 text-green-600" />
               </div>
               <span className="text-white font-bold text-sm">
-                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Sending...' : 'Swipe to Send'}
+                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Sending...' : t('send.swipeToSend')}
               </span>
             </div>
             
@@ -3030,7 +3042,7 @@ export default function FarcasterMiniApp() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-white text-lg font-medium">Pay</h2>
+        <h2 className="text-white text-lg font-medium">{t('pay.title')}</h2>
         <div className="flex items-center gap-2">
           {(() => {
             const selectedTokenData = stablecoins.find(token => 
@@ -3105,14 +3117,14 @@ export default function FarcasterMiniApp() {
 
       {/* Institution Selection */}
       <div className="space-y-2">
-        <label className="block text-xs text-gray-300 font-medium mb-1">Select Payment Provider</label>
+        <label className="block text-xs text-gray-300 font-medium mb-1">{t('pay.selectProvider')}</label>
         <div className="relative">
           <select 
             value={selectedInstitution}
             onChange={(e) => setSelectedInstitution(e.target.value)}
             className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
           >
-            <option value="">Choose payment provider...</option>
+            <option value="">{t('send.chooseProvider')}</option>
             {institutions.map((institution) => (
               <option key={institution.code} value={institution.code}>
                 {institution.name}
@@ -3148,7 +3160,7 @@ export default function FarcasterMiniApp() {
           <span className={`relative z-10 transition-all duration-300 ${
             paymentType === 'goods' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
           }`}>
-            🛍️ Buy Goods
+            🛍️ {t('pay.buyGoods')}
           </span>
           
           {/* Active pulse indicator */}
@@ -3180,7 +3192,7 @@ export default function FarcasterMiniApp() {
           <span className={`relative z-10 transition-all duration-300 ${
             paymentType === 'bill' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
           }`}>
-            📄 Paybill
+            📄 {t('pay.paybill')}
           </span>
           
           {/* Active pulse indicator */}
@@ -3195,13 +3207,13 @@ export default function FarcasterMiniApp() {
         <>
           {/* Paybill Number */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Paybill Number</label>
+            <label className="block text-xs text-gray-400 mb-1.5">{t('pay.paybill')} Number</label>
             <div className="relative">
               <input
                 type="text"
                 value={tillNumber}
                 onChange={(e) => setTillNumber(e.target.value)}
-                placeholder="Enter paybill number"
+                placeholder={`Enter ${t('pay.paybill').toLowerCase()} number`}
                 className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -3225,14 +3237,14 @@ export default function FarcasterMiniApp() {
         /* Till Number for Buy Goods */
         <div>
           <label className="block text-xs text-gray-400 mb-1.5">
-            {paymentType === 'goods' ? 'Till Number' : 'Enter Till Number'}
+            {paymentType === 'goods' ? t('pay.tillNumber') : t('pay.enterTillNumber')}
           </label>
           <div className="relative">
             <input
               type="text"
               value={tillNumber}
               onChange={(e) => setTillNumber(e.target.value)}
-              placeholder={paymentType === 'goods' ? 'Enter till number' : 'Enter till number'}
+              placeholder={t('pay.enterTillNumber')}
               className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -3242,7 +3254,7 @@ export default function FarcasterMiniApp() {
       {/* Amount Input with Currency Switching */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
-          <label className="text-xs text-gray-400">Enter Amount</label>
+          <label className="text-xs text-gray-400">{t('pay.enterAmount')}</label>
           <div className="flex gap-2">
             <div className="relative">
               <div className="relative">
@@ -3329,7 +3341,7 @@ export default function FarcasterMiniApp() {
         {/* You'll pay section */}
         <div className="mt-4">
           <div className="flex justify-between items-start">
-            <span className="text-gray-400 text-sm">You'll pay</span>
+            <span className="text-gray-400 text-sm">{t('pay.youllPay')}</span>
             <div className="text-right">
               {/* Network Label */}
               <div className="flex items-center justify-end gap-1 mb-1">
@@ -3353,7 +3365,7 @@ export default function FarcasterMiniApp() {
               
               {/* Balance underneath Base */}
               <div className="text-xs text-gray-400 flex items-center justify-end gap-2">
-                <span>Balance:</span>
+                <span>{t('wallet.balance')}:</span>
                 <button 
                   onClick={() => setAmount(walletBalance)}
                   className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
@@ -3381,7 +3393,7 @@ export default function FarcasterMiniApp() {
           </div>
 
           <div className="text-center text-xs text-gray-300 mb-4 font-semibold">
-            1 {selectedPayToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • Payment usually completes in 30s
+            1 {selectedPayToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • {t('pay.paymentCompletes')}
           </div>
         </div>
       </div>
@@ -3390,15 +3402,15 @@ export default function FarcasterMiniApp() {
       <div className="space-y-3">
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-400">Total {selectedCountry.currency}</span>
+            <span className="text-gray-400">{t('pay.totalTzs').replace('TZS', selectedCountry.currency)}</span>
             <span className="text-white">{paymentDetails.totalLocal} {selectedCountry.currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Fees</span>
+            <span className="text-gray-400">{t('pay.fees')}</span>
             <span className="text-white">{paymentDetails.fee} {selectedCountry.currency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Amount in {selectedPayToken}</span>
+            <span className="text-gray-400">{t('pay.amountInUsdc').replace('USDC', selectedPayToken)}</span>
             <span className="text-white">{paymentDetails.usdcAmount} {selectedPayToken}</span>
           </div>
         </div>
@@ -3419,7 +3431,7 @@ export default function FarcasterMiniApp() {
                 <CurrencyDollarIcon className="w-4 h-4 text-blue-600" />
               </div>
               <span className="text-white font-bold text-sm">
-                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Processing...' : 'Swipe to Pay'}
+                {isConfirming ? '🔄 Confirming...' : isSwipeComplete ? '✅ Processing...' : t('pay.swipeToPay')}
               </span>
             </div>
             
@@ -3614,10 +3626,10 @@ export default function FarcasterMiniApp() {
 
       {/* Institution Selector */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1.5">Select Institution</label>
+        <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.selectInstitution')}</label>
         <div className="relative">
           <select className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>Choose institution...</option>
+            <option>{t('deposit.chooseInstitution')}</option>
             {institutions.map((institution) => (
               <option key={institution.code} value={institution.code}>
                 {institution.name}
@@ -3630,13 +3642,13 @@ export default function FarcasterMiniApp() {
 
       {/* Account / Mobile Number */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1.5">Account / Mobile Number (Start with country code)</label>
+        <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.accountNumber')}</label>
         <div className="relative">
           <input
             type="text"
             value={tillNumber}
             onChange={(e) => setTillNumber(e.target.value)}
-            placeholder="e.g., +255787032800 or 123456789"
+            placeholder={t('deposit.accountPlaceholder')}
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -3644,7 +3656,7 @@ export default function FarcasterMiniApp() {
 
       {/* Wallet Address */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1.5">Wallet Address for {selectedToken.baseToken}</label>
+        <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.walletAddress').replace('USDC', selectedToken.baseToken)}</label>
         <input
           type="text"
           value={walletAddress || ''}
@@ -3668,7 +3680,7 @@ export default function FarcasterMiniApp() {
         <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" />
         
         <div className="relative z-10 flex items-center justify-center gap-3">
-          <span className="text-lg font-bold tracking-wide drop-shadow-lg">💰 Buy Now</span>
+          <span className="text-lg font-bold tracking-wide drop-shadow-lg">💰 {t('deposit.buyNow')}</span>
           <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
             <span className="text-sm">→</span>
           </div>
@@ -3693,8 +3705,8 @@ export default function FarcasterMiniApp() {
           }`}></span>
           <span className="text-xs font-medium">
             {isWalletConnected 
-              ? `✅ Wallet Connected - Ready to Generate Links` 
-              : `⚠️ Connect Wallet to Generate Links`
+              ? `✅ ${t('link.connected')}` 
+              : `⚠️ ${t('wallet.connect')} ${t('navigation.link')}`
             }
           </span>
         </div>
@@ -3707,7 +3719,7 @@ export default function FarcasterMiniApp() {
 
       {/* Payment Amount */}
       <div>
-        <label className="block text-gray-400 text-xs mb-1">Payment Amount</label>
+        <label className="block text-gray-400 text-xs mb-1">{t('link.paymentAmount')}</label>
         <div className="text-center py-4 bg-slate-800/30 rounded-lg">
           <div className="text-4xl text-white font-light">
             <span className="text-gray-400">$</span>
@@ -3726,7 +3738,7 @@ export default function FarcasterMiniApp() {
       {isProtocolEnabled() && linkAmount && Number(linkAmount) > 0 && (
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-blue-400 font-medium">Protocol Fee:</span>
+            <span className="text-blue-400 font-medium">{t('link.protocolFee')}</span>
             <div className="text-right">
               {(() => {
                 const feeInfo = calculateDynamicFee(Number(linkAmount));
@@ -3748,7 +3760,7 @@ export default function FarcasterMiniApp() {
 
       {/* Currency Selector */}
       <div>
-        <label className="block text-gray-400 text-xs mb-1">Currency</label>
+        <label className="block text-gray-400 text-xs mb-1">{t('link.currency')}</label>
         <div className="relative">
           <button
             onClick={() => setShowLinkCurrencyDropdown(!showLinkCurrencyDropdown)}
@@ -3802,11 +3814,11 @@ export default function FarcasterMiniApp() {
 
       {/* Description */}
       <div>
-        <label className="block text-gray-400 text-xs mb-1">Description (Optional)</label>
+        <label className="block text-gray-400 text-xs mb-1">{t('link.description')}</label>
         <textarea
           value={linkDescription}
           onChange={(e) => setLinkDescription(e.target.value)}
-          placeholder="vibe"
+          placeholder={t('link.descriptionPlaceholder')}
           rows={3}
           className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
@@ -3837,12 +3849,12 @@ export default function FarcasterMiniApp() {
       >
         {isWalletConnected ? (
           <>
-            🔗 Generate Payment Link
+            🔗 {t('link.generateLink')}
           </>
         ) : (
           <>
             <WalletIcon className="w-4 h-4" />
-            Connect Wallet
+            {t('wallet.connect')}
           </>
         )}
       </button>
@@ -3852,7 +3864,7 @@ export default function FarcasterMiniApp() {
         <div className="mt-3 p-3 bg-green-600/20 border border-green-600/30 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-            <span className="text-green-400 text-xs font-medium">✅ Payment Link Generated!</span>
+            <span className="text-green-400 text-xs font-medium">✅ {t('link.linkGenerated')}</span>
           </div>
           <div className="bg-slate-800/50 rounded-lg p-2 font-mono text-xs text-gray-300 break-all">
             {generatedLink}
@@ -3866,7 +3878,7 @@ export default function FarcasterMiniApp() {
               }}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-xs border-2 border-green-500 hover:border-green-400"
             >
-              {linkCopied ? '✅ Copied!' : '📋 Copy Link'}
+              {linkCopied ? `✅ ${t('link.copied')}` : `📋 ${t('link.copyLink')}`}
             </button>
           </div>
         </div>
@@ -3952,18 +3964,18 @@ export default function FarcasterMiniApp() {
             ←
           </button>
           <div>
-            <h2 className="text-lg font-bold text-white">Create Invoice</h2>
+            <h2 className="text-lg font-bold text-white">{t('invoice.createInvoice')}</h2>
           </div>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-2">
           {/* Client Information */}
           <div className="bg-slate-800/30 rounded-lg p-2">
-            <h3 className="text-white font-medium mb-1.5 text-xs">Client Information</h3>
+            <h3 className="text-white font-medium mb-1.5 text-xs">{t('invoice.clientInfo')}</h3>
             <div className="space-y-2">
               <input
                 type="text"
-                placeholder="Client name or company"
+                placeholder={t('invoice.clientPlaceholder')}
                 value={invoiceRecipient}
                 onChange={(e) => setInvoiceRecipient(e.target.value)}
                 className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3971,7 +3983,7 @@ export default function FarcasterMiniApp() {
               />
               <input
                 type="email"
-                placeholder="client@example.com"
+                placeholder={t('invoice.emailPlaceholder')}
                 value={invoiceEmail}
                 onChange={(e) => setInvoiceEmail(e.target.value)}
                 className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3982,10 +3994,10 @@ export default function FarcasterMiniApp() {
           
           {/* Sender Information */}
           <div className="bg-slate-800/30 rounded-lg p-2">
-            <h3 className="text-white font-medium mb-1.5 text-xs">Your Information</h3>
+            <h3 className="text-white font-medium mb-1.5 text-xs">{t('invoice.yourInfo')}</h3>
             <input
               type="text"
-              placeholder="Your name or business"
+              placeholder={t('invoice.yourPlaceholder')}
               value={invoiceSender}
               onChange={(e) => setInvoiceSender(e.target.value)}
               className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3996,7 +4008,7 @@ export default function FarcasterMiniApp() {
           {/* Currency Selection */}
           <div className="bg-slate-800/30 rounded-lg p-2">
             <div className="flex items-center justify-between">
-              <span className="text-white text-xs font-medium">Payment Currency</span>
+              <span className="text-white text-xs font-medium">{t('invoice.paymentCurrency')}</span>
               <div className="relative">
                 <button
                   onClick={() => setShowInvoiceCurrencyDropdown(!showInvoiceCurrencyDropdown)}
@@ -4041,7 +4053,7 @@ export default function FarcasterMiniApp() {
           {/* Due Date */}
           <div className="bg-slate-800/30 rounded-lg p-2">
             <div className="flex items-center justify-between">
-              <span className="text-white text-xs font-medium">Due Date</span>
+              <span className="text-white text-xs font-medium">{t('invoice.dueDate')}</span>
               <input
                 type="date"
                 value={invoiceDueDate}
@@ -4053,13 +4065,13 @@ export default function FarcasterMiniApp() {
           
           {/* Payment Link Selection */}
           <div className="bg-slate-800/30 rounded-lg p-2">
-            <h3 className="text-white font-medium mb-1.5 text-xs">Payment Link</h3>
+            <h3 className="text-white font-medium mb-1.5 text-xs">{t('invoice.paymentLink')}</h3>
             <p className="text-gray-400 text-xs mb-1.5">
-              Select from recent links or paste a payment link
+              {t('invoice.paymentLinkDesc')}
             </p>
             <input
               type="text"
-              placeholder="Paste your payment link here"
+              placeholder={t('invoice.paymentLinkPlaceholder')}
               value={invoicePaymentLink}
               onChange={(e) => setInvoicePaymentLink(e.target.value)}
               className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -4070,13 +4082,13 @@ export default function FarcasterMiniApp() {
           {/* Line Items */}
           <div className="bg-slate-800/30 rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-white font-medium text-sm">Invoice Items</h3>
+              <h3 className="text-white font-medium text-sm">{t('invoice.invoiceItems')}</h3>
               <button
                 type="button"
                 onClick={addLineItem}
                 className="text-blue-400 hover:text-blue-300 text-sm"
               >
-                + Add Item
+                + {t('invoice.addItem')}
               </button>
             </div>
             <div className="space-y-2">
@@ -4084,7 +4096,7 @@ export default function FarcasterMiniApp() {
                 <div key={idx} className="grid grid-cols-3 gap-2">
                   <input
                     type="text"
-                    placeholder="Description"
+                    placeholder={t('invoice.description')}
                     value={item.description}
                     onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)}
                     className="col-span-2 bg-slate-700 text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -4106,7 +4118,7 @@ export default function FarcasterMiniApp() {
             {/* Total */}
             <div className="mt-3 pt-2 border-t border-slate-600">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Total Amount</span>
+                <span className="text-gray-400 text-sm">{t('invoice.totalAmount')}</span>
                 <div className="flex items-center gap-2">
                   {/* Currency Icon */}
                   {invoiceCurrency === 'USDC' ? (
@@ -4136,13 +4148,13 @@ export default function FarcasterMiniApp() {
             disabled={invoiceStatus === 'loading'}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 border-2 border-blue-500 hover:border-blue-400"
           >
-            {invoiceStatus === 'loading' ? 'Creating Invoice...' : 'Send Invoice'}
+            {invoiceStatus === 'loading' ? t('invoice.creating') : t('invoice.sendInvoice')}
           </button>
           
           {/* Status Messages */}
           {invoiceStatus === 'success' && (
             <div className="bg-green-600/20 border border-green-600/30 text-green-400 p-3 rounded-lg text-sm">
-              ✅ Invoice sent successfully!
+              ✅ {t('invoice.success')}
             </div>
           )}
           
@@ -4203,8 +4215,8 @@ export default function FarcasterMiniApp() {
         {/* Invoice Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-white">Invoices</h2>
-            <p className="text-gray-400 text-sm">Create and manage your invoices</p>
+            <h2 className="text-xl font-bold text-white">{t('navigation.invoice')}</h2>
+            <p className="text-gray-400 text-sm">{t('invoice.subtitle')}</p>
           </div>
           <DocumentTextIcon className="w-8 h-8 text-blue-400" />
         </div>
@@ -4223,8 +4235,8 @@ export default function FarcasterMiniApp() {
             }`}></span>
             <span className="text-sm font-medium">
               {isWalletConnected 
-                ? `✅ Wallet Connected - Ready to Create Invoices` 
-                : `⚠️ Connect Wallet to Create Invoices`
+                ? `✅ ${t('wallet.connected')} - ${t('invoice.subtitle')}` 
+                : `⚠️ ${t('wallet.connect')} ${t('navigation.invoice')}`
               }
             </span>
           </div>
@@ -4253,7 +4265,7 @@ export default function FarcasterMiniApp() {
           >
             <div className="flex flex-col items-center gap-1.5">
               <DocumentTextIcon className="w-5 h-5" />
-              <span className="text-xs font-medium">Create Invoice</span>
+              <span className="text-xs font-medium">{t('invoice.createInvoice')}</span>
             </div>
           </button>
           
@@ -4273,41 +4285,41 @@ export default function FarcasterMiniApp() {
           >
             <div className="flex flex-col items-center gap-1.5">
               <ArrowPathIcon className="w-5 h-5" />
-              <span className="text-xs font-medium">View Invoices</span>
+              <span className="text-xs font-medium">{t('invoice.viewInvoices')}</span>
             </div>
           </button>
         </div>
 
         {/* Features List */}
         <div className="bg-slate-800/30 rounded-xl p-3">
-          <h3 className="text-white font-semibold mb-2 text-sm">Invoice Features</h3>
+          <h3 className="text-white font-semibold mb-2 text-sm">{t('invoice.features')}</h3>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-xs text-gray-300">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              <span>Create professional invoices</span>
+              <span>{t('invoice.feature1')}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-300">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              <span>Multiple cryptocurrency support</span>
+              <span>{t('invoice.feature2')}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-300">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              <span>Email delivery to clients</span>
+              <span>{t('invoice.feature3')}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-300">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              <span>Payment tracking & status</span>
+              <span>{t('invoice.feature4')}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-300">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              <span>PDF download & sharing</span>
+              <span>{t('invoice.feature5')}</span>
             </div>
           </div>
         </div>
 
         {/* Help Text */}
         <div className="text-center text-xs text-gray-400 bg-slate-800/20 rounded-lg p-2">
-          💡 Create professional invoices and get paid in cryptocurrency. Your clients can pay directly through the generated payment links.
+          💡 {t('invoice.helpText')}
         </div>
       </div>
     );
@@ -4329,7 +4341,7 @@ export default function FarcasterMiniApp() {
         <div className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/30">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-400 text-sm font-medium">From</span>
-            <span className="text-gray-400 text-sm">Balance: {swapFromBalance}</span>
+            <span className="text-gray-400 text-sm">{t('wallet.balance')}: {swapFromBalance}</span>
           </div>
           <div className="flex items-center justify-between mb-2">
             <div className="relative">
@@ -4413,7 +4425,7 @@ export default function FarcasterMiniApp() {
         <div className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/30">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-400 text-sm font-medium">To</span>
-            <span className="text-gray-400 text-sm">Balance: {swapToBalance}</span>
+            <span className="text-gray-400 text-sm">{t('wallet.balance')}: {swapToBalance}</span>
           </div>
           <div className="flex items-center justify-between mb-2">
             <div className="relative">
@@ -4559,18 +4571,18 @@ export default function FarcasterMiniApp() {
           }`}
         >
           {!isWalletConnected ? (
-            'Connect Wallet'
+            t('wallet.connect')
           ) : swapIsLoading ? (
             <div className="flex items-center justify-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Swapping...
+              {t('common.loading')}
             </div>
           ) : !swapAmount ? (
-            'Swap'
+            t('swap.swapNow')
           ) : !swapToToken ? (
-            'Select token'
+            t('swap.selectToToken')
           ) : (
-            'Swap'
+            t('swap.swapNow')
           )}
         </button>
 
@@ -4615,6 +4627,11 @@ export default function FarcasterMiniApp() {
               <h1 className="text-white font-bold text-base">NedaPay</h1>
               <p className="text-gray-400 text-xs">Mini App</p>
             </div>
+          </div>
+          
+          {/* Language Switcher */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
           </div>
           
           {/* Wallet Section - Right aligned with proper spacing */}
@@ -4873,12 +4890,12 @@ export default function FarcasterMiniApp() {
         <div className="bg-slate-900/90 rounded-xl p-1 mb-2 border border-slate-700/50 shadow-2xl">
           <div className="grid grid-cols-5 gap-1">
             {[
-              { key: 'send' as Tab, label: 'Send', icon: ArrowUpIcon },
-              { key: 'pay' as Tab, label: 'Pay', icon: CurrencyDollarIcon },
-              { key: 'deposit' as Tab, label: 'Deposit', icon: ArrowDownIcon },
-              { key: 'link' as Tab, label: 'Link', icon: LinkIcon },
-              // { key: 'swap' as Tab, label: 'Swap', icon: ArrowsRightLeftIcon }, // Temporarily hidden
-              { key: 'invoice' as Tab, label: 'Invoice', icon: DocumentTextIcon }
+              { key: 'send' as Tab, label: t('navigation.send'), icon: ArrowUpIcon },
+              { key: 'pay' as Tab, label: t('navigation.pay'), icon: CurrencyDollarIcon },
+              { key: 'deposit' as Tab, label: t('navigation.deposit'), icon: ArrowDownIcon },
+              { key: 'link' as Tab, label: t('navigation.link'), icon: LinkIcon },
+              // { key: 'swap' as Tab, label: t('navigation.swap'), icon: ArrowsRightLeftIcon }, // Temporarily hidden
+              { key: 'invoice' as Tab, label: t('navigation.invoice'), icon: DocumentTextIcon }
             ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -4946,7 +4963,7 @@ export default function FarcasterMiniApp() {
                   <BellIcon className="w-4 h-4 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white text-sm">Notifications</h3>
+                  <h3 className="font-semibold text-white text-sm">{t('notifications.title')}</h3>
                   <p className="text-xs text-gray-400">Recent activity</p>
                 </div>
               </div>
@@ -4956,7 +4973,7 @@ export default function FarcasterMiniApp() {
                     className="text-xs text-blue-400 hover:text-blue-300 bg-blue-500/20 hover:bg-blue-500/30 px-2 py-1 rounded-lg transition-all font-medium"
                     onClick={clearAllNotifications}
                   >
-                    Clear
+                    {t('notifications.clearAll')}
                   </button>
                 )}
                 <button
@@ -4978,9 +4995,9 @@ export default function FarcasterMiniApp() {
                     <div className="bg-blue-500/20 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3 border border-blue-500/30">
                       <BellIcon className="w-6 h-6 text-blue-400" />
                     </div>
-                    <h4 className="text-white font-semibold mb-1 text-sm">No notifications yet</h4>
+                    <h4 className="text-white font-semibold mb-1 text-sm">{t('notifications.noNotifications')}</h4>
                     <p className="text-gray-400 text-xs leading-relaxed">
-                      Send money or make payments to see your transaction history here.
+                      {t('send.subtitle')} {t('pay.subtitle').toLowerCase()}
                     </p>
                   </div>
                 </div>
@@ -5024,7 +5041,7 @@ export default function FarcasterMiniApp() {
                                   ? 'bg-blue-500/20 text-blue-300'
                                   : 'bg-gray-500/20 text-gray-300'
                               }`}>
-                                {notification.type === 'send' ? 'Send' : notification.type === 'pay' ? 'Payment' : 'General'}
+                                {notification.type === 'send' ? t('navigation.send') : notification.type === 'pay' ? t('navigation.pay') : t('common.general') || 'General'}
                               </span>
                               <span className="text-xs text-gray-500">
                                 {notification.timestamp}
