@@ -66,9 +66,9 @@
   },
   "pay": {
     "title": "Lipa",
-    "selectProvider": "Chagua Mtoa Huduma wa Malipo",
+    "selectProvider": "Chagua Mtoa Huduma wa Pesa za Simu",
     "buyGoods": "Nunua Bidhaa",
-    "paybill": "Lipa Bili",
+    "payBill": "Lipa Bill",
     "tillNumber": "Nambari ya Till",
     "enterTillNumber": "Ingiza nambari ya till",
     "enterAmount": "Ingiza Kiasi",
