@@ -119,27 +119,27 @@ export default function PayPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 space-y-4">
-        {/* Language Switcher */}
-        <div className="flex justify-end mb-4">
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 space-y-4 border border-white/20">
+        {/* Language Switcher - Fixed Position */}
+        <div className="absolute top-4 right-4 z-50">
+          <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-gray-200">
             <button
               onClick={() => handleLanguageChange('en')}
-              className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
                 i18n.language === 'en' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-blue-500 text-white shadow-md' 
+                  : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               🇺🇸 EN
             </button>
             <button
               onClick={() => handleLanguageChange('sw')}
-              className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
                 i18n.language === 'sw' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-blue-500 text-white shadow-md' 
+                  : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               🇹🇿 SW

@@ -3187,7 +3187,7 @@ export default function FarcasterMiniApp() {
           <span className={`relative z-10 transition-all duration-300 ${
             paymentType === 'bill' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
           }`}>
-            📄 {t('pay.paybill')}
+            📄 {t('pay.payBill')}
           </span>
           
           {/* Active pulse indicator */}
