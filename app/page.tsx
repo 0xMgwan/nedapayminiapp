@@ -1645,12 +1645,12 @@ export default function FarcasterMiniApp() {
       
       // Ensure proper network detection based on token type
       let network: 'base' | 'celo' = 'base'; // Default to base
-      let token: 'USDC' | 'USDT' = 'USDC'; // Default to USDC
+      let token: 'USDC' | 'USDT' | 'cUSD' = 'USDC'; // Default to USDC
       
       if (selectedTokenData) {
-        token = selectedTokenData.baseToken as 'USDC' | 'USDT';
-        // USDT is on Celo (chainId: 42220), USDC is on Base (chainId: 8453)
-        if (token === 'USDT') {
+        token = selectedTokenData.baseToken as 'USDC' | 'USDT' | 'cUSD';
+        // USDT and cUSD are on Celo (chainId: 42220), USDC is on Base (chainId: 8453)
+        if (token === 'USDT' || token === 'cUSD') {
           network = 'celo';
         } else if (token === 'USDC') {
           network = 'base';
@@ -1665,7 +1665,7 @@ export default function FarcasterMiniApp() {
         amount: paymentAmount,
         rate: rate,
         network: network as 'base' | 'celo',
-        token: token as 'USDC' | 'USDT',
+        token: token as 'USDC' | 'USDT' | 'cUSD',
         recipient: recipient,
         returnAddress: walletAddress,
         reference: `miniapp-${Date.now()}`
