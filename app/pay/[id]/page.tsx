@@ -153,9 +153,29 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
         <div className="text-center bg-gray-50 p-4 rounded-xl">
           <p className="text-sm text-gray-600 mb-1">{t('paymentLink.amount')}</p>
-          <p className="text-3xl font-bold text-gray-900">
-            {amount} <span className="text-xl font-normal">{currency}</span>
-          </p>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <p className="text-3xl font-bold text-gray-900">{amount} {currency}</p>
+            {currency === 'USDC' ? (
+              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-8 h-8" />
+            ) : currency === 'USDT' ? (
+              <img src="/usdt.png" alt="USDT" className="w-8 h-8 rounded-full" />
+            ) : currency === 'cUSD' ? (
+              <img src="/cUSD.png" alt="cUSD" className="w-8 h-8" />
+            ) : (
+              <span className="text-2xl">🇺🇸</span>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-1">
+            {(currency === 'USDT' || currency === 'cUSD') ? (
+              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">
+                🟠 on Celo Network
+              </span>
+            ) : (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                🔵 on Base Network
+              </span>
+            )}
+          </div>
         </div>
 
         {description && (

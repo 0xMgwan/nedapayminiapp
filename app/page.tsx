@@ -2631,9 +2631,9 @@ export default function FarcasterMiniApp() {
                 
                 {showSendTokenDropdown && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-48 overflow-y-auto">
-                    {stablecoins.map((token) => (
+                    {stablecoins.map((token, index) => (
                       <button
-                        key={token.baseToken}
+                        key={`${token.baseToken}-${token.chainId}-${index}`}
                         onClick={async () => {
                           setSelectedSendToken(token.baseToken);
                           setShowSendTokenDropdown(false);
@@ -2641,9 +2641,9 @@ export default function FarcasterMiniApp() {
                           // Switch chain immediately when token is selected using hook
                           if (isConnected && switchChain) {
                             try {
-                              const targetChainId = token.baseToken === 'USDT' ? 42220 : 8453; // Celo : Base
+                              const targetChainId = (token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 42220 : 8453; // Celo : Base
                               await switchChain({ chainId: targetChainId });
-                              console.log(`✅ Pre-switched to ${token.baseToken === 'USDT' ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                              console.log(`✅ Pre-switched to ${(token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 'Celo' : 'Base'} for ${token.baseToken}`);
                             } catch (error) {
                               console.log('⚠️ Pre-chain switch failed:', error);
                             }
@@ -2714,15 +2714,15 @@ export default function FarcasterMiniApp() {
                 const selectedTokenData = stablecoins.find(token => 
                   token.baseToken === (sendCurrency === 'local' ? selectedSendToken : selectedSendToken)
                 );
-                const isUSDT = selectedTokenData?.baseToken === 'USDT';
+                const isCeloToken = selectedTokenData?.baseToken === 'USDT' || selectedTokenData?.baseToken === 'cUSD';
                 return (
                   <>
                     <img 
-                      src={isUSDT ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
-                      alt={isUSDT ? "Celo" : "Base"} 
+                      src={isCeloToken ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
+                      alt={isCeloToken ? "Celo" : "Base"} 
                       className="w-3 h-3 rounded-full" 
                     />
-                    <span className="text-white text-xs">{isUSDT ? "Celo" : "Base"}</span>
+                    <span className="text-white text-xs">{isCeloToken ? "Celo" : "Base"}</span>
                   </>
                 );
               })()}
@@ -3287,9 +3287,9 @@ export default function FarcasterMiniApp() {
                 
                 {showPayTokenDropdown && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-48 overflow-y-auto">
-                    {stablecoins.map((token) => (
+                    {stablecoins.map((token, index) => (
                       <button
-                        key={token.baseToken}
+                        key={`${token.baseToken}-${token.chainId}-${index}`}
                         onClick={async () => {
                           setSelectedPayToken(token.baseToken);
                           setShowPayTokenDropdown(false);
@@ -3297,9 +3297,9 @@ export default function FarcasterMiniApp() {
                           // Switch chain immediately when token is selected using hook
                           if (isConnected && switchChain) {
                             try {
-                              const targetChainId = token.baseToken === 'USDT' ? 42220 : 8453; // Celo : Base
+                              const targetChainId = (token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 42220 : 8453; // Celo : Base
                               await switchChain({ chainId: targetChainId });
-                              console.log(`✅ Pre-switched to ${token.baseToken === 'USDT' ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                              console.log(`✅ Pre-switched to ${(token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 'Celo' : 'Base'} for ${token.baseToken}`);
                             } catch (error) {
                               console.log('⚠️ Pre-chain switch failed:', error);
                             }
@@ -3356,15 +3356,15 @@ export default function FarcasterMiniApp() {
                   const selectedTokenData = stablecoins.find(token => 
                     token.baseToken === (payCurrency === 'local' ? selectedPayToken : selectedPayToken)
                   );
-                  const isUSDT = selectedTokenData?.baseToken === 'USDT';
+                  const isCeloToken = selectedTokenData?.baseToken === 'USDT' || selectedTokenData?.baseToken === 'cUSD';
                   return (
                     <>
                       <img 
-                        src={isUSDT ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
-                        alt={isUSDT ? "Celo" : "Base"} 
+                        src={isCeloToken ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
+                        alt={isCeloToken ? "Celo" : "Base"} 
                         className="w-3 h-3 rounded-full" 
                       />
-                      <span className="text-white text-xs">{isUSDT ? "Celo" : "Base"}</span>
+                      <span className="text-white text-xs">{isCeloToken ? "Celo" : "Base"}</span>
                     </>
                   );
                 })()}
@@ -3592,11 +3592,11 @@ export default function FarcasterMiniApp() {
         {/* Dropdown Menu */}
         {showDepositTokenDropdown && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-80">
-            {stablecoins.map((token) => {
+            {stablecoins.map((token, index) => {
               console.log('🔍 Rendering deposit token:', token.baseToken, token.name);
               return (
                 <button
-                  key={token.baseToken}
+                  key={`${token.baseToken}-${token.chainId}-${index}`}
                   onClick={() => {
                     setSelectedToken(token);
                     setShowDepositTokenDropdown(false);
@@ -3799,11 +3799,11 @@ export default function FarcasterMiniApp() {
           
           {showLinkCurrencyDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-80">
-              {stablecoins.map((token) => {
+              {stablecoins.map((token, index) => {
                 console.log('🔍 Rendering link token:', token.baseToken, token.name);
                 return (
                   <button
-                    key={token.baseToken}
+                    key={`${token.baseToken}-${token.chainId}-${index}`}
                     onClick={() => {
                       setSelectedStablecoin(token);
                       setShowLinkCurrencyDropdown(false);
@@ -4050,9 +4050,9 @@ export default function FarcasterMiniApp() {
                 
                 {showInvoiceCurrencyDropdown && (
                   <div className="absolute top-full left-0 mt-1 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto w-full min-w-max">
-                    {stablecoins.map((token) => (
+                    {stablecoins.map((token, index) => (
                       <button
-                        key={token.baseToken}
+                        key={`${token.baseToken}-${token.chainId}-${index}`}
                         onClick={() => {
                           setInvoiceCurrency(token.baseToken);
                           setShowInvoiceCurrencyDropdown(false);

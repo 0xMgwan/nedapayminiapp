@@ -99,10 +99,16 @@
     "currency": "Sarafu",
     "description": "Maelezo (Hiari)",
     "descriptionPlaceholder": "Ongeza maelezo ya malipo, taarifa za agizo, au maagizo maalum kwa mpokeaji",
+    "generatePaymentLink": "Unda Kiungo cha Malipo",
     "generateLink": "Unda Kiungo cha Malipo",
+    "linkAmount": "Kiasi cha Kiungo",
+    "linkDescription": "Maelezo ya Kiungo",
+    "generatedLink": "Kiungo Kilikotengenezwa",
     "linkGenerated": "Kiungo cha Malipo Kimetengenezwa!",
+    "linkCopied": "Kiungo kimenakiliwa kwenye clipboard",
+    "copyLink": "Nakili Kiungo",
     "copied": "Kimenakiliwa!",
-    "copyLink": "Nakili Kiungo"
+    "shareLink": "Shiriki Kiungo"
   },
   "swap": {
     "title": "Badilisha Tokeni",

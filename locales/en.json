@@ -104,7 +104,10 @@
     "linkAmount": "Link Amount",
     "linkDescription": "Link Description",
     "generatedLink": "Generated Link",
+    "linkGenerated": "Payment Link Generated!",
     "linkCopied": "Link copied to clipboard",
+    "copyLink": "Copy Link",
+    "copied": "Copied!",
     "shareLink": "Share Link"
   },
   "swap": {

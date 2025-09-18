@@ -262,19 +262,24 @@ function PaymentRequestPageContent() {
   const getTokenAddress = (token: string) => {
     console.log('🔍 Looking for token:', token);
     
-    const stablecoin = stablecoins.find(s => s.baseToken === token);
+    const tokenData = stablecoins.find(t => t.baseToken === token);
     
-    if (stablecoin && 
-        stablecoin.address && 
-        ethers.utils.isAddress(stablecoin.address) &&
-        stablecoin.chainId === 8453) { // Only Base mainnet tokens
-      console.log('✅ Using valid token address:', stablecoin.address);
-      return stablecoin.address;
+    let tokenAddress = tokenData?.address;
+    
+    // Fallback for USDT and cUSD to their Celo addresses if not found
+    if (!tokenAddress) {
+      if (token === 'USDT') {
+        tokenAddress = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e'; // USDT on Celo
+        console.log('🔄 Using fallback USDT address on Celo');
+      } else if (token === 'cUSD') {
+        tokenAddress = '0x765DE816845861e75A25fCA122bb6898B8B1282a'; // cUSD on Celo
+        console.log('🔄 Using fallback cUSD address on Celo');
+      }
     }
     
-    // Default to USDC if token not found or invalid
-    console.log('⚠️ Token not found or invalid, defaulting to USDC');
-    return "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // USDC on Base
+    console.log('💰 Token lookup result:', { token, tokenAddress, chainId: tokenData?.chainId });
+    
+    return tokenAddress;
   };
 
   const getTokenIcon = (token: string) => {
