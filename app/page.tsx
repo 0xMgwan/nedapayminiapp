@@ -139,7 +139,8 @@ interface RateData {
 
 export default function FarcasterMiniApp() {
   console.log('🚀 NedaPay MiniApp Loading...');
-  console.log('🔍 Stablecoins array:', stablecoins.map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
+  console.log('🔍 Stablecoins array length:', stablecoins.length);
+  console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('send');
   const [selectedToken, setSelectedToken] = useState(stablecoins[0]);
@@ -3590,8 +3591,8 @@ export default function FarcasterMiniApp() {
         
         {/* Dropdown Menu */}
         {showDepositTokenDropdown && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64">
-{stablecoins.map((token) => {
+          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-80">
+            {stablecoins.map((token) => {
               console.log('🔍 Rendering deposit token:', token.baseToken, token.name);
               return (
                 <button
@@ -3797,8 +3798,8 @@ export default function FarcasterMiniApp() {
           </button>
           
           {showLinkCurrencyDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64">
-{stablecoins.map((token) => {
+            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-80">
+              {stablecoins.map((token) => {
                 console.log('🔍 Rendering link token:', token.baseToken, token.name);
                 return (
                   <button
