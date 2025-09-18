@@ -2644,6 +2644,11 @@ export default function FarcasterMiniApp() {
                               const targetChainId = (token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 42220 : 8453; // Celo : Base
                               await switchChain({ chainId: targetChainId });
                               console.log(`✅ Pre-switched to ${(token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                              
+                              // Fetch balance for the newly selected token
+                              setTimeout(() => {
+                                fetchWalletBalance(token.baseToken);
+                              }, 1000); // Wait for chain switch to complete
                             } catch (error) {
                               console.log('⚠️ Pre-chain switch failed:', error);
                             }
@@ -3300,6 +3305,11 @@ export default function FarcasterMiniApp() {
                               const targetChainId = (token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 42220 : 8453; // Celo : Base
                               await switchChain({ chainId: targetChainId });
                               console.log(`✅ Pre-switched to ${(token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                              
+                              // Fetch balance for the newly selected token
+                              setTimeout(() => {
+                                fetchWalletBalance(token.baseToken);
+                              }, 1000); // Wait for chain switch to complete
                             } catch (error) {
                               console.log('⚠️ Pre-chain switch failed:', error);
                             }
