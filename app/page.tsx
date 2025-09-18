@@ -2302,7 +2302,7 @@ export default function FarcasterMiniApp() {
       
     } catch (error) {
       console.error('Failed to generate payment link:', error);
-      alert('❌ Failed to generate payment link: ' + (error as Error).message);
+      alert(' Failed to generate payment link: ' + (error as Error).message);
     }
   }, [linkAmount, isConnected, walletAddress, selectedStablecoin, linkDescription]);
 
@@ -2318,6 +2318,20 @@ export default function FarcasterMiniApp() {
     }
 
     try {
+      // Ensure we're on the correct network before transaction
+      if (isConnected && switchChain) {
+        const targetChainId = (selectedSendToken === 'USDT' || selectedSendToken === 'cUSD') ? 42220 : 8453; // Celo : Base
+        try {
+          await switchChain({ chainId: targetChainId });
+          console.log(` Switched to ${(selectedSendToken === 'USDT' || selectedSendToken === 'cUSD') ? 'Celo' : 'Base'} for transaction`);
+          
+          // Wait a moment for chain switch to complete
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        } catch (error) {
+          console.log('⚠️ Chain switch failed before transaction:', error);
+        }
+      }
+
       // Show loading state
       setIsSwipeComplete(true);
       
@@ -2412,6 +2426,20 @@ export default function FarcasterMiniApp() {
     }
 
     try {
+      // Ensure we're on the correct network before transaction
+      if (isConnected && switchChain) {
+        const targetChainId = (selectedPayToken === 'USDT' || selectedPayToken === 'cUSD') ? 42220 : 8453; // Celo : Base
+        try {
+          await switchChain({ chainId: targetChainId });
+          console.log(`✅ Switched to ${(selectedPayToken === 'USDT' || selectedPayToken === 'cUSD') ? 'Celo' : 'Base'} for transaction`);
+          
+          // Wait a moment for chain switch to complete
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        } catch (error) {
+          console.log('⚠️ Chain switch failed before transaction:', error);
+        }
+      }
+
       // Show loading state
       setIsSwipeComplete(true);
       
