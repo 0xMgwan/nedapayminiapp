@@ -98,7 +98,7 @@
     "protocolFee": "Ada ya Itifaki:",
     "currency": "Sarafu",
     "description": "Maelezo (Hiari)",
-    "descriptionPlaceholder": "mfano: Malipo ya huduma za uongozaji",
+    "descriptionPlaceholder": "Ongeza maelezo ya malipo, taarifa za agizo, au maagizo maalum kwa mpokeaji",
     "generateLink": "Unda Kiungo cha Malipo",
     "linkGenerated": "Kiungo cha Malipo Kimetengenezwa!",
     "copied": "Kimenakiliwa!",
@@ -210,6 +210,7 @@
     "ugx": "Shilingi ya Uganda",
     "xof": "Faranga ya Afrika Magharibi",
     "usdc": "USD Coin",
+    "cusd": "Dola ya Celo",
     "usdt": "Tether USD"
   }
 }

@@ -143,6 +143,20 @@ export const stablecoins = [
     issuer: 'Etherfuse/Brale',
     description: 'Stablecoin pegged 1:1 to the Mexican Peso (MXN)',
     website: 'https://stablecoins.earth',
+    chainId: 8453 // Base Mainnet
+  },
+  {
+    region: 'United States',
+    flag: '🇺🇸',
+    currency: 'USD',
+    baseToken: 'cUSD',
+    name: 'Celo Dollar',
+    address: '0x765DE816845861e75A25fCA122bb6898B8B1282a', // Celo Mainnet
+    issuer: 'Celo',
+    description: 'USD-backed stablecoin by Celo Protocol (Celo Mainnet)',
+    website: 'https://celo.org',
+    chainId: 42220, // Celo Mainnet
+    decimals: 18
   },
   {
     region: 'United States',

@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 
 // Token contract addresses
 const USDC_CONTRACT_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base
+const CUSD_CONTRACT_ADDRESS = '0x765DE816845861e75A25fCA122bb6898B8B1282a'; // Celo
 const USDT_CONTRACT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e'; // Celo
 
 // Token ABI (simplified for transfer function)
@@ -98,7 +99,15 @@ export async function executeTokenTransaction(
   try {
     // Determine token contract address and network
     const isUSDT = tokenData?.baseToken === 'USDT';
-    const contractAddress = isUSDT ? USDT_CONTRACT_ADDRESS : USDC_CONTRACT_ADDRESS;
+    const isCUSD = tokenData?.baseToken === 'cUSD';
+    let contractAddress;
+    if (isUSDT) {
+      contractAddress = USDT_CONTRACT_ADDRESS;
+    } else if (isCUSD) {
+      contractAddress = CUSD_CONTRACT_ADDRESS;
+    } else {
+      contractAddress = USDC_CONTRACT_ADDRESS;
+    }
     const decimals = tokenData?.decimals || 6;
     
     // Get the provider from Privy wallet or fallback to window.ethereum
@@ -166,11 +175,22 @@ export async function getTokenBalance(walletAddress: string, tokenData: any, wal
 
     // Determine network and contract based on token
     const isUSDT = tokenData?.baseToken === 'USDT';
-    const contractAddress = isUSDT ? USDT_CONTRACT_ADDRESS : USDC_CONTRACT_ADDRESS;
-    const rpcUrl = isUSDT ? 'https://forno.celo.org' : 'https://mainnet.base.org';
+    const isCUSD = tokenData?.baseToken === 'cUSD';
+    const isCeloToken = isUSDT || isCUSD;
+    
+    let contractAddress;
+    if (isUSDT) {
+      contractAddress = USDT_CONTRACT_ADDRESS;
+    } else if (isCUSD) {
+      contractAddress = CUSD_CONTRACT_ADDRESS;
+    } else {
+      contractAddress = USDC_CONTRACT_ADDRESS;
+    }
+    
+    const rpcUrl = isCeloToken ? 'https://forno.celo.org' : 'https://mainnet.base.org';
     const decimals = tokenData?.decimals || 6;
 
-    console.log('🌐 Creating provider for network:', isUSDT ? 'Celo' : 'Base');
+    console.log('🌐 Creating provider for network:', isCeloToken ? 'Celo' : 'Base');
     console.log('🔗 RPC URL:', rpcUrl);
     console.log('📄 Contract Address:', contractAddress);
     console.log('👛 Wallet Address:', walletAddress);

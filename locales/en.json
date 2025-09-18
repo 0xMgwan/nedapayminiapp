@@ -98,6 +98,7 @@
     "protocolFee": "Protocol Fee:",
     "currency": "Currency",
     "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add payment details, order information, or special instructions for the recipient",
     "generatePaymentLink": "Generate Payment Link",
     "generateLink": "Generate Payment Link",
     "linkAmount": "Link Amount",
@@ -212,6 +213,7 @@
     "ugx": "Ugandan Shilling",
     "xof": "West African CFA Franc",
     "usdc": "USD Coin",
+    "cusd": "Celo Dollar",
     "usdt": "Tether USD"
   }
 }
