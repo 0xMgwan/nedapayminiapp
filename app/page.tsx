@@ -3256,13 +3256,13 @@ export default function FarcasterMiniApp() {
         <>
           {/* Paybill Number */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">{t('pay.paybill')} Number</label>
+            <label className="block text-xs text-gray-400 mb-1.5">{t('pay.payBill')} Number</label>
             <div className="relative">
               <input
                 type="text"
                 value={tillNumber}
                 onChange={(e) => setTillNumber(e.target.value)}
-                placeholder={`Enter ${t('pay.paybill').toLowerCase()} number`}
+                placeholder={`Enter ${t('pay.payBill').toLowerCase()} number`}
                 className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
