@@ -3087,15 +3087,15 @@ export default function FarcasterMiniApp() {
             const selectedTokenData = stablecoins.find(token => 
               token.baseToken === (payCurrency === 'local' ? selectedPayToken : selectedPayToken)
             );
-            const isUSDT = selectedTokenData?.baseToken === 'USDT';
+            const isCeloToken = selectedTokenData?.baseToken === 'USDT' || selectedTokenData?.baseToken === 'cUSD';
             return (
               <>
                 <img 
-                  src={isUSDT ? "/assets/logos/celo-logo.png" : "/assets/logos/base-logo.jpg"} 
-                  alt={isUSDT ? "Celo" : "Base"} 
+                  src={isCeloToken ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
+                  alt={isCeloToken ? "Celo" : "Base"} 
                   className="w-4 h-4 rounded-full" 
                 />
-                <span className="text-white text-sm">{isUSDT ? "Celo" : "Base"}</span>
+                <span className="text-white text-sm">{isCeloToken ? "Celo" : "Base"}</span>
               </>
             );
           })()}
