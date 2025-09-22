@@ -74,7 +74,8 @@
     "youllPay": "You'll Pay",
     "amountInUsdc": "Amount in USDC",
     "fees": "Fees",
-    "totalTzs": "Total TZS"
+    "totalTzs": "Total TZS",
+    "paymentCompletes": "Payments typically complete within 30 seconds"
   },
   "deposit": {
     "title": "Deposit",
