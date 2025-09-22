@@ -3052,7 +3052,7 @@ export default function FarcasterMiniApp() {
                 setTillNumber('');
                 setBusinessNumber('');
               }}
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105"
+              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 border-2 border-green-400/50 hover:border-green-300/70"
             >
               ✨ {t('success.done')}
             </button>
