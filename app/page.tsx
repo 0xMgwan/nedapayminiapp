@@ -2568,10 +2568,6 @@ export default function FarcasterMiniApp() {
         )}
       </div>
 
-      {/* Send Money Button */}
-      <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors">
-        {t('send.title')}
-      </button>
 
       {/* Mobile Money Provider */}
       <div>
