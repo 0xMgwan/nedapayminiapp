@@ -2834,14 +2834,7 @@ export default function FarcasterMiniApp() {
                     {t('send.confirming')}
                   </>
                 ) : isSwipeComplete ? (
-                  <>
-                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    {t('send.sending')}
-                  </>
+                  t('send.sending')
                 ) : t('send.swipeToSend')}
               </span>
             </div>
@@ -3498,14 +3491,7 @@ export default function FarcasterMiniApp() {
                     {t('pay.confirming')}
                   </>
                 ) : isSwipeComplete ? (
-                  <>
-                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    {t('pay.processing')}
-                  </>
+                  t('pay.processing')
                 ) : t('pay.swipeToPay')}
               </span>
             </div>
@@ -3762,7 +3748,7 @@ export default function FarcasterMiniApp() {
         <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" />
         
         <div className="relative z-10 flex items-center justify-center gap-3">
-          <span className="text-lg font-bold tracking-wide drop-shadow-lg">💰 {t('deposit.buyNow')}</span>
+          <span className="text-lg font-bold tracking-wide drop-shadow-lg">{t('deposit.buyNow')}</span>
           <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
             <span className="text-sm">→</span>
           </div>
