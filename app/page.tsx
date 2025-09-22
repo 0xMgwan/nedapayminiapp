@@ -2515,7 +2515,30 @@ export default function FarcasterMiniApp() {
   }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedPayToken, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
 
   const renderSendTab = () => (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-white text-lg font-medium">{t('send.title')}</h2>
+        <div className="flex items-center gap-2">
+          {(() => {
+            const selectedTokenData = stablecoins.find(token => 
+              token.baseToken === (sendCurrency === 'local' ? selectedSendToken : selectedSendToken)
+            );
+            const isCeloToken = selectedTokenData?.baseToken === 'USDT' || selectedTokenData?.baseToken === 'cUSD';
+            return (
+              <>
+                <img 
+                  src={isCeloToken ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
+                  alt={isCeloToken ? "Celo" : "Base"} 
+                  className="w-4 h-4 rounded-full" 
+                />
+                <span className="text-white text-sm">{isCeloToken ? "Celo" : "Base"}</span>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
       {/* Country Selector */}
       <div className="relative">
         <button
