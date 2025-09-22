@@ -3200,10 +3200,13 @@ export default function FarcasterMiniApp() {
               : 'opacity-0 group-hover:opacity-100 bg-emerald-400/5'
           }`} />
           
-          <span className={`relative z-10 transition-all duration-300 ${
+          <span className={`relative z-10 flex items-center transition-all duration-300 ${
             paymentType === 'goods' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
           }`}>
-            🛍️ {t('pay.buyGoods')}
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            {t('pay.buyGoods')}
           </span>
           
           {/* Active pulse indicator */}
@@ -3232,10 +3235,13 @@ export default function FarcasterMiniApp() {
               : 'opacity-0 group-hover:opacity-100 bg-blue-400/5'
           }`} />
           
-          <span className={`relative z-10 transition-all duration-300 ${
+          <span className={`relative z-10 flex items-center transition-all duration-300 ${
             paymentType === 'bill' ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
           }`}>
-            📄 {t('pay.payBill')}
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {t('pay.payBill')}
           </span>
           
           {/* Active pulse indicator */}
