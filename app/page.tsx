@@ -2833,7 +2833,7 @@ export default function FarcasterMiniApp() {
       
       {/* Swipe to Send */}
       <div className="mt-4">
-        <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 rounded-full p-1 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 rounded-2xl p-1.5 overflow-hidden shadow-2xl shadow-green-500/30 border border-green-400/30">
           {/* Progress Background */}
           <div 
             className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full transition-all duration-150 ease-in-out"
@@ -3518,7 +3518,7 @@ export default function FarcasterMiniApp() {
 
       {/* Swipe to Pay */}
       <div className="mt-6">
-        <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 rounded-full p-1 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 rounded-2xl p-1.5 overflow-hidden shadow-2xl shadow-blue-500/30 border border-blue-400/30">
           {/* Progress Background */}
           <div 
             className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-150 ease-in-out"
@@ -4781,20 +4781,28 @@ export default function FarcasterMiniApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-2">
-      <div className="max-w-sm mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-blue-900 p-3 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-indigo-600/10"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent"></div>
+      
+      <div className="max-w-sm mx-auto relative z-10">
         {/* Top Header with Wallet */}
-        <div className="flex items-center justify-between mb-1 w-full">
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Image 
-              src="/NEDApayLogo.png" 
-              alt="NedaPay" 
-              width={32} 
-              height={32} 
-              className="rounded-lg"
-            />
+        <div className="glass-card flex items-center justify-between mb-4 w-full p-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="relative">
+              <Image 
+                src="/NEDApayLogo.png" 
+                alt="NedaPay" 
+                width={36} 
+                height={36} 
+                className="rounded-xl shadow-lg"
+              />
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-400/20 to-purple-400/20"></div>
+            </div>
             <div>
-              <h1 className="text-white font-bold text-base">Neda Pay</h1>
+              <h1 className="text-white font-bold text-lg tracking-tight">Neda Pay</h1>
+              <p className="text-blue-200/70 text-xs font-medium">Digital Finance</p>
             </div>
           </div>
           
@@ -4852,7 +4860,7 @@ export default function FarcasterMiniApp() {
                   alert('Failed to connect wallet. Please try again.');
                 }
               }}
-              className="relative w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-600 rounded-xl transition-all duration-300 ease-out flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-blue-400/30 hover:border-blue-300/50 group overflow-hidden"
+              className="btn-premium relative w-14 h-14 flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 group overflow-hidden"
             >
               {/* Animated background */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -4939,7 +4947,7 @@ export default function FarcasterMiniApp() {
         </div>
 
         {/* Floating Rates Ticker */}
-        <div className="mb-2 relative overflow-hidden bg-gradient-to-r from-purple-900/20 via-blue-900/20 to-indigo-900/20 backdrop-blur-sm rounded-lg py-1.5">
+        <div className="mb-4 relative overflow-hidden glass-card py-3">
           <div className="flex animate-scroll-left whitespace-nowrap">
             {/* First set of rates */}
             {Object.entries(floatingRates).map(([currency, data]) => {
@@ -5056,7 +5064,7 @@ export default function FarcasterMiniApp() {
         `}</style>
 
         {/* Tab Navigation */}
-        <div className="bg-slate-900/90 rounded-xl p-1 mb-2 border border-slate-700/50 shadow-2xl">
+        <div className="glass-card p-2 mb-4">
           <div className="grid grid-cols-5 gap-1">
             {[
               { key: 'send' as Tab, label: t('navigation.send'), icon: ArrowUpIcon },
@@ -5106,7 +5114,7 @@ export default function FarcasterMiniApp() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-gray-800 rounded-xl p-3">
+        <div className="glass-card p-4">
           {renderTabContent()}
         </div>
       </div>
@@ -5124,7 +5132,7 @@ export default function FarcasterMiniApp() {
           />
           
           {/* Notification Panel */}
-          <div className="fixed top-16 right-2 w-80 max-w-[calc(100vw-16px)] bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border border-slate-600/40 rounded-2xl shadow-2xl z-50 max-h-[65vh] flex flex-col overflow-hidden">
+          <div className="fixed top-20 right-4 w-80 max-w-[calc(100vw-16px)] glass-card shadow-2xl z-50 max-h-[65vh] flex flex-col overflow-hidden animate-slide-in">
             {/* Header */}
             <div className="p-3 border-b border-slate-600/20 flex justify-between items-center bg-gradient-to-r from-blue-500/10 to-purple-500/10">
               <div className="flex items-center gap-2">
