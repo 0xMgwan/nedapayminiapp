@@ -816,9 +816,29 @@ export default function FarcasterMiniApp() {
 
       // Determine token contract and decimals based on network
       const isUSDT = tokenData?.baseToken === 'USDT';
-      const tokenContract = isUSDT ? '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e' : '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Celo USDT : Base USDC
+      const isCUSD = tokenData?.baseToken === 'cUSD';
+      const isCeloToken = isUSDT || isCUSD;
+      
+      console.log('🔍 Token Detection Debug:', {
+        tokenDataBaseToken: tokenData?.baseToken,
+        isUSDT,
+        isCUSD,
+        isCeloToken,
+        tokenDataChainId: tokenData?.chainId
+      });
+      
+      const tokenContract = isCeloToken 
+        ? (isUSDT ? '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e' : '0x765DE816845861e75A25fCA122bb6898B8B1282a') // USDT : cUSD on Celo
+        : '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
       const decimals = tokenData?.decimals || 6;
-      const chainId = isUSDT ? 42220 : 8453; // Celo : Base
+      const chainId = isCeloToken ? 42220 : 8453; // Celo : Base
+      
+      console.log('🔍 Final Transaction Config:', {
+        tokenContract,
+        chainId,
+        chainName: isCeloToken ? 'Celo' : 'Base',
+        decimals
+      });
       
       // Convert amount to token decimals
       const amountInUnits = BigInt(Math.floor(amount * Math.pow(10, decimals)));
@@ -830,13 +850,21 @@ export default function FarcasterMiniApp() {
       const { writeContract, switchChain } = await import('wagmi/actions');
       const { config } = await import('../providers/MiniKitProvider');
       
-      // Switch to the correct chain before executing transaction
+      // Switch to the correct chain before executing transaction - be more aggressive
       try {
+        console.log(`🔄 Attempting to switch to chain ${chainId} (${isCeloToken ? 'Celo' : 'Base'}) for ${tokenData?.baseToken}`);
         await switchChain(config, { chainId: chainId });
-        console.log(`✅ Switched to chain ${chainId} (${isUSDT ? 'Celo' : 'Base'})`);
+        console.log(`✅ Successfully switched to chain ${chainId} (${isCeloToken ? 'Celo' : 'Base'})`);
+        
+        // Wait longer for chain switch to complete in MiniKit
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (switchError) {
-        console.log('⚠️ Chain switch failed or not needed:', switchError);
-        // Continue anyway - some wallets handle this automatically
+        console.error('❌ Chain switch failed:', switchError);
+        // For Celo tokens, this is critical - throw error if we can't switch to Celo
+        if (isCeloToken) {
+          throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken} transaction: ${switchError}`);
+        }
+        console.log('⚠️ Continuing with current chain for Base token');
       }
       
       const hash = await writeContract(config, {
