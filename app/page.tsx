@@ -4742,7 +4742,7 @@ export default function FarcasterMiniApp() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-2">
       <div className="max-w-sm mx-auto">
         {/* Top Header with Wallet */}
-        <div className="flex items-center justify-between mb-3 w-full">
+        <div className="flex items-center justify-between mb-1 w-full">
           <div className="flex items-center gap-2 flex-shrink-0">
             <Image 
               src="/NEDApayLogo.png" 
