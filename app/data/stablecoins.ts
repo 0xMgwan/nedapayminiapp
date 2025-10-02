@@ -17,7 +17,7 @@ export const stablecoins = [
   // cUSD and USDT moved up for better visibility
   {
     region: 'United States',
-    flag: '🇺🇸',
+    flag: 'CUSD_LOGO', // Use cUSD logo instead of flag
     currency: 'USD',
     baseToken: 'cUSD',
     name: 'Celo Dollar',
@@ -30,7 +30,7 @@ export const stablecoins = [
   },
   {
     region: 'United States',
-    flag: '🇺🇸',
+    flag: 'USDT_LOGO', // Use USDT logo instead of flag
     currency: 'USD',
     baseToken: 'USDT',
     name: 'Tether USD',
@@ -171,31 +171,5 @@ export const stablecoins = [
     description: 'Stablecoin pegged 1:1 to the Mexican Peso (MXN)',
     website: 'https://stablecoins.earth',
     chainId: 8453 // Base Mainnet
-  },
-  {
-    region: 'United States',
-    flag: '🇺🇸',
-    currency: 'USD',
-    baseToken: 'cUSD',
-    name: 'Celo Dollar',
-    address: '0x765DE816845861e75A25fCA122bb6898B8B1282a', // Celo Mainnet
-    issuer: 'Celo',
-    description: 'USD-backed stablecoin by Celo Protocol (Celo Mainnet)',
-    website: 'https://celo.org',
-    chainId: 42220, // Celo Mainnet
-    decimals: 18
-  },
-  {
-    region: 'United States',
-    flag: '🇺🇸',
-    currency: 'USD',
-    baseToken: 'USDT',
-    name: 'Tether USD',
-    address: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e', // Celo Mainnet
-    issuer: 'Tether',
-    description: 'USD-backed stablecoin by Tether (Celo Mainnet)',
-    website: 'https://tether.to',
-    chainId: 42220, // Celo Mainnet
-    decimals: 6
   }
 ];

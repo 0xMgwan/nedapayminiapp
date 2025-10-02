@@ -4075,15 +4075,15 @@ export default function FarcasterMiniApp() {
         
         <form onSubmit={handleSubmit} className="space-y-2">
           {/* Client Information */}
-          <div className="bg-slate-800/30 rounded-lg p-2">
-            <h3 className="text-white font-medium mb-1.5 text-xs">{t('invoice.clientInfo')}</h3>
-            <div className="space-y-2">
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <h3 className="text-white font-medium mb-2 text-sm">{t('invoice.clientInfo')}</h3>
+            <div className="space-y-2.5">
               <input
                 type="text"
                 placeholder={t('invoice.clientPlaceholder')}
                 value={invoiceRecipient}
                 onChange={(e) => setInvoiceRecipient(e.target.value)}
-                className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               <input
@@ -4091,7 +4091,7 @@ export default function FarcasterMiniApp() {
                 placeholder={t('invoice.emailPlaceholder')}
                 value={invoiceEmail}
                 onChange={(e) => setInvoiceEmail(e.target.value)}
-                className="w-full bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -4143,7 +4143,13 @@ export default function FarcasterMiniApp() {
                       >
                         {token.baseToken === 'USDC' ? (
                           <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+                        ) : token.baseToken === 'USDT' ? (
+                          <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
                         ) : token.baseToken === 'cUSD' ? (
+                          <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
+                        ) : token.flag === 'USDT_LOGO' ? (
+                          <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
+                        ) : token.flag === 'CUSD_LOGO' ? (
                           <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
                         ) : (
                           <span className="text-sm">{token.flag || '🌍'}</span>
@@ -4171,9 +4177,9 @@ export default function FarcasterMiniApp() {
           </div>
           
           {/* Payment Link Selection */}
-          <div className="bg-slate-800/30 rounded-lg p-2">
-            <h3 className="text-white font-medium mb-1.5 text-xs">{t('invoice.paymentLink')}</h3>
-            <p className="text-gray-400 text-xs mb-1.5">
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <h3 className="text-white font-medium mb-2 text-sm">{t('invoice.paymentLink')}</h3>
+            <p className="text-gray-400 text-sm mb-2.5">
               {t('invoice.paymentLinkDesc')}
             </p>
             <input
