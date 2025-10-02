@@ -2858,11 +2858,26 @@ export default function FarcasterMiniApp() {
               </span>
             </div>
             
-            <div className="text-white text-sm font-bold">
-              {sendCurrency === 'local' 
-                ? `${amount || '0'} ${selectedCountry.currency}`
-                : `${amount || '0'} ${selectedSendToken}`
-              }
+            <div className="text-white text-sm font-bold flex items-center gap-2">
+              {sendCurrency === 'local' ? (
+                <>
+                  <span className="text-lg">{selectedCountry.flag}</span>
+                  <span>{amount || '0'} {selectedCountry.currency}</span>
+                </>
+              ) : (
+                <>
+                  {selectedSendToken === 'USDC' ? (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
+                  ) : selectedSendToken === 'USDT' ? (
+                    <img src="/usdt.png" alt="USDT" className="w-5 h-5" />
+                  ) : selectedSendToken === 'cUSD' ? (
+                    <img src="/cUSD.png" alt="cUSD" className="w-5 h-5" />
+                  ) : (
+                    <span className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-xs">?</span>
+                  )}
+                  <span>{amount || '0'} {selectedSendToken}</span>
+                </>
+              )}
             </div>
           </div>
           
@@ -3521,11 +3536,26 @@ export default function FarcasterMiniApp() {
               </span>
             </div>
             
-            <div className="text-white text-sm font-bold">
-              {payCurrency === 'local' 
-                ? `${amount || '0'} ${selectedCountry.currency}`
-                : `${amount || '0'} ${selectedPayToken}`
-              }
+            <div className="text-white text-sm font-bold flex items-center gap-2">
+              {payCurrency === 'local' ? (
+                <>
+                  <span className="text-lg">{selectedCountry.flag}</span>
+                  <span>{amount || '0'} {selectedCountry.currency}</span>
+                </>
+              ) : (
+                <>
+                  {selectedPayToken === 'USDC' ? (
+                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
+                  ) : selectedPayToken === 'USDT' ? (
+                    <img src="/usdt.png" alt="USDT" className="w-5 h-5" />
+                  ) : selectedPayToken === 'cUSD' ? (
+                    <img src="/cUSD.png" alt="cUSD" className="w-5 h-5" />
+                  ) : (
+                    <span className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-xs">?</span>
+                  )}
+                  <span>{amount || '0'} {selectedPayToken}</span>
+                </>
+              )}
             </div>
           </div>
           

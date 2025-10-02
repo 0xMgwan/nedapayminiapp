@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* Mobile Farcaster popup suppression */
@@ -137,7 +137,7 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   font-feature-settings: normal;
   font-variation-settings: normal;
   font-weight: 500;
@@ -151,12 +151,18 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Force DM Sans font everywhere */
+* {
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
 /* Enhanced typography with rounded font style */
 h1, h2, h3, h4, h5, h6 {
   font-size: revert;
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.3;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 h1 { font-weight: 800; }
@@ -168,18 +174,21 @@ p {
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.5;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 /* Make buttons and interactive elements bolder */
 button, .btn {
   font-weight: 600;
   letter-spacing: -0.01em;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 /* Make labels and form text bolder */
 label, .label {
   font-weight: 600;
   letter-spacing: -0.01em;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 
