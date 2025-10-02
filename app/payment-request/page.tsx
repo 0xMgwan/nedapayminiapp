@@ -218,9 +218,10 @@ function PaymentRequestPageContent() {
         setPaymentData(data);
         
         const tokenAddress = getTokenAddress(token);
+        const networkInfo = getNetworkInfo(token);
         const amountInWei = (parseFloat(amount) * 1e6).toString();
         
-        let qrData = `ethereum:${tokenAddress}@8453/transfer?address=${merchant}&uint256=${amountInWei}`;
+        let qrData = `ethereum:${tokenAddress}@${networkInfo.chainId}/transfer?address=${merchant}&uint256=${amountInWei}`;
         
         if (!qrData || qrData.length > 500) {
           const currentUrl = window.location.origin;
@@ -283,11 +284,27 @@ function PaymentRequestPageContent() {
   };
 
   const getTokenIcon = (token: string) => {
-    // Special case for USDC - always show the USDC logo
+    // Special handling for specific tokens with custom icons
     if (token === 'USDC') {
       return {
         type: 'image',
         value: '/assets/logos/usdc-logo.png',
+        region: 'USD'
+      };
+    }
+    
+    if (token === 'USDT') {
+      return {
+        type: 'image',
+        value: '/usdt.png',
+        region: 'USD'
+      };
+    }
+    
+    if (token === 'cUSD') {
+      return {
+        type: 'image',
+        value: '/cUSD.png',
         region: 'USD'
       };
     }
@@ -311,6 +328,35 @@ function PaymentRequestPageContent() {
     };
   };
 
+  const getNetworkInfo = (token: string) => {
+    const stablecoin = stablecoins.find(s => s.baseToken === token);
+    
+    if (stablecoin) {
+      if (stablecoin.chainId === 42220) {
+        // Celo network
+        return {
+          name: 'Celo',
+          icon: '/celo.png',
+          chainId: 42220
+        };
+      } else if (stablecoin.chainId === 8453) {
+        // Base network
+        return {
+          name: 'Base',
+          icon: '/assets/logos/base-logo.jpg',
+          chainId: 8453
+        };
+      }
+    }
+    
+    // Default to Base network
+    return {
+      name: 'Base',
+      icon: '/assets/logos/base-logo.jpg',
+      chainId: 8453
+    };
+  };
+
   const executeTokenTransaction = async (toAddress: string, amount: number, tokenSymbol: string, description?: string): Promise<boolean> => {
     if (!walletAddress || !isConnected || !walletClient) {
       throw new Error('Wallet not connected');
@@ -328,7 +374,7 @@ function PaymentRequestPageContent() {
       const tokenAddress = getTokenAddress(tokenSymbol);
       console.log('🪙 Token address for', tokenSymbol, ':', tokenAddress);
       
-      if (!ethers.utils.isAddress(tokenAddress)) {
+      if (!tokenAddress || !ethers.utils.isAddress(tokenAddress)) {
         throw new Error(`Invalid token address for ${tokenSymbol}: ${tokenAddress}`);
       }
 
@@ -342,8 +388,11 @@ function PaymentRequestPageContent() {
         network = await provider.getNetwork();
         console.log('🌐 Current network:', network);
         
-        if (network.chainId !== 8453) {
-          throw new Error('Please switch to Base network (Chain ID: 8453)');
+        // Get expected network for this token
+        const expectedNetwork = getNetworkInfo(tokenSymbol);
+        
+        if (network.chainId !== expectedNetwork.chainId) {
+          throw new Error(`Please switch to ${expectedNetwork.name} network (Chain ID: ${expectedNetwork.chainId})`);
         }
       } catch (providerError) {
         console.error('❌ Provider/Network error:', providerError);
@@ -376,7 +425,7 @@ function PaymentRequestPageContent() {
       const decimals = tokenInfo?.decimals || 6; // Default to 6 for USDC
       
       console.log('🔧 Creating contract with address:', tokenAddress, 'decimals:', decimals);
-      const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, signer);
+      const tokenContract = new ethers.Contract(tokenAddress as string, erc20ABI, signer);
       const amountInWei = ethers.utils.parseUnits(amount.toString(), decimals);
 
       // Check balance
@@ -696,12 +745,19 @@ function PaymentRequestPageContent() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Network:</span>
                 <div className="flex items-center gap-1">
-                  <img 
-                    src="/assets/logos/base-logo.jpg" 
-                    alt="Base Network" 
-                    className="w-4 h-4"
-                  />
-                  <span className="text-white text-xs">Base</span>
+                  {(() => {
+                    const networkInfo = getNetworkInfo(paymentData?.token || '');
+                    return (
+                      <>
+                        <img 
+                          src={networkInfo.icon} 
+                          alt={`${networkInfo.name} Network`} 
+                          className="w-4 h-4"
+                        />
+                        <span className="text-white text-xs">{networkInfo.name}</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               {transactionHash && (
@@ -805,12 +861,19 @@ function PaymentRequestPageContent() {
             })()}
           </div>
           <div className="flex items-center justify-center gap-1 text-xs text-gray-400">
-            <img 
-              src="/assets/logos/base-logo.jpg" 
-              alt="Base Network" 
-              className="w-4 h-4"
-            />
-            <span>on Base Network</span>
+            {(() => {
+              const networkInfo = getNetworkInfo(paymentData.token);
+              return (
+                <>
+                  <img 
+                    src={networkInfo.icon} 
+                    alt={`${networkInfo.name} Network`} 
+                    className="w-4 h-4"
+                  />
+                  <span>on {networkInfo.name} Network</span>
+                </>
+              );
+            })()}
           </div>
         </div>
 
