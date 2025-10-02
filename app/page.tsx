@@ -4788,31 +4788,28 @@ export default function FarcasterMiniApp() {
       
       <div className="max-w-sm mx-auto relative z-10">
         {/* Top Header with Wallet */}
-        <div className="glass-card flex items-center justify-between mb-4 w-full p-4">
-          <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="glass-card flex items-center justify-between mb-4 w-full p-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <div className="relative">
               <Image 
                 src="/NEDApayLogo.png" 
                 alt="NedaPay" 
-                width={36} 
-                height={36} 
-                className="rounded-xl shadow-lg"
+                width={28} 
+                height={28} 
+                className="rounded-lg shadow-lg"
               />
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-400/20 to-purple-400/20"></div>
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-400/20 to-purple-400/20"></div>
             </div>
             <div>
-              <h1 className="text-white font-bold text-lg tracking-tight">Neda Pay</h1>
-              <p className="text-blue-200/70 text-xs font-medium">Digital Finance</p>
+              <h1 className="text-white font-bold text-sm tracking-tight">Neda Pay</h1>
             </div>
           </div>
           
-          {/* Language Switcher */}
-          <div className="flex items-center gap-2">
+          {/* Right Section - Language, Wallet, Notification */}
+          <div className="flex items-center gap-1.5 flex-shrink min-w-0">
             <LanguageSwitcher />
-          </div>
-          
-          {/* Wallet Section - Right aligned with proper spacing */}
-          <div className="flex items-center gap-2 flex-shrink min-w-0">
+            
+            {/* Wallet Connection */}
             {!isWalletConnected ? (
             <button
               onClick={async () => {
@@ -4926,23 +4923,23 @@ export default function FarcasterMiniApp() {
                   </svg>
                 </button>
               </div>
-              
-              {/* Notification Icon - Compact */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-1.5 bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300 hover:bg-slate-700/60"
-                >
-                  <BellIcon className="w-4 h-4 text-gray-400 hover:text-blue-400 transition-colors" />
-                  {notifications.filter(n => !n.read).length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                      {notifications.filter(n => !n.read).length}
-                    </span>
-                  )}
-                </button>
-              </div>
             </>
           )}
+          
+          {/* Notification Icon - Always at the end */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-1.5 bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300 hover:bg-slate-700/60"
+            >
+              <BellIcon className="w-4 h-4 text-gray-300 hover:text-blue-400 transition-colors" />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-lg">
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              )}
+            </button>
+          </div>
           </div>
         </div>
 
