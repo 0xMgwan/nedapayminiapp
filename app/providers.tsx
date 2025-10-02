@@ -3,6 +3,7 @@
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { MiniKitProvider } from '../providers/MiniKitProvider';
+import { I18nProvider } from '../providers/I18nProvider';
 import { PrivyProvider } from '@privy-io/react-auth';
 
 export function Providers(props: { children: ReactNode }) {
@@ -57,9 +58,11 @@ export function Providers(props: { children: ReactNode }) {
           },
         }}
       >
-        <MiniKitProvider>
-          {props.children}
-        </MiniKitProvider>
+        <I18nProvider>
+          <MiniKitProvider>
+            {props.children}
+          </MiniKitProvider>
+        </I18nProvider>
       </PrivyProvider>
     </ThemeProvider>
   );

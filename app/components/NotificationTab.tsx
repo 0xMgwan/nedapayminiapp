@@ -274,10 +274,10 @@ export default function NotificationTab() {
                   </>
                 )}
                 <button
-                  className="p-1 hover:!bg-slate-100 !rounded-full transition-colors"
+                  className="p-1.5 hover:!bg-slate-100 !rounded-full transition-colors border border-slate-200"
                   onClick={() => setOpen(false)}
                 >
-                  <FaTimes size={14} className="text-slate-500" />
+                  <FaTimes size={16} className="text-slate-600" />
                 </button>
               </div>
             </div>

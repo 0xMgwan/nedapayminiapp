@@ -86,8 +86,8 @@ export default function Header() {
       {/* Simple top border */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
 
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 overflow-visible">
+        <div className="flex justify-between items-center h-16 overflow-visible">
           
           {/* Logo Section */}
           <div className="flex items-center">
@@ -110,7 +110,7 @@ export default function Header() {
           </div>
 
           {/* Navigation and Actions */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4 overflow-visible">
             
             {/* Navigation Links */}
             {pathname === "/" && (
@@ -164,7 +164,7 @@ export default function Header() {
             )}
 
               {/* Action Buttons Container */}
-              <div className="flex items-center space-x-1 sm:space-x-2 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-xl shadow-md">
+              <div className="flex items-center space-x-1 sm:space-x-2 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-xl shadow-md overflow-visible">
                 {/* Language Switcher */}
                 <LanguageSwitcher />
                 
