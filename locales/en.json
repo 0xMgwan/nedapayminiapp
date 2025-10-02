@@ -90,7 +90,10 @@
     "copyAddress": "Copy Address",
     "addressCopied": "Address copied to clipboard",
     "onlyDeposit": "Only deposit {{token}} on Base network",
-    "warning": "Depositing other tokens or using wrong network may result in loss of funds"
+    "warning": "Depositing other tokens or using wrong network may result in loss of funds",
+    "comingSoon": "Coming Soon",
+    "comingSoonMessage": "Deposit feature is currently under development. Stay tuned for updates!",
+    "notifyMe": "Notify Me When Ready"
   },
   "link": {
     "title": "Link",

@@ -91,7 +91,10 @@
     "accountNumber": "Nambari ya Akaunti / Nambari ya Simu (Anza na msimbo wa nchi)",
     "accountPlaceholder": "mfano: +255787032800 au 123456789",
     "walletAddress": "Anwani ya Mkoba kwa USDC",
-    "buyNow": "Nunua Sasa"
+    "buyNow": "Nunua Sasa",
+    "comingSoon": "Inakuja Hivi Karibuni",
+    "comingSoonMessage": "Kipengele cha kuweka fedha bado kinaendelezwa. Subiri masasisho!",
+    "notifyMe": "Nijulishe Inapokuwa Tayari"
   },
   "link": {
     "title": "Kiungo",

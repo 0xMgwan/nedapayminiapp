@@ -3610,175 +3610,147 @@ export default function FarcasterMiniApp() {
   );
 
   const renderDepositTab = () => (
-    <div className="space-y-3">
-      {/* Country Selector */}
-      <div className="relative">
-        <select 
-          value={selectedCountry.code}
-          onChange={(e) => setSelectedCountry(orderedCountries.find(c => c.code === e.target.value) || orderedCountries[0])}
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {orderedCountries.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.flag} {country.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-      </div>
-
-      {/* Amount Input */}
-      <div className="text-center py-4 bg-slate-800/30 rounded-xl">
-        <div className="text-4xl text-white font-light flex items-center justify-center">
-          <span className="text-gray-400">$</span>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="bg-transparent text-white text-4xl font-light w-32 text-center focus:outline-none"
-            placeholder="1"
-            min="1"
-            step="1"
-          />
+    <div className="space-y-4 relative">
+      {/* Lock Overlay */}
+      <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md rounded-xl z-10 flex items-center justify-center">
+        <div className="text-center space-y-10 p-8">
+          {/* Bold Premium Lock Icon */}
+          <div className="relative mx-auto flex items-center justify-center">
+            {/* Enhanced outer glow rings */}
+            <div className="absolute w-40 h-40 bg-gradient-to-r from-blue-400/40 via-purple-500/40 to-pink-500/40 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute w-32 h-32 bg-gradient-to-r from-blue-500/50 via-purple-600/50 to-pink-600/50 rounded-full blur-2xl animate-pulse delay-75"></div>
+            <div className="absolute w-28 h-28 bg-gradient-to-r from-cyan-400/60 via-blue-500/60 to-purple-600/60 rounded-full blur-xl animate-pulse delay-150"></div>
+            
+            {/* Main lock container - Much bolder */}
+            <div className="relative w-28 h-28 bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.8)] border-2 border-slate-400/40">
+              {/* Enhanced inner highlight */}
+              <div className="absolute inset-1 bg-gradient-to-br from-white/20 via-white/5 to-transparent rounded-3xl"></div>
+              <div className="absolute inset-2 bg-gradient-to-tl from-blue-500/10 via-transparent to-purple-500/10 rounded-2xl"></div>
+              
+              {/* Larger, bolder Lock SVG */}
+              <svg className="w-16 h-16 text-slate-200 relative z-10 drop-shadow-2xl" fill="currentColor" viewBox="0 0 24 24" strokeWidth="0.5" stroke="currentColor">
+                {/* Lock body - Enhanced */}
+                <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10H19C19.5523 10 20 10.4477 20 11V19C20 19.5523 19.5523 20 19 20H5C4.44772 20 4 19.5523 4 19V11C4 10.4477 4.44772 10 5 10H6ZM8 8V10H16V8C16 6.89543 15.1046 6 14 6H10C8.89543 6 8 6.89543 8 8Z" />
+                {/* Enhanced keyhole */}
+                <circle cx="12" cy="15" r="2.5" fill="currentColor" className="text-slate-400" />
+                <rect x="11" y="15" width="2" height="3.5" fill="currentColor" className="text-slate-400" />
+              </svg>
+              
+              {/* Enhanced corner accents */}
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full opacity-80 animate-ping shadow-lg"></div>
+              <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full opacity-70 animate-pulse delay-300 shadow-lg"></div>
+              <div className="absolute -top-1 -left-1 w-2 h-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-60 animate-pulse delay-700"></div>
+            </div>
+          </div>
+          
+          {/* Bold Coming Soon Text */}
+          <div className="space-y-4">
+            <h3 className="text-4xl font-black text-white tracking-wide drop-shadow-2xl bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
+              {t('deposit.comingSoon')}
+            </h3>
+            <p className="text-slate-200 text-lg font-medium leading-relaxed max-w-lg mx-auto drop-shadow-lg">
+              {t('deposit.comingSoonMessage')}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Token Selector */}
-      <div className="relative">
-        <button
-          onClick={() => setShowDepositTokenDropdown(!showDepositTokenDropdown)}
-          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-3 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <div className="flex items-center gap-2">
-            {selectedToken.baseToken === 'USDC' ? (
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-            ) : selectedToken.baseToken === 'USDT' ? (
-              <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
-            ) : selectedToken.baseToken === 'cUSD' ? (
-              <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
-            ) : (
-              <span className="text-sm">{selectedToken.flag || '🌍'}</span>
-            )}
-            <span className="text-white font-medium text-sm">{selectedToken.baseToken} - {selectedToken.name}</span>
-          </div>
-          <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${
-            showDepositTokenDropdown ? 'rotate-180' : ''
-          }`} />
-        </button>
-        
-        {/* Dropdown Menu */}
-        {showDepositTokenDropdown && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-80">
-            {stablecoins.map((token, index) => {
-              console.log('🔍 Rendering deposit token:', token.baseToken, token.name);
-              return (
-                <button
-                  key={`${token.baseToken}-${token.chainId}-${index}`}
-                  onClick={() => {
-                    setSelectedToken(token);
-                    setShowDepositTokenDropdown(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors hover:bg-slate-700 ${
-                    selectedToken.baseToken === token.baseToken ? 'bg-blue-600/20' : ''
-                  }`}
-                >
-                  {token.baseToken === 'USDC' ? (
-                    <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-                  ) : token.baseToken === 'USDT' ? (
-                    <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
-                  ) : token.baseToken === 'cUSD' ? (
-                    <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
-                  ) : (
-                    <span className="text-sm">{token.flag || '🌍'}</span>
-                  )}
-                  <div className="flex flex-col">
-                    <span className="text-white font-medium text-sm">{token.baseToken} - {token.name}</span>
-                  </div>
-                  {selectedToken.baseToken === token.baseToken && (
-                    <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Quick Amount Buttons */}
-      <div className="grid grid-cols-3 gap-1.5">
-        {[100, 300, 500].map((value) => (
-          <button
-            key={value}
-            onClick={() => setAmount(value.toString())}
-            className="bg-slate-700 hover:bg-slate-600 text-white py-1.5 px-3 rounded-lg transition-colors text-sm"
-          >
-            ${value}
-          </button>
-        ))}
-      </div>
-
-      {/* Institution Selector */}
-      <div>
-        <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.selectInstitution')}</label>
+      {/* Blurred Background Content */}
+      <div className="opacity-30 pointer-events-none">
+        {/* Country Selector */}
         <div className="relative">
-          <select className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>{t('deposit.chooseInstitution')}</option>
-            {institutions.map((institution) => (
-              <option key={institution.code} value={institution.code}>
-                {institution.name}
-              </option>
-            ))}
+          <select 
+            disabled
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none"
+          >
+            <option>{selectedCountry.flag} {selectedCountry.name}</option>
           </select>
           <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
         </div>
-      </div>
 
-      {/* Account / Mobile Number */}
-      <div>
-        <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.accountNumber')}</label>
-        <div className="relative">
-          <input
-            type="text"
-            value={tillNumber}
-            onChange={(e) => setTillNumber(e.target.value)}
-            placeholder={t('deposit.accountPlaceholder')}
-            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
-      {/* Wallet Address */}
-      <div>
-        <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.walletAddress').replace('USDC', selectedToken.baseToken)}</label>
-        <input
-          type="text"
-          value={walletAddress || ''}
-          readOnly
-          placeholder="Enter your wallet address..."
-          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Exchange Rate */}
-      <div className="text-center text-xs text-gray-400">
-        1 USDC = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency}
-      </div>
-
-      {/* Buy Button */}
-      <button className="relative w-full bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 hover:from-green-400 hover:via-emerald-500 hover:to-teal-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 ease-out shadow-2xl hover:shadow-3xl hover:scale-105 active:scale-95 border-2 border-green-400/30 hover:border-green-300/50 group overflow-hidden">
-        {/* Animated background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Shimmer effect */}
-        <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" />
-        
-        <div className="relative z-10 flex items-center justify-center gap-3">
-          <span className="text-lg font-bold tracking-wide drop-shadow-lg">{t('deposit.buyNow')}</span>
-          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-sm">→</span>
+        {/* Amount Input */}
+        <div className="text-center py-4 bg-slate-800/30 rounded-xl">
+          <div className="text-4xl text-white font-light flex items-center justify-center">
+            <span className="text-gray-400">$</span>
+            <input
+              type="number"
+              disabled
+              value="100"
+              className="bg-transparent text-white text-4xl font-light w-32 text-center"
+            />
           </div>
         </div>
-      </button>
+
+        {/* Token Selector */}
+        <div className="relative">
+          <button
+            disabled
+            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-3 text-left flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
+              <span className="text-white font-medium text-sm">USDC - USD Coin</span>
+            </div>
+            <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Quick Amount Buttons */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {[100, 300, 500].map((value) => (
+            <button
+              key={value}
+              disabled
+              className="bg-slate-700 text-white py-1.5 px-3 rounded-lg text-sm"
+            >
+              ${value}
+            </button>
+          ))}
+        </div>
+
+        {/* Institution Selector */}
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.selectInstitution')}</label>
+          <div className="relative">
+            <select disabled className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 pr-8 text-sm appearance-none">
+              <option>{t('deposit.chooseInstitution')}</option>
+            </select>
+            <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          </div>
+        </div>
+
+        {/* Account / Mobile Number */}
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.accountNumber')}</label>
+          <input
+            type="text"
+            disabled
+            placeholder={t('deposit.accountPlaceholder')}
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm"
+          />
+        </div>
+
+        {/* Wallet Address */}
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5">{t('deposit.walletAddress').replace('USDC', 'USDC')}</label>
+          <input
+            type="text"
+            disabled
+            placeholder="0x1234...5678"
+            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2.5 text-sm"
+          />
+        </div>
+
+        {/* Exchange Rate */}
+        <div className="text-center text-xs text-gray-400">
+          1 USDC = 2547 {selectedCountry.currency}
+        </div>
+
+        {/* Buy Button */}
+        <button disabled className="w-full bg-slate-600 text-gray-400 font-bold py-4 rounded-2xl">
+          {t('deposit.buyNow')}
+        </button>
+      </div>
     </div>
   );
 
