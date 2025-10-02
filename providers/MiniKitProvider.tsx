@@ -148,7 +148,7 @@ export function MiniKitProvider({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <OnchainKitMiniKitProvider
           apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY!}
-          chain={base}
+          chain={celo}
           config={{
             appearance: {
               mode: 'auto',

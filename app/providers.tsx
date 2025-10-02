@@ -30,6 +30,19 @@ export function Providers(props: { children: ReactNode }) {
           loginMethods: ['email', 'sms', 'wallet'],
           supportedChains: [
             {
+              id: 42220, // Celo mainnet
+              name: 'Celo',
+              network: 'celo',
+              nativeCurrency: { name: 'Celo', symbol: 'CELO', decimals: 18 },
+              rpcUrls: {
+                default: { http: ['https://forno.celo.org'] },
+                public: { http: ['https://forno.celo.org'] },
+              },
+              blockExplorers: {
+                default: { name: 'CeloScan', url: 'https://celoscan.io' },
+              },
+            },
+            {
               id: 8453, // Base mainnet
               name: 'Base',
               network: 'base',
@@ -44,16 +57,16 @@ export function Providers(props: { children: ReactNode }) {
             },
           ],
           defaultChain: {
-            id: 8453,
-            name: 'Base',
-            network: 'base',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            id: 42220, // Default to Celo for Farcaster
+            name: 'Celo',
+            network: 'celo',
+            nativeCurrency: { name: 'Celo', symbol: 'CELO', decimals: 18 },
             rpcUrls: {
-              default: { http: ['https://mainnet.base.org'] },
-              public: { http: ['https://mainnet.base.org'] },
+              default: { http: ['https://forno.celo.org'] },
+              public: { http: ['https://forno.celo.org'] },
             },
             blockExplorers: {
-              default: { name: 'BaseScan', url: 'https://basescan.org' },
+              default: { name: 'CeloScan', url: 'https://celoscan.io' },
             },
           },
         }}
