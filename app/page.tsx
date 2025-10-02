@@ -2811,11 +2811,11 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
 
-        <div className="text-center text-xs text-gray-300 mb-4 font-semibold mt-3">
+        <div className="text-center text-xs text-gray-300 mb-2 font-semibold mt-2">
           1 {selectedSendToken} = {isLoadingRate ? '...' : currentRate} {selectedCountry.currency} • {t('send.paymentCompletes')}
         </div>
 
-        <div className="space-y-1 text-xs mb-4">
+        <div className="space-y-0.5 text-xs mb-3">
           <div className="flex justify-between">
             <span className="text-gray-400">{t('send.totalTzs').replace('TZS', selectedCountry.currency)}</span>
             <span className="text-white">{paymentDetails.totalLocal} {selectedCountry.currency}</span>
@@ -2832,7 +2832,7 @@ export default function FarcasterMiniApp() {
       </div>
       
       {/* Swipe to Send */}
-      <div className="mt-6">
+      <div className="mt-4">
         <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 rounded-full p-1 overflow-hidden">
           {/* Progress Background */}
           <div 
@@ -2873,7 +2873,13 @@ export default function FarcasterMiniApp() {
                   ) : selectedSendToken === 'cUSD' ? (
                     <img src="/cUSD.png" alt="cUSD" className="w-5 h-5" />
                   ) : (
-                    <span className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-xs">?</span>
+                    (() => {
+                      const tokenData = stablecoins.find(s => s.baseToken === selectedSendToken);
+                      if (tokenData && tokenData.flag && !tokenData.flag.includes('_LOGO')) {
+                        return <span className="text-lg">{tokenData.flag}</span>;
+                      }
+                      return <span className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-xs">?</span>;
+                    })()
                   )}
                   <span>{amount || '0'} {selectedSendToken}</span>
                 </>
@@ -3551,7 +3557,13 @@ export default function FarcasterMiniApp() {
                   ) : selectedPayToken === 'cUSD' ? (
                     <img src="/cUSD.png" alt="cUSD" className="w-5 h-5" />
                   ) : (
-                    <span className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-xs">?</span>
+                    (() => {
+                      const tokenData = stablecoins.find(s => s.baseToken === selectedPayToken);
+                      if (tokenData && tokenData.flag && !tokenData.flag.includes('_LOGO')) {
+                        return <span className="text-lg">{tokenData.flag}</span>;
+                      }
+                      return <span className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-xs">?</span>;
+                    })()
                   )}
                   <span>{amount || '0'} {selectedPayToken}</span>
                 </>
