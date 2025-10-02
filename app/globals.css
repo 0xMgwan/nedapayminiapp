@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* Mobile Farcaster popup suppression */
@@ -137,12 +137,12 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: normal;
   font-variation-settings: normal;
   font-weight: 500;
-  letter-spacing: -0.025em;
-  line-height: 1.4;
+  letter-spacing: -0.015em;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -151,12 +151,12 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Enhanced typography with bolder weights */
+/* Enhanced typography with rounded font style */
 h1, h2, h3, h4, h5, h6 {
   font-size: revert;
   font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
 h1 { font-weight: 800; }
@@ -166,19 +166,20 @@ h3 { font-weight: 600; }
 p {
   font-size: revert;
   font-weight: 500;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
 }
 
 /* Make buttons and interactive elements bolder */
 button, .btn {
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
 }
 
 /* Make labels and form text bolder */
 label, .label {
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
 }
 
 

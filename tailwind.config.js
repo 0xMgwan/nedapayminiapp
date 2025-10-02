@@ -21,7 +21,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
       },
       colors: {
@@ -82,14 +82,14 @@ module.exports = {
         },
       },
       fontSize: {
-        'xs': ['0.75rem', { lineHeight: '1rem', letterSpacing: '-0.025em', fontWeight: '500' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem', letterSpacing: '-0.025em', fontWeight: '500' }],
-        'base': ['1rem', { lineHeight: '1.4rem', letterSpacing: '-0.025em', fontWeight: '500' }],
-        'lg': ['1.125rem', { lineHeight: '1.5rem', letterSpacing: '-0.025em', fontWeight: '600' }],
-        'xl': ['1.25rem', { lineHeight: '1.6rem', letterSpacing: '-0.025em', fontWeight: '600' }],
-        '2xl': ['1.5rem', { lineHeight: '1.8rem', letterSpacing: '-0.025em', fontWeight: '700' }],
-        '3xl': ['1.875rem', { lineHeight: '2.1rem', letterSpacing: '-0.025em', fontWeight: '700' }],
-        '4xl': ['2.25rem', { lineHeight: '2.4rem', letterSpacing: '-0.025em', fontWeight: '800' }],
+        'xs': ['0.75rem', { lineHeight: '1rem', letterSpacing: '-0.015em', fontWeight: '500' }],
+        'sm': ['0.875rem', { lineHeight: '1.25rem', letterSpacing: '-0.015em', fontWeight: '500' }],
+        'base': ['1rem', { lineHeight: '1.5rem', letterSpacing: '-0.015em', fontWeight: '500' }],
+        'lg': ['1.125rem', { lineHeight: '1.6rem', letterSpacing: '-0.015em', fontWeight: '600' }],
+        'xl': ['1.25rem', { lineHeight: '1.7rem', letterSpacing: '-0.015em', fontWeight: '600' }],
+        '2xl': ['1.5rem', { lineHeight: '2rem', letterSpacing: '-0.015em', fontWeight: '700' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem', letterSpacing: '-0.015em', fontWeight: '700' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.015em', fontWeight: '800' }],
       },
       fontWeight: {
         thin: '100',
