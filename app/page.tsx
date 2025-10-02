@@ -4073,7 +4073,7 @@ export default function FarcasterMiniApp() {
           </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-2 mt-4">
           {/* Client Information */}
           <div className="bg-slate-800/30 rounded-lg p-3">
             <h3 className="text-white font-medium mb-2 text-sm">{t('invoice.clientInfo')}</h3>
