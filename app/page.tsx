@@ -4927,19 +4927,17 @@ export default function FarcasterMiniApp() {
           )}
           
           {/* Notification Icon - Always at the end */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-1.5 bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300 hover:bg-slate-700/60"
-            >
-              <BellIcon className="w-4 h-4 text-gray-300 hover:text-blue-400 transition-colors" />
-              {notifications.filter(n => !n.read).length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-lg">
-                  {notifications.filter(n => !n.read).length}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-1.5 bg-slate-700/90 backdrop-blur-sm rounded-lg hover:bg-slate-600/90 transition-all duration-300 border border-slate-500/30"
+          >
+            <BellIcon className="w-5 h-5 text-white hover:text-blue-400 transition-colors" />
+            {notifications.filter(n => !n.read).length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-lg">
+                {notifications.filter(n => !n.read).length}
+              </span>
+            )}
+          </button>
           </div>
         </div>
 

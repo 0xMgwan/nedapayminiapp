@@ -223,16 +223,18 @@ export default function NotificationTab() {
   return (
     <div className="relative">
       <button
-        className="relative p-2 !rounded-full text-slate-800 hover:!bg-blue-100 transition-colors duration-300"
+        className="relative p-2 !rounded-full bg-white/20 backdrop-blur-sm hover:!bg-white/30 transition-colors duration-300 border border-white/30"
         aria-label="Notifications"
         onClick={() => setOpen((o) => !o)}
       >
-        <FaBell size={18} className='text-slate-800 hover:text-blue-500 transition-colors duration-300'/>
+        <FaBell size={18} className='text-white hover:text-blue-200 transition-colors duration-300'/>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[1.25rem]">
+          <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[1.25rem] shadow-lg border-2 border-white">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
+        {/* Online indicator - green dot */}
+        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full shadow-lg"></span>
       </button>
 
       {open && (

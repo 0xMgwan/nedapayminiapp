@@ -26,6 +26,7 @@ import Image from "next/image";
 // Import your actual components
 import WalletSelector from "./WalletSelector";
 import NotificationTab from "./NotificationTab";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { FaGear } from "react-icons/fa6";
 import { usePrivy } from "@privy-io/react-auth";
 
@@ -163,7 +164,10 @@ export default function Header() {
             )}
 
               {/* Action Buttons Container */}
-              <div className="flex items-center space-x-1 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl shadow-md">
+              <div className="flex items-center space-x-1 sm:space-x-2 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-xl shadow-md">
+                {/* Language Switcher */}
+                <LanguageSwitcher />
+                
                 {/* Stablecoin Balance Modal Toggle */}
                 <button
                   onClick={() => setIsBalanceModalOpen(true)}

@@ -20,7 +20,7 @@ if (typeof window !== 'undefined') {
   // Get language from URL params first, then localStorage, or default to 'en'
   const urlParams = new URLSearchParams(window.location.search);
   const urlLang = urlParams.get('lang');
-  const savedLanguage = localStorage.getItem('language') || 'en';
+  const savedLanguage = localStorage.getItem('nedapay-language') || 'en';
   const initialLanguage = urlLang || savedLanguage;
   
   i18n
