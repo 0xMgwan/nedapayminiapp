@@ -74,6 +74,7 @@
     "@vercel/analytics": "^1.5.0",
     "@wagmi/connectors": "^5.7.12",
     "@wagmi/core": "^2.16.7",
+    "@walletconnect/crypto": "^1.1.0",
     "@walletconnect/ethereum-provider": "^2.20.0",
     "@walletconnect/modal": "^2.7.0",
     "@walletconnect/web3-provider": "^1.8.0",
