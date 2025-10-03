@@ -79,7 +79,7 @@ model Transaction {
   type         String?       // 'send', 'pay', 'deposit', etc.
   network      String?       // 'celo', 'base', etc.
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  updatedAt    DateTime      @updatedAt @default(now())
   invoiceId    String?       @unique
   Notification Notification? @relation("TransactionNotification")
   
@@ -92,7 +92,7 @@ model PaymentLink {
   merchantId   String
   url          String        @unique
   amount       Float
-  currency     String
+  currency     String?
   description  String?
   status       String
   createdAt    DateTime      @default(now())
