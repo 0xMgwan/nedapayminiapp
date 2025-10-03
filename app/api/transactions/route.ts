@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 // POST: Add a new transaction
 export async function POST(req: NextRequest) {
   const data = await req.json();
-  const { merchantId, wallet, amount, currency, status, txHash } = data;
+  const { merchantId, wallet, amount, currency, status, txHash, recipient, orderId, type, network } = data;
   if (!merchantId || !wallet || !amount || !currency || !status || !txHash) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
       currency,
       status,
       txHash,
+      recipient: recipient || null,
+      orderId: orderId || null,
+      type: type || null,
+      network: network || null,
     },
   });
   return NextResponse.json(transaction, { status: 201 });
@@ -59,7 +63,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const data = await req.json();
-    const { merchantId, wallet, amount, currency, status } = data;
+    const { merchantId, wallet, amount, currency, status, recipient, orderId, type, network } = data;
 
     if (!merchantId || !wallet || !amount || !currency || !status) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -104,6 +108,10 @@ export async function PUT(req: NextRequest) {
         amount: parsedAmount,
         currency,
         status,
+        recipient: recipient || null,
+        orderId: orderId || null,
+        type: type || null,
+        network: network || null,
       },
     });
 

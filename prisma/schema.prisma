@@ -74,9 +74,17 @@ model Transaction {
   currency     String
   status       String
   txHash       String
+  recipient    String?       // Who received the transaction
+  orderId      String?       // Paycrest order ID
+  type         String?       // 'send', 'pay', 'deposit', etc.
+  network      String?       // 'celo', 'base', etc.
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   invoiceId    String?       @unique
   Notification Notification? @relation("TransactionNotification")
+  
+  @@index([merchantId, createdAt])
+  @@index([txHash])
 }
 
 model PaymentLink {
