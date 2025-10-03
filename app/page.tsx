@@ -142,6 +142,23 @@ export default function FarcasterMiniApp() {
   console.log('🔍 Stablecoins array length:', stablecoins.length);
   console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
   const { t, i18n } = useTranslation();
+
+  // Helper function to render token icon
+  const renderTokenIcon = (token: any, className: string = "w-4 h-4") => {
+    if (token.baseToken === 'USDC') {
+      return <img src="/assets/logos/usdc-logo.png" alt="USDC" className={className} />;
+    } else if (token.baseToken === 'USDT') {
+      return <img src="/usdt.png" alt="USDT" className={className} />;
+    } else if (token.baseToken === 'cUSD') {
+      return <img src="/cUSD.png" alt="cUSD" className={className} />;
+    } else if (token.flag && token.flag.startsWith('/')) {
+      // Use the new icon path
+      return <img src={token.flag} alt={token.baseToken} className={className} />;
+    } else {
+      // Fallback to emoji or default icon
+      return <span className={className.includes('w-3') ? 'text-xs' : className.includes('w-5') ? 'text-lg' : 'text-sm'}>{token.flag || '🌍'}</span>;
+    }
+  };
   const [activeTab, setActiveTab] = useState<Tab>('send');
   const [selectedToken, setSelectedToken] = useState(stablecoins[0]);
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
@@ -2819,17 +2836,7 @@ export default function FarcasterMiniApp() {
                   className="relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-blue-500/30 border-2 border-blue-400/50"
                 >
                   <div className="flex items-center gap-2">
-                    {selectedSendToken === 'USDC' ? (
-                      <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                    ) : selectedSendToken === 'USDT' ? (
-                      <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
-                    ) : selectedSendToken === 'cUSD' ? (
-                      <img src="/cUSD.png" alt="cUSD" className="w-3 h-3" />
-                    ) : (
-                      <span className="text-xs">
-                        {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
-                      </span>
-                    )}
+                    {renderTokenIcon(stablecoins.find(token => token.baseToken === selectedSendToken) || stablecoins[0], "w-3 h-3")}
                     <span>{selectedSendToken}</span>
                   </div>
                   <ChevronDownIcon className="w-3 h-3 text-white" />
@@ -2862,15 +2869,7 @@ export default function FarcasterMiniApp() {
                         }}
                         className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors"
                       >
-                        {token.baseToken === 'USDC' ? (
-                          <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                        ) : token.baseToken === 'USDT' ? (
-                          <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
-                        ) : token.baseToken === 'cUSD' ? (
-                          <img src="/cUSD.png" alt="cUSD" className="w-3 h-3" />
-                        ) : (
-                          <span className="text-xs">{token.flag || '🌍'}</span>
-                        )}
+                        {renderTokenIcon(token, "w-3 h-3")}
                         <span className="text-white">{token.baseToken}</span>
                       </button>
                     ))}
@@ -2946,17 +2945,7 @@ export default function FarcasterMiniApp() {
                 onClick={() => setAmount(walletBalance)}
                 className="text-blue-400 font-medium hover:text-blue-300 transition-colors cursor-pointer inline-flex items-center gap-1"
               >
-                {selectedSendToken === 'USDC' ? (
-                  <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                ) : selectedSendToken === 'USDT' ? (
-                  <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
-                ) : selectedSendToken === 'cUSD' ? (
-                  <img src="/cUSD.png" alt="cUSD" className="w-3 h-3" />
-                ) : (
-                  <span className="text-xs">
-                    {stablecoins.find(token => token.baseToken === selectedSendToken)?.flag || '🌍'}
-                  </span>
-                )}
+                {renderTokenIcon(stablecoins.find(token => token.baseToken === selectedSendToken) || stablecoins[0], "w-3 h-3")}
                 {selectedSendToken} {walletBalance}
               </button>
               <button
@@ -3557,15 +3546,7 @@ export default function FarcasterMiniApp() {
                         }}
                         className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors"
                       >
-                        {token.baseToken === 'USDC' ? (
-                          <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-3 h-3" />
-                        ) : token.baseToken === 'USDT' ? (
-                          <img src="/usdt.png" alt="USDT" className="w-3 h-3" />
-                        ) : token.baseToken === 'cUSD' ? (
-                          <img src="/cUSD.png" alt="cUSD" className="w-3 h-3" />
-                        ) : (
-                          <span className="text-xs">{token.flag || '🌍'}</span>
-                        )}
+                        {renderTokenIcon(token, "w-3 h-3")}
                         <span className="text-white">{token.baseToken}</span>
                       </button>
                     ))}
@@ -4044,15 +4025,7 @@ export default function FarcasterMiniApp() {
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between border border-slate-600/50 hover:border-slate-500 transition-colors"
           >
             <div className="flex items-center gap-2">
-              {selectedStablecoin.baseToken === 'USDC' ? (
-                <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-              ) : selectedStablecoin.baseToken === 'USDT' ? (
-                <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
-              ) : selectedStablecoin.baseToken === 'cUSD' ? (
-                <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
-              ) : (
-                <span className="text-sm">{selectedStablecoin.flag || '🌍'}</span>
-              )}
+              {renderTokenIcon(selectedStablecoin, "w-4 h-4")}
               <span>{selectedStablecoin.baseToken} - {selectedStablecoin.name}</span>
             </div>
             <ChevronDownIcon className="w-4 h-4 text-gray-400" />
@@ -4073,15 +4046,7 @@ export default function FarcasterMiniApp() {
                       selectedStablecoin.baseToken === token.baseToken ? 'bg-blue-600/20' : ''
                     }`}
                   >
-                    {token.baseToken === 'USDC' ? (
-                      <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-                    ) : token.baseToken === 'USDT' ? (
-                      <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
-                    ) : token.baseToken === 'cUSD' ? (
-                      <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
-                    ) : (
-                      <span className="text-sm">{token.flag || '🌍'}</span>
-                    )}
+                    {renderTokenIcon(token, "w-4 h-4")}
                     <div className="flex flex-col">
                       <span className="text-white font-medium text-sm">{token.baseToken} - {token.name}</span>
                     </div>
@@ -4342,19 +4307,7 @@ export default function FarcasterMiniApp() {
                         }}
                         className="w-full px-3 py-2 text-left hover:bg-slate-700 flex items-center gap-2 text-xs transition-colors whitespace-nowrap"
                       >
-                        {token.baseToken === 'USDC' ? (
-                          <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-4 h-4" />
-                        ) : token.baseToken === 'USDT' ? (
-                          <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
-                        ) : token.baseToken === 'cUSD' ? (
-                          <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
-                        ) : token.flag === 'USDT_LOGO' ? (
-                          <img src="/usdt.png" alt="USDT" className="w-4 h-4" />
-                        ) : token.flag === 'CUSD_LOGO' ? (
-                          <img src="/cUSD.png" alt="cUSD" className="w-4 h-4" />
-                        ) : (
-                          <span className="text-sm">{token.flag || '🌍'}</span>
-                        )}
+                        {renderTokenIcon(token, "w-4 h-4")}
                         <span className="text-white">{token.baseToken} - {token.name}</span>
                       </button>
                     ))}
@@ -4696,13 +4649,7 @@ export default function FarcasterMiniApp() {
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors whitespace-nowrap"
                     >
-                      {token.baseToken === 'USDC' ? (
-                        <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
-                      ) : token.baseToken === 'cUSD' ? (
-                        <img src="/cUSD.png" alt="cUSD" className="w-5 h-5" />
-                      ) : (
-                        <span className="text-lg">{token.flag || '🌍'}</span>
-                      )}
+                      {renderTokenIcon(token, "w-5 h-5")}
                       <span className="text-white">{token.baseToken} - {token.name}</span>
                     </button>
                   ))}
@@ -4784,13 +4731,7 @@ export default function FarcasterMiniApp() {
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors whitespace-nowrap"
                     >
-                      {token.baseToken === 'USDC' ? (
-                        <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-5 h-5" />
-                      ) : token.baseToken === 'cUSD' ? (
-                        <img src="/cUSD.png" alt="cUSD" className="w-5 h-5" />
-                      ) : (
-                        <span className="text-lg">{token.flag || '🌍'}</span>
-                      )}
+                      {renderTokenIcon(token, "w-5 h-5")}
                       <span className="text-white">{token.baseToken} - {token.name}</span>
                     </button>
                   ))}

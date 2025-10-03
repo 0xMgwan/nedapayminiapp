@@ -8,6 +8,7 @@ import { utils } from "ethers";
 import { useAccount } from "wagmi";
 import { useTranslation } from "react-i18next";
 import "../../../lib/i18n";
+import { stablecoins } from "../../data/stablecoins";
 import {
   ClipboardCopy,
   CheckCircle,
@@ -22,6 +23,25 @@ const PayWithWallet = dynamicImport(() => import("./PayWithWallet"), { ssr: fals
 export default function PayPage({ params }: { params: { id: string } }) {
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
+
+  // Helper function to render token icon
+  const renderTokenIcon = (currency: string, className: string = "w-8 h-8") => {
+    const token = stablecoins.find(coin => coin.baseToken === currency);
+    
+    if (currency === 'USDC') {
+      return <img src="/assets/logos/usdc-logo.png" alt="USDC" className={className} />;
+    } else if (currency === 'USDT') {
+      return <img src="/usdt.png" alt="USDT" className={`${className} rounded-full`} />;
+    } else if (currency === 'cUSD') {
+      return <img src="/cUSD.png" alt="cUSD" className={className} />;
+    } else if (token?.flag && token.flag.startsWith('/')) {
+      // Use the new icon path
+      return <img src={token.flag} alt={currency} className={className} />;
+    } else {
+      // Fallback to emoji or default icon
+      return <span className="text-2xl">{token?.flag || '🌍'}</span>;
+    }
+  };
   
   // Set language from URL params or localStorage on component mount
   useEffect(() => {
@@ -155,26 +175,23 @@ export default function PayPage({ params }: { params: { id: string } }) {
           <p className="text-sm text-gray-600 mb-1">{t('paymentLink.amount')}</p>
           <div className="flex items-center justify-center gap-3 mb-2">
             <p className="text-3xl font-bold text-gray-900">{amount} {currency}</p>
-            {currency === 'USDC' ? (
-              <img src="/assets/logos/usdc-logo.png" alt="USDC" className="w-8 h-8" />
-            ) : currency === 'USDT' ? (
-              <img src="/usdt.png" alt="USDT" className="w-8 h-8 rounded-full" />
-            ) : currency === 'cUSD' ? (
-              <img src="/cUSD.png" alt="cUSD" className="w-8 h-8" />
-            ) : (
-              <span className="text-2xl">🇺🇸</span>
-            )}
+            {renderTokenIcon(currency || '', "w-8 h-8")}
           </div>
           <div className="flex items-center justify-center gap-1">
-            {(currency === 'USDT' || currency === 'cUSD') ? (
-              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">
-                🟠 on Celo Network
-              </span>
-            ) : (
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                🔵 on Base Network
-              </span>
-            )}
+            {(() => {
+              const token = stablecoins.find(coin => coin.baseToken === currency);
+              const isCeloToken = token?.chainId === 42220 || currency === 'USDT' || currency === 'cUSD';
+              
+              return isCeloToken ? (
+                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">
+                  🟠 on Celo Network
+                </span>
+              ) : (
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                  🔵 on Base Network
+                </span>
+              );
+            })()}
           </div>
         </div>
 

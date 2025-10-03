@@ -44,7 +44,7 @@ export const stablecoins = [
   // NOTE: TSHC removed due to invalid placeholder address
   {
     region: 'Nigeria',
-    flag: '🇳🇬',
+    flag: '/cngn-icon.jpg',
     currency: 'NGN',
     baseToken: 'cNGN',
     name: 'Nigerian Naira Coin',
@@ -70,7 +70,7 @@ export const stablecoins = [
   },
   {
     region: 'South Africa',
-    flag: '🇿🇦',
+    flag: '/zarp-coin.png',
     currency: 'ZAR',
     baseToken: 'ZARP',
     decimals: 18,
@@ -83,7 +83,7 @@ export const stablecoins = [
   },
   {
     region: 'Indonesia',
-    flag: '🇮🇩',
+    flag: '/idrx-coin.png',
     currency: 'IDR',
     baseToken: 'IDRX',
     name: 'Indonesian Rupiah Coin',
@@ -96,7 +96,7 @@ export const stablecoins = [
   },
   {
     region: 'Europe',
-    flag: '🇪🇺',
+    flag: '/eurc-coin.png',
     currency: 'EUR',
     baseToken: 'EURC',
     decimals: 6,
@@ -109,7 +109,7 @@ export const stablecoins = [
   },
   {
     region: 'Canada',
-    flag: '🇨🇦',
+    flag: '/cadc-coin.png',
     currency: 'CAD',
     baseToken: 'CADC',
     decimals: 18,
@@ -122,7 +122,7 @@ export const stablecoins = [
   },
   {
     region: 'Brazil',
-    flag: '🇧🇷',
+    flag: '/brl-coin.png',
     currency: 'BRL',
     baseToken: 'BRL',
     decimals: 18,
@@ -148,7 +148,7 @@ export const stablecoins = [
   },
   {
     region: 'New Zealand',
-    flag: '🇳🇿',
+    flag: '/nzdd-icon.png',
     currency: 'NZD',
     baseToken: 'NZDD',
     decimals: 6,
@@ -161,7 +161,7 @@ export const stablecoins = [
   },
   {
     region: 'Mexico',
-    flag: '🇲🇽',
+    flag: '/mxne-coin.png',
     currency: 'MXN',
     baseToken: 'MXNe',
     decimals: 6,
