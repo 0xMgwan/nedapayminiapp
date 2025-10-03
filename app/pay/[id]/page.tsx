@@ -58,10 +58,20 @@ export default function PayPage({ params }: { params: { id: string } }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const amount = searchParams.get("amount");
-  const currency = searchParams.get("currency");
+  const rawCurrency = searchParams.get("currency");
   const description = searchParams.get("description");
   const to = searchParams.get("to");
   const signature = searchParams.get("sig");
+  
+  // Clean up currency - if it's a file path, convert it back to token symbol
+  const currency = (() => {
+    if (rawCurrency?.includes('/') || rawCurrency?.includes('.')) {
+      // Find token by flag path
+      const token = stablecoins.find(coin => coin.flag === rawCurrency);
+      return token?.baseToken || rawCurrency;
+    }
+    return rawCurrency;
+  })();
   const { address: connectedAddress } = useAccount();
 
   const merchantAddress = to && utils.isAddress(to) ? to : connectedAddress || "";
