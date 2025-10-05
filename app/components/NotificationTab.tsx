@@ -20,6 +20,12 @@ export interface NotificationItem {
   isLocal?: boolean; // To distinguish between local and database notifications
 }
 
+type CombinedNotification = (NotificationItem | DatabaseNotification) & {
+  displayTimestamp: string;
+  isLocal: boolean;
+  read: boolean;
+};
+
 interface DatabaseNotification {
   id: string;
   message: string;
@@ -102,9 +108,10 @@ export default function NotificationTab() {
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/notifications?recipient=${userAddress}`);
+      const response = await fetch(`/api/notifications?recipient=${userAddress}&limit=50`);
       if (response.ok) {
         const notifications = await response.json();
+        console.log('Fetched notifications:', notifications);
         setDbNotifications(notifications);
       }
     } catch (error) {
@@ -225,7 +232,9 @@ export default function NotificationTab() {
   }, [open, userAddress]);
 
   // Handle notification click (mark as seen for database notifications)
-  const handleNotificationClick = async (notification: NotificationItem | DatabaseNotification) => {
+  const handleNotificationClick = async (notification: CombinedNotification) => {
+    console.log('Notification clicked:', notification);
+    
     if ('status' in notification && notification.status === 'unseen') {
       await markDbNotificationAsSeen(notification.id);
       // Update local state
@@ -236,8 +245,13 @@ export default function NotificationTab() {
 
     // Show transaction details if available
     if ('relatedTransaction' in notification && notification.relatedTransaction) {
+      console.log('Opening transaction modal with data:', notification.relatedTransaction);
       setSelectedTransaction(notification.relatedTransaction);
       setShowTransactionModal(true);
+    } else {
+      console.log('No related transaction data found for notification:', notification);
+      // If no transaction data, show a simple alert for now
+      alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}`);
     }
   };
 
@@ -273,13 +287,18 @@ export default function NotificationTab() {
                      dbNotifications.filter(n => n.status === 'unseen').length;
 
   // Combine and sort all notifications
-  const allNotifications = [
-    ...localNotifications.map(n => ({ ...n, createdAt: n.timestamp, isLocal: true })),
+  const allNotifications: CombinedNotification[] = [
+    ...localNotifications.map(n => ({ 
+      ...n, 
+      createdAt: n.timestamp, 
+      isLocal: true,
+      displayTimestamp: n.timestamp
+    })),
     ...dbNotifications.map(n => ({ 
       ...n, 
       read: n.status === 'seen', 
-      timestamp: new Date(n.createdAt).toLocaleString(),
-      isLocal: false 
+      isLocal: false,
+      displayTimestamp: new Date(n.createdAt).toLocaleString()
     }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -379,12 +398,12 @@ export default function NotificationTab() {
                             }`}>
                               {notification.type || 'general'}
                             </span>
-                            {notification.isLocal && (
+                            {'isLocal' in notification && notification.isLocal && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
                                 local
                               </span>
                             )}
-                            {'relatedTransaction' in notification && notification.relatedTransaction && (
+                            {!notification.isLocal && 'relatedTransaction' in notification && notification.relatedTransaction && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
                                 <FaExternalLinkAlt className="w-2 h-2" />
                                 details
@@ -395,14 +414,14 @@ export default function NotificationTab() {
                             {notification.message}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {notification.timestamp}
+                            {notification.displayTimestamp}
                           </div>
                         </div>
                         <button
                           className="opacity-0 !group-hover:opacity-100 p-1 hover:!bg-red-100 !rounded-full transition-all"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (notification.isLocal) {
+                            if ('isLocal' in notification && notification.isLocal) {
                               deleteLocalNotification(notification.id);
                             } else {
                               deleteDbNotification(notification.id);
@@ -423,7 +442,7 @@ export default function NotificationTab() {
 
       {/* Transaction Details Modal */}
       {showTransactionModal && selectedTransaction && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99999] flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
