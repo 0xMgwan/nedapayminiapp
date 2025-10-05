@@ -61,7 +61,7 @@ export default function PaymentLinkPage() {
 
   const [isClient, setIsClient] = useState(false);
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("TSHC");
+  const [currency, setCurrency] = useState("USDC");
   const [description, setDescription] = useState("");
   const [generatedLink, setGeneratedLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -185,6 +185,17 @@ export default function PaymentLinkPage() {
     const sanitizedDescription = sanitizeInput(description);
 
     try {
+      // Ensure currency is always a baseToken, not a flag path
+      const safeCurrency = (() => {
+        if (currency?.includes('/') || currency?.includes('.')) {
+          const token = stablecoins.find(coin => coin.flag === currency);
+          return token?.baseToken || currency;
+        }
+        return currency;
+      })();
+      
+      console.log('Creating payment link with currency:', safeCurrency);
+      
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const response = await fetch("/api/payment-links", {
         method: "POST",
@@ -194,7 +205,7 @@ export default function PaymentLinkPage() {
         body: JSON.stringify({
           merchantId: merchantAddress,
           amount: parseFloat(sanitizedAmount),
-          currency,
+          currency: safeCurrency,
           description: sanitizedDescription || undefined,
           status: "Active",
           expiresAt,
@@ -397,7 +408,10 @@ export default function PaymentLinkPage() {
                   id="currency"
                   name="currency"
                   value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
+                  onChange={(e) => {
+                    console.log('Currency selected:', e.target.value);
+                    setCurrency(e.target.value);
+                  }}
                   className="w-full px-6 py-4 text-base rounded-2xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 bg-white/50 backdrop-blur-sm appearance-none"
                 >
                   {stablecoins.map((coin: any) => (

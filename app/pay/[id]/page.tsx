@@ -24,23 +24,25 @@ export default function PayPage({ params }: { params: { id: string } }) {
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
 
-  // Helper function to render token icon
+  // Helper function to render token icon - same logic for all tokens
   const renderTokenIcon = (currency: string, className: string = "w-8 h-8") => {
-    const token = stablecoins.find(coin => coin.baseToken === currency);
-    
+    // Handle hardcoded tokens first
     if (currency === 'USDC') {
       return <img src="/assets/logos/usdc-logo.png" alt="USDC" className={className} />;
     } else if (currency === 'USDT') {
       return <img src="/usdt.png" alt="USDT" className={`${className} rounded-full`} />;
     } else if (currency === 'cUSD') {
       return <img src="/cUSD.png" alt="cUSD" className={className} />;
-    } else if (token?.flag && token.flag.startsWith('/')) {
-      // Use the new icon path
-      return <img src={token.flag} alt={currency} className={className} />;
-    } else {
-      // Fallback to emoji or default icon
-      return <span className="text-2xl">{token?.flag || '🌍'}</span>;
     }
+    
+    // Handle all other tokens using their flag paths
+    const token = stablecoins.find(coin => coin.baseToken === currency);
+    if (token?.flag && token.flag.startsWith('/')) {
+      return <img src={token.flag} alt={currency} className={className} />;
+    }
+    
+    // Fallback
+    return <span className="text-2xl">🌍</span>;
   };
   
   // Set language from URL params or localStorage on component mount
@@ -65,7 +67,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
   
   // Clean up currency - if it's a file path, convert it back to token symbol
   const currency = (() => {
-    if (rawCurrency?.includes('/') || rawCurrency?.includes('.')) {
+    if (rawCurrency?.includes('/') || rawCurrency?.includes('.') || rawCurrency?.includes('-')) {
       // Find token by flag path
       const token = stablecoins.find(coin => coin.flag === rawCurrency);
       return token?.baseToken || rawCurrency;
@@ -184,7 +186,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
         <div className="text-center bg-gray-50 p-4 rounded-xl">
           <p className="text-sm text-gray-600 mb-1">{t('paymentLink.amount')}</p>
           <div className="flex items-center justify-center gap-3 mb-2">
-            <p className="text-3xl font-bold text-gray-900">{amount} {currency}</p>
+            <p className="text-3xl font-bold text-gray-900">{amount} {currency} ✅</p>
             {renderTokenIcon(currency || '', "w-8 h-8")}
           </div>
           <div className="flex items-center justify-center gap-1">

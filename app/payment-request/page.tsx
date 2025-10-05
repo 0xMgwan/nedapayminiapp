@@ -309,15 +309,24 @@ function PaymentRequestPageContent() {
       };
     }
     
-    // For other tokens, show country flags
+    // For other tokens, show country flags or token images
     const stablecoin = stablecoins.find(s => s.baseToken === token);
     
     if (stablecoin && stablecoin.flag) {
-      return {
-        type: 'flag',
-        value: stablecoin.flag,
-        region: stablecoin.region
-      };
+      // Check if flag is an image path (starts with /) or an emoji
+      if (stablecoin.flag.startsWith('/') || stablecoin.flag.includes('.')) {
+        return {
+          type: 'image',
+          value: stablecoin.flag,
+          region: stablecoin.region
+        };
+      } else {
+        return {
+          type: 'flag',
+          value: stablecoin.flag,
+          region: stablecoin.region
+        };
+      }
     }
     
     // Default to USDC logo for unknown tokens
