@@ -96,7 +96,7 @@ const BasenameDisplay: React.FC<BasenameDisplayProps> = ({
   if (baseName) {
     return (
       <span
-        className={`text-sm text-white font-bold ${basenameClassName}`}
+        className={`text-sm font-semibold ${basenameClassName}`}
       >
         {baseName}
       </span>
@@ -420,21 +420,38 @@ const WalletSelector = forwardRef<
     }
 
     return (
-      <FaWallet className="text-slate-800"/>
+      <FaWallet className="text-white"/>
     );
   };
 
   if (!ready) {
     return (
-      <div className="wallet-button flex items-center bg-gradient-to-r from-blue-600 to-purple-700 px-2 sm:px-3 py-1 rounded-lg text-white shadow-lg">
-        <span className="text-xs sm:text-sm text-black">Loading...</span>
+      <div className="flex items-center bg-gray-100 border border-gray-200 px-3 py-2 rounded-xl shadow-sm">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+        <span className="text-sm text-gray-600 font-medium">Loading...</span>
       </div>
     );
   }
 
   return (
-    <div className="relative bg-gradient-to-r from-blue-400 bg-indigo-400 rounded-xl" ref={dropdownRef}>
-      <style jsx>{mobileStyles}</style>
+    <div className="relative" ref={dropdownRef}>
+      <style jsx>{`
+        .modern-wallet-selector {
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(8px) !important;
+          border: 1px solid rgba(156, 163, 175, 0.6) !important;
+          color: rgb(55, 65, 81) !important;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+          border-radius: 0.75rem !important;
+          padding: 0.5rem 0.75rem !important;
+          transition: all 0.3s ease !important;
+        }
+        .modern-wallet-selector:hover {
+          background: rgba(255, 255, 255, 1) !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        }
+        ${mobileStyles}
+      `}</style>
 
       {isConnected ? (
         <button
@@ -442,30 +459,29 @@ const WalletSelector = forwardRef<
             e.stopPropagation();
             setShowOptions(!showOptions);
           }}
-          className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm hover:from-blue-600 hover:to-purple-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 p-2"
-          style={{ borderRadius: "0.75rem" }}
+          className="modern-wallet-selector flex items-center space-x-2 group focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2"
         >
-          <div className="wallet-icon w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="wallet-icon w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-500 p-1">
             {renderWalletIcon()}
           </div>
 
           {pathname !== "/" && (
             <div className="wallet-address-container flex-1 min-w-0">
               {walletAddress ? (
-                <div className="wallet-address text-xs sm:text-sm font-bold">
+                <div className="wallet-address text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                   <BasenameDisplay
                     address={walletAddress}
-                    basenameClassName="basename-display"
-                    addressClassName="address-display !text-slate-800"
+                    basenameClassName="basename-display text-gray-700 group-hover:text-gray-900"
+                    addressClassName="address-display text-gray-700 group-hover:text-gray-900"
                     isMobile={true}
                   />
                 </div>
               ) : emailAddress ? (
-                <span className="wallet-address text-xs sm:text-sm !text-slate-20 font-bold">
+                <span className="wallet-address text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                   {formatEmail(emailAddress, 15)}
                 </span>
               ) : (
-                <span className="wallet-address text-xs sm:text-sm font-bold p-2">
+                <span className="wallet-address text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                   Connected
                 </span>
               )}
@@ -476,9 +492,9 @@ const WalletSelector = forwardRef<
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            strokeWidth={1.5}
+            strokeWidth={2}
             stroke="currentColor"
-            className="w-4 h-4 flex-shrink-0 text-slate-800"
+            className="w-3.5 h-3.5 flex-shrink-0 text-gray-500 group-hover:text-gray-700 transition-colors"
           >
             <path
               strokeLinecap="round"
@@ -490,11 +506,11 @@ const WalletSelector = forwardRef<
       ) : (
         <button
           onClick={handleEmailLogin}
-          className="flex items-center hover:!bg-blue-50 text-slate-800 rounded-lg transition-all duration-200 shadow-sm"
+          className="flex items-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 px-4 py-2"
           disabled={isConnecting}
-          style={{ borderRadius: "0.75rem" }}
         >
-          <span className="sign-in-text text-xs sm:text-sm font-bold p-2">
+          <FaWallet className="w-4 h-4 mr-2" />
+          <span className="sign-in-text text-sm font-semibold">
             {isConnecting ? "Connecting..." : "Sign in"}
           </span>
         </button>
@@ -502,101 +518,89 @@ const WalletSelector = forwardRef<
 
       {showOptions && isConnected && (
         <div
-          className="wallet-dropdown absolute right-0 mt-2 w-64 rounded-xl shadow-xl bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 border-2 border-blue-100 dark:border-blue-900"
+          className="wallet-dropdown absolute right-0 mt-3 w-72 rounded-2xl shadow-2xl bg-white/95 backdrop-blur-sm border border-gray-200/50 focus:outline-none z-50 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
           style={{ maxHeight: "80vh", overflowY: "auto" }}
         >
-          <div
-            className="p-3 border-b border-gray-200 dark:border-gray-700"
-            style={{
-              border: "1px solid lightgray",
-              borderRadius: "0.75rem",
-              padding: "0.5rem",
-              margin: "0.5rem",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-900">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900">
                 Connected Account
               </h3>
-              <span
-                className="text-xs px-2 py-1 rounded-full text-green-600"
-              >
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
                 Active
               </span>
             </div>
-            <div className="mt-1 text-xs text-slate-800 break-all">
-              {walletAddress ? (
-                <BasenameDisplay
-                  address={walletAddress}
-                  basenameClassName="text-xs !text-slate-800"
-                  isMobile={false}
-                />
-              ) : emailAddress ? (
-                emailAddress
-              ) : (
-                "Connected"
-              )}
+            <div className="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+              <div className="text-xs font-medium text-gray-500 mb-1">Address</div>
+              <div className="text-sm text-gray-900 break-all font-mono">
+                {walletAddress ? (
+                  <BasenameDisplay
+                    address={walletAddress}
+                    basenameClassName="text-sm font-semibold text-gray-900"
+                    addressClassName="text-sm text-gray-700"
+                    isMobile={false}
+                  />
+                ) : emailAddress ? (
+                  emailAddress
+                ) : (
+                  "Connected"
+                )}
+              </div>
             </div>
           </div>
 
           {!hasEmail && walletAddress && (
-            <div className="p-3 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-100">
               <button
                 onClick={handleLinkEmail}
-                className="options w-full text-center px-4 py-2 text-blue-600 transition-colors rounded-lg"
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 rounded-xl border border-blue-200/50"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                  </svg>
-                  <span className="hover:text-blue-800">Add Email Address</span>
-                </div>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <span className="font-medium">Add Email Address</span>
               </button>
             </div>
           )}
 
-          <div className="p-2 space-y-1">
-            <button
-              onClick={handleLogout}
-              className="options block w-full text-center px-4 py-2 rounded-lg"
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <FaSignOutAlt size={20} />
-                <span>Logout</span>
-              </div>
-            </button>
-          </div>
           {user?.wallet?.walletClientType === 'privy' && (
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 border-b border-gray-100">
               <button
                 onClick={() => {
                   setShowWithdrawalModal(true);
                   setIsLoadingWallet(true);
                 }}
-                className="options w-full text-center px-4 py-2 text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg"
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-orange-50 hover:bg-orange-100 text-orange-600 hover:text-orange-700 transition-all duration-200 rounded-xl border border-orange-200/50"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <FaWallet size={20} />
-                  {isLoadingWallet ? (
-                    <span>Loading...</span>
-                  ) : (
-                    <span>Wallet</span>
-                  )}
-                </div>
+                <FaWallet className="w-4 h-4" />
+                <span className="font-medium">
+                  {isLoadingWallet ? "Loading..." : "Wallet"}
+                </span>
               </button>
             </div>
           )}
+
+          <div className="p-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all duration-200 rounded-xl border border-red-200/50"
+            >
+              <FaSignOutAlt className="w-4 h-4" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       )}
 

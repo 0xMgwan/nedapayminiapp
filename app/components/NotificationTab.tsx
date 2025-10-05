@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaBell, FaTrash, FaTimes } from 'react-icons/fa';
+import { FaBell, FaTrash, FaTimes, FaExternalLinkAlt, FaCopy, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { useWallets } from '@privy-io/react-auth';
 import { addPaymentTransaction, PaymentTransaction } from '../utils/paymentStorage';
 
@@ -28,6 +28,22 @@ interface DatabaseNotification {
   status: 'seen' | 'unseen';
   createdAt: string;
   relatedTransactionId?: string;
+  relatedTransaction?: {
+    id: string;
+    merchantId: string;
+    wallet: string;
+    amount: string;
+    currency: string;
+    status: string;
+    txHash?: string;
+    orderId?: string;
+    blockHash?: string;
+    blockNumber?: number;
+    gasUsed?: string;
+    gasPrice?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 export default function NotificationTab() {
@@ -35,9 +51,50 @@ export default function NotificationTab() {
   const [localNotifications, setLocalNotifications] = useState<NotificationItem[]>([]);
   const [dbNotifications, setDbNotifications] = useState<DatabaseNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<DatabaseNotification['relatedTransaction'] | null>(null);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const { wallets } = useWallets();
   
   const userAddress = wallets?.[0]?.address;
+
+  // Copy to clipboard utility
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
+
+  // Format number with commas
+  const formatNumber = (num: string | number): string => {
+    const numStr = typeof num === 'string' ? num : num.toString();
+    const parts = numStr.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  // Get status icon and color
+  const getStatusDisplay = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'success':
+      case 'confirmed':
+        return { icon: FaCheckCircle, color: 'text-green-600', bg: 'bg-green-100' };
+      case 'failed':
+      case 'error':
+      case 'rejected':
+        return { icon: FaTimesCircle, color: 'text-red-600', bg: 'bg-red-100' };
+      case 'pending':
+      case 'processing':
+        return { icon: FaExclamationTriangle, color: 'text-yellow-600', bg: 'bg-yellow-100' };
+      default:
+        return { icon: FaExclamationTriangle, color: 'text-gray-600', bg: 'bg-gray-100' };
+    }
+  };
 
   // Fetch database notifications
   const fetchDbNotifications = async () => {
@@ -176,6 +233,12 @@ export default function NotificationTab() {
         prev.map(n => n.id === notification.id ? { ...n, status: 'seen' } : n)
       );
     }
+
+    // Show transaction details if available
+    if ('relatedTransaction' in notification && notification.relatedTransaction) {
+      setSelectedTransaction(notification.relatedTransaction);
+      setShowTransactionModal(true);
+    }
   };
 
   // Mark all local notifications as read
@@ -296,6 +359,10 @@ export default function NotificationTab() {
                       key={notification.id} 
                       className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer group ${
                         !notification.read ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+                      } ${
+                        'relatedTransaction' in notification && notification.relatedTransaction 
+                          ? 'hover:bg-blue-50 border-r-2 border-r-blue-300' 
+                          : ''
                       }`}
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -315,6 +382,12 @@ export default function NotificationTab() {
                             {notification.isLocal && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
                                 local
+                              </span>
+                            )}
+                            {'relatedTransaction' in notification && notification.relatedTransaction && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
+                                <FaExternalLinkAlt className="w-2 h-2" />
+                                details
                               </span>
                             )}
                           </div>
@@ -346,6 +419,234 @@ export default function NotificationTab() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Transaction Details Modal */}
+      {showTransactionModal && selectedTransaction && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${getStatusDisplay(selectedTransaction.status).bg}`}>
+                    {(() => {
+                      const StatusIcon = getStatusDisplay(selectedTransaction.status).icon;
+                      return <StatusIcon className={`w-5 h-5 ${getStatusDisplay(selectedTransaction.status).color}`} />;
+                    })()}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Transaction Details</h2>
+                    <p className="text-sm text-gray-500">
+                      {new Date(selectedTransaction.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowTransactionModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  <FaTimes className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Transaction Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Amount</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatNumber(selectedTransaction.amount)} {selectedTransaction.currency}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {(() => {
+                        const StatusIcon = getStatusDisplay(selectedTransaction.status).icon;
+                        return <StatusIcon className={`w-4 h-4 ${getStatusDisplay(selectedTransaction.status).color}`} />;
+                      })()}
+                      <span className={`text-sm font-semibold capitalize ${getStatusDisplay(selectedTransaction.status).color}`}>
+                        {selectedTransaction.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transaction Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Order ID */}
+                {selectedTransaction.orderId && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-600">Order ID</p>
+                      <button
+                        onClick={() => copyToClipboard(selectedTransaction.orderId!, 'orderId')}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        {copiedField === 'orderId' ? (
+                          <FaCheckCircle className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <FaCopy className="w-4 h-4 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-sm font-mono text-gray-900 break-all">
+                      {selectedTransaction.orderId}
+                    </p>
+                  </div>
+                )}
+
+                {/* Transaction Hash */}
+                {selectedTransaction.txHash && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-600">Transaction Hash</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => copyToClipboard(selectedTransaction.txHash!, 'txHash')}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        >
+                          {copiedField === 'txHash' ? (
+                            <FaCheckCircle className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <FaCopy className="w-4 h-4 text-gray-500" />
+                          )}
+                        </button>
+                        <a
+                          href={`https://basescan.org/tx/${selectedTransaction.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        >
+                          <FaExternalLinkAlt className="w-4 h-4 text-blue-600" />
+                        </a>
+                      </div>
+                    </div>
+                    <p className="text-sm font-mono text-gray-900 break-all">
+                      {selectedTransaction.txHash}
+                    </p>
+                  </div>
+                )}
+
+                {/* Block Hash */}
+                {selectedTransaction.blockHash && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-600">Block Hash</p>
+                      <button
+                        onClick={() => copyToClipboard(selectedTransaction.blockHash!, 'blockHash')}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        {copiedField === 'blockHash' ? (
+                          <FaCheckCircle className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <FaCopy className="w-4 h-4 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-sm font-mono text-gray-900 break-all">
+                      {selectedTransaction.blockHash}
+                    </p>
+                  </div>
+                )}
+
+                {/* Block Number */}
+                {selectedTransaction.blockNumber && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-sm font-medium text-gray-600 mb-2">Block Number</p>
+                    <p className="text-sm font-mono text-gray-900">
+                      #{formatNumber(selectedTransaction.blockNumber)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Gas Used */}
+                {selectedTransaction.gasUsed && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-sm font-medium text-gray-600 mb-2">Gas Used</p>
+                    <p className="text-sm font-mono text-gray-900">
+                      {formatNumber(selectedTransaction.gasUsed)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Gas Price */}
+                {selectedTransaction.gasPrice && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-sm font-medium text-gray-600 mb-2">Gas Price</p>
+                    <p className="text-sm font-mono text-gray-900">
+                      {formatNumber(selectedTransaction.gasPrice)} Gwei
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Wallet Information */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">Wallet Address</p>
+                  <button
+                    onClick={() => copyToClipboard(selectedTransaction.wallet, 'wallet')}
+                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    {copiedField === 'wallet' ? (
+                      <FaCheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <FaCopy className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm font-mono text-gray-900 break-all">
+                  {selectedTransaction.wallet}
+                </p>
+              </div>
+
+              {/* Timestamps */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Created At</p>
+                  <p className="text-sm text-gray-900">
+                    {new Date(selectedTransaction.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Updated At</p>
+                  <p className="text-sm text-gray-900">
+                    {new Date(selectedTransaction.updatedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 rounded-b-2xl">
+              <div className="flex justify-end gap-3">
+                {selectedTransaction.txHash && (
+                  <a
+                    href={`https://basescan.org/tx/${selectedTransaction.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <FaExternalLinkAlt className="w-4 h-4" />
+                    View on BaseScan
+                  </a>
+                )}
+                <button
+                  onClick={() => setShowTransactionModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
