@@ -36,6 +36,14 @@ function PaymentRequestPageContent() {
 
   const walletAddress = address;
 
+  // Format numbers with commas for better readability
+  const formatNumber = (num: string | number): string => {
+    const numStr = typeof num === 'string' ? num : num.toString();
+    const parts = numStr.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
   // Initialize frame detection and update metadata
   useEffect(() => {
     const checkFrameEnvironment = () => {
@@ -720,7 +728,7 @@ function PaymentRequestPageContent() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Amount:</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-white font-medium">{paymentData?.amount}</span>
+                  <span className="text-white font-medium">{formatNumber(paymentData?.amount || '')}</span>
                   {(() => {
                     const tokenIcon = getTokenIcon(paymentData?.token || '');
                     if (tokenIcon.type === 'flag') {
@@ -845,7 +853,7 @@ function PaymentRequestPageContent() {
           <div className="text-xs text-gray-400 mb-1">Amount</div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="text-2xl font-bold text-white">
-              {paymentData.amount} {paymentData.token}
+              {formatNumber(paymentData.amount)} {paymentData.token}
             </div>
             {(() => {
               const tokenIcon = getTokenIcon(paymentData.token);

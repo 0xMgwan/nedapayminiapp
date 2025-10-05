@@ -164,6 +164,14 @@ export default function FarcasterMiniApp() {
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
   const [amount, setAmount] = useState('');
 
+  // Format numbers with commas for better readability
+  const formatNumber = (num: string | number): string => {
+    const numStr = typeof num === 'string' ? num : num.toString();
+    const parts = numStr.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
   // Initialize language from localStorage
   useEffect(() => {
     const savedLanguage = localStorage.getItem('nedapay-language');

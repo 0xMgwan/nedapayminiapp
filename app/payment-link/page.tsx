@@ -59,6 +59,14 @@ export default function PaymentLinkPage() {
     return "";
   };
 
+  // Format numbers with commas for better readability
+  const formatNumber = (num: string | number): string => {
+    const numStr = typeof num === 'string' ? num : num.toString();
+    const parts = numStr.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
   const [isClient, setIsClient] = useState(false);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USDC");
@@ -650,7 +658,7 @@ export default function PaymentLinkPage() {
                           {link.createdAt}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">
-                          {link.amount}
+                          {formatNumber(link.amount)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">
                           <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-base font-medium">
