@@ -53,9 +53,26 @@ export async function generateMetadata({
       images: [`${URL}/api/og/payment-request?amount=${amount}&currency=${currency}&description=${description || ''}`],
     },
     other: {
-      // Farcaster Frame metadata - points to the specific payment link
+      // Farcaster MiniApp metadata - this should make it open in the MiniApp
+      'fc:miniapp': JSON.stringify({
+        version: "1",
+        imageUrl: `${URL}/api/og/payment-request?amount=${amount}&currency=${currency}&description=${description || ''}`,
+        button: {
+          title: `Pay ${amount} ${currency}`,
+          action: {
+            type: "launch_miniapp",
+            name: "NedaPay",
+            url: paymentUrl,
+            splashImageUrl: `${URL}/splash.png`,
+            splashBackgroundColor: "#1e293b"
+          }
+        }
+      }),
+      
+      // Farcaster Frame metadata - fallback for non-MiniApp clients
       'fc:frame': 'vNext',
       'fc:frame:image': `${URL}/api/og/payment-request?amount=${amount}&currency=${currency}&description=${description || ''}`,
+      'fc:frame:image:aspect_ratio': '1.91:1',
       'fc:frame:button:1': `Pay ${amount} ${currency}`,
       'fc:frame:button:1:action': 'link',
       'fc:frame:button:1:target': paymentUrl,
