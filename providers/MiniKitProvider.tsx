@@ -18,14 +18,28 @@ export const config = createConfig({
   connectors: [
     // Farcaster MiniApp connector for Farcaster environment
     miniAppConnector(),
-    // Web wallet connectors for normal browser environment
+    // Coinbase Wallet - prioritized for Base.dev environment
     coinbaseWallet({
       appName: 'NedaPay',
       appLogoUrl: '/NEDApayLogo.png',
+      preference: 'smartWalletOnly', // Use smart wallet for better Base.dev compatibility
     }),
-    metaMask(),
+    // MetaMask with improved configuration
+    metaMask({
+      dappMetadata: {
+        name: 'NedaPay',
+        url: process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app',
+        iconUrl: '/NEDApayLogo.png',
+      },
+    }),
     walletConnect({
       projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'default-project-id',
+      metadata: {
+        name: 'NedaPay',
+        description: 'Pay, Accept, Swap and On/Offramp your Stablecoins to Fiat in seconds.',
+        url: process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app',
+        icons: ['/NEDApayLogo.png'],
+      },
     }),
   ]
 });
@@ -36,11 +50,12 @@ export function MiniKitProvider({ children }: { children: ReactNode }) {
   // Enhanced MiniKit initialization for smart wallet environments
   useEffect(() => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isFarcaster = window.location.href.includes('farcaster') || window.location.href.includes('warpcast');
-    const isBaseApp = window.location.href.includes('base.org');
-    const isSmartWalletEnv = isMobile || isFarcaster || isBaseApp;
+    const isFarcaster = window.location.href.includes('farcaster') || window.location.href.includes('warpcast') || 
+                       document.referrer.includes('farcaster') || document.referrer.includes('warpcast');
+    const isBaseApp = window.location.href.includes('base.org') || window.location.href.includes('base.dev');
+    const isSmartWalletEnv = isFarcaster; // Only apply smart wallet behavior for Farcaster, not Base.dev
     
-    console.log('🚀 MiniKit Provider Initializing for Smart Wallet Environment:', {
+    console.log('🚀 MiniKit Provider Initializing:', {
       url: window.location.href,
       referrer: document.referrer,
       userAgent: navigator.userAgent,
@@ -51,6 +66,20 @@ export function MiniKitProvider({ children }: { children: ReactNode }) {
       hasOnchainKit: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
       projectName: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME
     });
+
+    // For Base.dev environment, ensure proper wallet initialization
+    if (isBaseApp && !isFarcaster) {
+      console.log('🔗 Base.dev environment detected - initializing wallet connectors');
+      
+      // Add ready state indicator
+      setTimeout(() => {
+        console.log('✅ Wallet connectors ready for Base.dev');
+        // Dispatch a custom event to indicate readiness
+        window.dispatchEvent(new CustomEvent('nedapay-ready', { 
+          detail: { environment: 'base.dev', ready: true } 
+        }));
+      }, 1000);
+    }
     
     // Smart wallet environment popup prevention
     const originalConsoleError = console.error;
@@ -148,7 +177,7 @@ export function MiniKitProvider({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <OnchainKitMiniKitProvider
           apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY!}
-          chain={celo}
+          chain={base} // Use Base as default for better Base.dev compatibility
           config={{
             appearance: {
               mode: 'auto',

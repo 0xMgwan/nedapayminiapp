@@ -5,6 +5,7 @@ import './compliance/user/kyc.css';
 import './components/name-fallback.css';
 import { Providers } from './providers';
 import AppToaster from './components/Toaster';
+import { ReadyState } from './components/ReadyState';
 import {Analytics} from '@vercel/analytics/next';
 
 const URL = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
@@ -82,6 +83,7 @@ export default function RootLayout({
         <div className="flex flex-col min-h-screen">
           <Providers>
             <AppToaster />
+            <ReadyState />
             <main className="flex-grow">{children}</main>
           </Providers>
         </div>
