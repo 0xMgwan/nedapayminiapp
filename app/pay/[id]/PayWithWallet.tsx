@@ -6,9 +6,10 @@ import dynamic from "next/dynamic";
 import { stablecoins } from "../../data/stablecoins";
 import { utils } from "ethers";
 import { Toaster, toast } from 'react-hot-toast';
-import { pad } from "viem";
+import { pad, numberToHex, parseUnits, encodeFunctionData } from "viem";
 import { useTranslation } from "react-i18next";
 import "../../../lib/i18n";
+import { createBaseAccountSDK, getCryptoKeyAccount, base } from '@base-org/account';
 
 const WalletConnectButton = dynamic(() => import("./WalletConnectButton"), {
   ssr: false,
@@ -265,7 +266,178 @@ const createNotification = async (
     return true;
   };
 
-  const handlePay = async () => {
+  // Enhanced payment function with Base Account SDK and batch transactions
+  const handlePayWithBaseAccount = async () => {
+    setError(null);
+    setLoading(true);
+    setTxHash(null);
+    setTxStatus("preparing");
+
+    try {
+      // Validate inputs
+      if (!to || !utils.isAddress(to)) {
+        setError("Invalid merchant address. Please check the payment link.");
+        setLoading(false);
+        setTxStatus("failed");
+        return;
+      }
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        setError("Invalid amount.");
+        setLoading(false);
+        setTxStatus("failed");
+        return;
+      }
+
+      // Initialize Base Account SDK
+      const sdk = createBaseAccountSDK({
+        appName: 'NedaPay Merchant',
+        appLogoUrl: 'https://nedapay.com/logo.png',
+        appChainIds: [base.constants.CHAIN_IDS.base],
+      });
+
+      const provider = sdk.getProvider();
+      const cryptoAccount = await getCryptoKeyAccount();
+      const walletAddress = cryptoAccount?.account?.address;
+
+      if (!walletAddress) {
+        setError("Unable to get wallet address. Please connect your wallet.");
+        setLoading(false);
+        setTxStatus("failed");
+        return;
+      }
+
+      setTxStatus("submitting");
+
+      // Find token info from stablecoins
+      const token = stablecoins.find(
+        (sc) =>
+          sc.baseToken.toLowerCase() === currency?.toLowerCase() ||
+          sc.currency.toLowerCase() === currency?.toLowerCase()
+      );
+
+      let calls = [];
+      let txHash = '';
+
+      if (
+        token &&
+        token.address &&
+        token.address !== "0x0000000000000000000000000000000000000000"
+      ) {
+        // ERC-20 transfer using batch transaction
+        const decimals = token.decimals || 18;
+        const transferAmount = parseUnits(amount, decimals);
+
+        // ERC-20 ABI for transfer
+        const erc20Abi = [
+          {
+            name: 'transfer',
+            type: 'function',
+            stateMutability: 'nonpayable',
+            inputs: [
+              { name: 'to', type: 'address' },
+              { name: 'amount', type: 'uint256' }
+            ],
+            outputs: [{ name: '', type: 'bool' }]
+          }
+        ] as const;
+
+        calls = [{
+          to: token.address,
+          value: '0x0',
+          data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [to as `0x${string}`, transferAmount]
+          })
+        }];
+      } else {
+        // Native ETH transfer
+        const transferAmount = parseUnits(amount, 18);
+        calls = [{
+          to: to as `0x${string}`,
+          value: numberToHex(transferAmount),
+          data: '0x'
+        }];
+      }
+
+      // Send batch transaction (even if single call, for consistency)
+      const result = await provider.request({
+        method: 'wallet_sendCalls',
+        params: [{
+          version: '2.0.0',
+          from: walletAddress,
+          chainId: numberToHex(base.constants.CHAIN_IDS.base),
+          atomicRequired: true, // All calls must succeed or all fail
+          calls: calls
+        }]
+      });
+
+      txHash = result;
+      setTxHash(txHash);
+      setTxStatus("pending");
+
+      // Save transaction as Pending initially
+      const saved = await saveTransactionToDB(
+        to,
+        walletAddress,
+        amount,
+        currency,
+        description,
+        "Pending",
+        txHash
+      );
+
+      if (!saved) {
+        setError(
+          "Transaction sent, but failed to record in database. Please contact support."
+        );
+      } else {
+        const shortSender = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+        const shortMerchant = to.slice(0, 6) + '...' + to.slice(-4);
+        const toastMessage = description
+          ? `Payment sent: ${amount} ${currency} from ${shortSender} to ${shortMerchant} for ${description}`
+          : `Payment sent: ${amount} ${currency} from ${shortSender} to ${shortMerchant}`;
+        toast.success(toastMessage, {
+          duration: 3000,
+        });
+        window.dispatchEvent(new CustomEvent('neda-notification', {
+          detail: {
+            message: toastMessage
+          }
+        }));
+      }
+
+      // For Base Account SDK, we'll handle confirmation differently
+      // The SDK handles the transaction confirmation internally
+      setTxStatus("confirmed");
+      
+      // Update transaction to completed
+      const updated = await updateTransactionStatus(
+        txHash,
+        to,
+        walletAddress,
+        amount,
+        currency,
+        description
+      );
+
+      if (!updated) {
+        setError(
+          "Transaction confirmed, but failed to update in database. Please contact support."
+        );
+      }
+
+    } catch (e: any) {
+      console.error("Payment error:", e);
+      setError(e.message || "Transaction failed");
+      setTxStatus("failed");
+    }
+
+    setLoading(false);
+  };
+
+  // Fallback to traditional method if Base Account SDK is not available
+  const handlePayFallback = async () => {
     setError(null);
     setLoading(true);
     setTxHash(null);
@@ -459,6 +631,18 @@ const createNotification = async (
     setLoading(false);
   };
 
+  // Main payment handler that tries Base Account SDK first, then falls back
+  const handlePay = async () => {
+    try {
+      // Try Base Account SDK first for better UX
+      await handlePayWithBaseAccount();
+    } catch (e: any) {
+      console.warn("Base Account SDK failed, falling back to traditional method:", e);
+      // Fallback to traditional method
+      await handlePayFallback();
+    }
+  };
+
   // Cleanup effect to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -571,25 +755,45 @@ const createNotification = async (
         <div className="mt-2 text-red-600 dark:text-red-400 text-sm" style={{color: "red"}}>{error}</div>
       )}
 
-      {/* Mobile wallet options */}
+      {/* Enhanced mobile wallet options with better deep linking */}
       {!window.ethereum && isMobile() && (
         <div className="mt-4 text-center">
-          <div className="mb-2 text-sm text-red-600 dark:text-red-400" style={{color: "red"}}>No wallet detected. Open in your wallet app:</div>
-          <div className="flex flex-col gap-2 items-center">
-            <a
-              href={`metamask://dapp/${typeof window !== 'undefined' ? window.location.host + window.location.pathname + window.location.search : ''}`}
-              className="px-4 py-2 !bg-orange-500 hover:!bg-orange-600  dark:!text-white rounded-lg font-semibold transition"
+          <div className="mb-3 text-sm text-gray-600">Choose your preferred wallet:</div>
+          <div className="flex flex-col gap-3 items-center">
+            <button
+              onClick={() => {
+                const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+                const metamaskUrl = `metamask://dapp/${typeof window !== 'undefined' ? window.location.host + window.location.pathname + window.location.search : ''}`;
+                // Try to open MetaMask, fallback to app store if not installed
+                window.location.href = metamaskUrl;
+                setTimeout(() => {
+                  window.location.href = 'https://metamask.app.link/dapp/' + encodeURIComponent(currentUrl);
+                }, 1000);
+              }}
+              className="w-full max-w-xs px-4 py-3 !bg-orange-500 hover:!bg-orange-600 text-white rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
             >
-            Open in MetaMask
-              
-            </a>
-            <a
-              href={`cbwallet://dapp?url=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
-              className="px-4 py-2 !bg-blue-600 hover:  !bg-blue-700 dark:!text-white !rounded-lg font-semibold transition"
+              <span>🦊</span> Open in MetaMask
+            </button>
+            <button
+              onClick={() => {
+                const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+                const coinbaseUrl = `cbwallet://dapp?url=${encodeURIComponent(currentUrl)}`;
+                // Try to open Coinbase Wallet, fallback to app store if not installed
+                window.location.href = coinbaseUrl;
+                setTimeout(() => {
+                  window.location.href = 'https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(currentUrl);
+                }, 1000);
+              }}
+              className="w-full max-w-xs px-4 py-3 !bg-blue-600 hover:!bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
             >
-              Open in Coinbase Wallet
-            </a>
-            <WalletConnectButton to={to} amount={amount} currency={currency} description={description || ''} />
+              <span>🔵</span> Open in Coinbase Wallet
+            </button>
+            <div className="w-full max-w-xs">
+              <WalletConnectButton to={to} amount={amount} currency={currency} description={description || ''} />
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            If wallet doesn't open, please copy the URL and paste it in your wallet's browser
           </div>
         </div>
       )}
