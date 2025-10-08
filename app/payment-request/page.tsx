@@ -4,14 +4,14 @@ import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
-import { usePrivy } from '@privy-io/react-auth';
+import { ConnectWallet, Wallet } from '@coinbase/onchainkit/wallet';
+import { Avatar, Name, Address, EthBalance, Identity } from '@coinbase/onchainkit/identity';
 
 import { stablecoins } from "../data/stablecoins";
 import { ethers } from 'ethers';
 import QRCode from 'qrcode';
 import { calculateDynamicFee, isProtocolEnabled } from '../utils/nedaPayProtocol';
 import { getNedaPayProtocolAddress } from '../config/contracts';
-import WalletSelector from '../components/WalletSelector';
 
 interface PaymentData {
   id: string;
@@ -28,8 +28,6 @@ function PaymentRequestPageContent() {
   const { connect, connectors } = useConnect();
   const { data: walletClient } = useConnectorClient();
   const { address, isConnected } = useAccount();
-  const { user, authenticated, ready, login } = usePrivy();
-  const walletSelectorRef = useRef<{ triggerLogin: () => void }>(null);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,10 +51,9 @@ function PaymentRequestPageContent() {
     window.location.hostname.includes('localhost')
   );
 
-  // Use Privy wallet address if available, otherwise fall back to wagmi
-  const privyWalletAddress = user?.wallet?.address;
-  const walletAddress = privyWalletAddress || address;
-  const isWalletConnected = authenticated && (privyWalletAddress || isConnected);
+  // Use wagmi wallet connection (OnchainKit handles this)
+  const walletAddress = address;
+  const isWalletConnected = isConnected;
   // Format numbers with commas for better readability
   const formatNumber = (num: string | number): string => {
     const numStr = typeof num === 'string' ? num : num.toString();
@@ -756,46 +753,10 @@ function PaymentRequestPageContent() {
   };
 
   const handlePayment = async () => {
-    // Use smart wallet login if not authenticated
+    // Check if wallet is connected via OnchainKit/wagmi
     if (!isWalletConnected) {
-      console.log('🔄 Wallet not connected, using smart wallet login...');
-      console.log('🔍 Privy ready:', ready);
-      console.log('🔍 Authenticated:', authenticated);
-      console.log('🔍 Environment:', { isFarcasterEnvironment, isLocalhost });
-      
-      if (!ready) {
-        alert('⏳ Wallet system is loading. Please wait a moment and try again.');
-        return;
-      }
-
-      try {
-        // Use the WalletSelector's login method
-        if (walletSelectorRef.current) {
-          console.log('🔗 Triggering smart wallet login...');
-          walletSelectorRef.current.triggerLogin();
-          // Wait a bit for authentication to complete
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
-          // Fallback to direct Privy login
-          console.log('🔗 Using direct Privy login...');
-          await login();
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } catch (error) {
-        console.error('❌ Smart wallet login failed:', error);
-        if (isLocalhost) {
-          alert('❌ Wallet connection failed on localhost. Please install MetaMask or another Web3 wallet and try again.');
-        } else {
-          alert('❌ Unable to connect wallet. Please try again or use a different wallet.');
-        }
-        return;
-      }
-      
-      // Check if authentication was successful
-      if (!isWalletConnected) {
-        alert('❌ Wallet connection was not established. Please try again.');
-        return;
-      }
+      alert('❌ Please connect your wallet first using the Connect Wallet button below.');
+      return;
     }
 
     if (!paymentData || !walletAddress) {
@@ -1118,9 +1079,7 @@ function PaymentRequestPageContent() {
               '🚀 Pay with Base Wallet' : 
               'Pay with Wallet'
           ) : (
-            ready ? 
-              '🔗 Connect Smart Wallet' :
-              '⏳ Loading...'
+            '🔗 Connect Wallet'
           )}
         </button>
 
@@ -1133,11 +1092,21 @@ function PaymentRequestPageContent() {
           </div>
         )}
 
-        {!isWalletConnected && ready && paymentData.status === 'pending' && (
-          <div className="mt-3 p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-            <p className="text-xs text-blue-300 text-center">
-              <span>🔐</span> Secure login with email, phone, or social accounts
-            </p>
+        {!isWalletConnected && paymentData.status === 'pending' && (
+          <div className="mt-3 space-y-3">
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+              <p className="text-xs text-blue-300 text-center">
+                <span>🔐</span> Connect your Base Account or any wallet to continue
+              </p>
+            </div>
+            
+            {/* OnchainKit Connect Wallet Component */}
+            <div className="flex justify-center">
+              <ConnectWallet>
+                <Avatar className="h-6 w-6" />
+                <Name />
+              </ConnectWallet>
+            </div>
           </div>
         )}
 
@@ -1151,10 +1120,6 @@ function PaymentRequestPageContent() {
           </div>
         )}
 
-        {/* Hidden WalletSelector for smart wallet functionality */}
-        <div className="hidden">
-          <WalletSelector ref={walletSelectorRef} />
-        </div>
       </div>
       
       {showSuccessModal && <SuccessModal />}
