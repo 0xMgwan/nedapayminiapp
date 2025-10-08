@@ -22,6 +22,34 @@ function isMobile() {
   );
 }
 
+// Detect if we're in Farcaster environment
+function isFarcasterEnvironment() {
+  if (typeof window === "undefined") return false;
+  return window.location.href.includes('warpcast.com') || 
+         window.navigator.userAgent.includes('Warpcast') ||
+         window.navigator.userAgent.includes('farcaster') ||
+         (window as any).farcaster !== undefined;
+}
+
+// Detect if we're in Base app environment
+function isBaseAppEnvironment() {
+  if (typeof window === "undefined") return false;
+  return window.navigator.userAgent.includes('Base') ||
+         window.location.href.includes('base.org') ||
+         (window as any).base !== undefined;
+}
+
+// Detect if we're in a wallet app environment
+function isWalletAppEnvironment() {
+  if (typeof window === "undefined") return false;
+  return window.navigator.userAgent.includes('MetaMask') ||
+         window.navigator.userAgent.includes('Coinbase') ||
+         window.navigator.userAgent.includes('Rainbow') ||
+         window.navigator.userAgent.includes('Trust') ||
+         isFarcasterEnvironment() ||
+         isBaseAppEnvironment();
+}
+
 export default function PayWithWallet({
   to,
   amount,
@@ -413,7 +441,7 @@ const createNotification = async (
       
       // Update transaction to completed
       const updated = await updateTransactionStatus(
-        txHash,
+        txHash as string,
         to,
         walletAddress,
         amount,
@@ -638,15 +666,216 @@ const createNotification = async (
            window.ethereum.isMetaMask === false; // Not MetaMask, could be Base Account
   };
 
-  // Main payment handler that tries Base Account SDK first, then falls back
-  const handlePay = async () => {
-    // Always try traditional method first to avoid multiple signing issues
-    // Base Account SDK integration can be added later when properly configured
-    await handlePayFallback();
+  // Enhanced payment handler for Farcaster/Base app environments
+  const handleFarcasterPayment = async () => {
+    setError(null);
+    setLoading(true);
+    setTxHash(null);
+    setTxStatus("preparing");
+
+    try {
+      // Validate inputs
+      if (!to || !utils.isAddress(to)) {
+        setError("Invalid merchant address. Please check the payment link.");
+        setLoading(false);
+        setTxStatus("failed");
+        return;
+      }
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        setError("Invalid amount.");
+        setLoading(false);
+        setTxStatus("failed");
+        return;
+      }
+
+      // Try to use Farcaster SDK or Base Account SDK first
+      if (isFarcasterEnvironment() || isBaseAppEnvironment()) {
+        try {
+          // Initialize Base Account SDK for Farcaster/Base environments
+          const sdk = createBaseAccountSDK({
+            appName: 'NedaPay Merchant',
+            appLogoUrl: 'https://nedapay.com/logo.png',
+            appChainIds: [base.constants.CHAIN_IDS.base],
+          });
+
+          const provider = sdk.getProvider();
+          
+          // Request account access
+          await provider.request({ method: 'eth_requestAccounts' });
+          
+          const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
+          if (!accounts || accounts.length === 0) {
+            throw new Error('No accounts found');
+          }
+          
+          const walletAddress = accounts[0];
+          setTxStatus("submitting");
+
+          // Find token info from stablecoins
+          const token = stablecoins.find(
+            (sc) =>
+              sc.baseToken.toLowerCase() === currency?.toLowerCase() ||
+              sc.currency.toLowerCase() === currency?.toLowerCase()
+          );
+
+          let txResponse;
+
+          if (
+            token &&
+            token.address &&
+            token.address !== "0x0000000000000000000000000000000000000000"
+          ) {
+            // ERC-20 transfer
+            const decimals = token.decimals || 18;
+            const transferAmount = parseUnits(amount, decimals);
+
+            // Use wallet_sendCalls for batch transaction
+            const calls = [{
+              to: token.address,
+              value: '0x0',
+              data: encodeFunctionData({
+                abi: [{
+                  name: 'transfer',
+                  type: 'function',
+                  stateMutability: 'nonpayable',
+                  inputs: [
+                    { name: 'to', type: 'address' },
+                    { name: 'amount', type: 'uint256' }
+                  ],
+                  outputs: [{ name: '', type: 'bool' }]
+                }] as const,
+                functionName: 'transfer',
+                args: [to as `0x${string}`, transferAmount]
+              })
+            }];
+
+            const result = await provider.request({
+              method: 'wallet_sendCalls',
+              params: [{
+                version: '2.0.0',
+                from: walletAddress,
+                chainId: numberToHex(base.constants.CHAIN_IDS.base),
+                atomicRequired: true,
+                calls: calls
+              }]
+            }) as string;
+
+            txResponse = { hash: result };
+          } else {
+            // Native ETH transfer
+            const transferAmount = parseUnits(amount, 18);
+            
+            const result = await provider.request({
+              method: 'wallet_sendCalls',
+              params: [{
+                version: '2.0.0',
+                from: walletAddress,
+                chainId: numberToHex(base.constants.CHAIN_IDS.base),
+                atomicRequired: true,
+                calls: [{
+                  to: to as `0x${string}`,
+                  value: numberToHex(transferAmount),
+                  data: '0x'
+                }]
+              }]
+            }) as string;
+
+            txResponse = { hash: result };
+          }
+
+          setTxHash(txResponse.hash);
+          setTxStatus("pending");
+
+          // Save transaction as Pending initially
+          const saved = await saveTransactionToDB(
+            to,
+            walletAddress,
+            amount,
+            currency,
+            description,
+            "Pending",
+            txResponse.hash
+          );
+
+          if (saved) {
+            const shortSender = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+            const shortMerchant = to.slice(0, 6) + '...' + to.slice(-4);
+            const toastMessage = description
+              ? `Payment sent: ${amount} ${currency} from ${shortSender} to ${shortMerchant} for ${description}`
+              : `Payment sent: ${amount} ${currency} from ${shortSender} to ${shortMerchant}`;
+            toast.success(toastMessage, { duration: 3000 });
+            
+            // Auto-confirm for Farcaster/Base environments
+            setTxStatus("confirmed");
+            await updateTransactionStatus(
+              txResponse.hash as string,
+              to,
+              walletAddress,
+              amount,
+              currency,
+              description
+            );
+          }
+
+        } catch (sdkError: any) {
+          console.warn("Base Account SDK failed, falling back to traditional method:", sdkError);
+          // Fallback to traditional method
+          await handlePayFallback();
+          return;
+        }
+      } else {
+        // Not in Farcaster/Base environment, use traditional method
+        await handlePayFallback();
+        return;
+      }
+
+    } catch (e: any) {
+      console.error("Farcaster payment error:", e);
+      setError(e.message || "Transaction failed");
+      setTxStatus("failed");
+    }
+
+    setLoading(false);
   };
 
-  // Cleanup effect to prevent memory leaks
+  // Main payment handler that detects environment and uses appropriate method
+  const handlePay = async () => {
+    if (isFarcasterEnvironment() || isBaseAppEnvironment() || isWalletAppEnvironment()) {
+      await handleFarcasterPayment();
+    } else {
+      await handlePayFallback();
+    }
+  };
+
+  // Auto-connect for Farcaster/Base environments
   useEffect(() => {
+    const autoConnectWallet = async () => {
+      if (isFarcasterEnvironment() || isBaseAppEnvironment() || isWalletAppEnvironment()) {
+        try {
+          // Try to auto-connect in wallet environments
+          if (window.ethereum && typeof window.ethereum.request === 'function') {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
+            if (accounts && accounts.length > 0) {
+              console.log('Auto-connected to wallet in Farcaster/Base environment');
+            }
+          }
+        } catch (error) {
+          console.log('Auto-connect failed, user will need to connect manually');
+        }
+      }
+    };
+
+    autoConnectWallet();
+  }, []);
+
+  // Cleanup effect to prevent memory leaks and reset state
+  useEffect(() => {
+    // Reset state on component mount
+    setLoading(false);
+    setTxStatus("idle");
+    setError(null);
+    setTxHash(null);
+    
     return () => {
       setLoading(false);
       setTxStatus("idle");
@@ -687,12 +916,12 @@ const createNotification = async (
       <button
         onClick={handlePay}
         disabled={loading}
-        className="px-4 py-2 !bg-blue-500 hover:!bg-blue-600 text-white rounded-lg font-semibold transition disabled:opacity-60"
+        className="w-full px-6 py-4 !bg-blue-500 hover:!bg-blue-600 text-white rounded-xl font-semibold text-lg transition disabled:opacity-60 shadow-lg"
       >
         {loading ? (
           <span className="flex items-center justify-center">
             <svg
-              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -714,7 +943,13 @@ const createNotification = async (
             {txStatus === "idle" ? "Processing..." : message}
           </span>
         ) : (
-          t('paymentLink.payWithWallet')
+          <>
+            {isFarcasterEnvironment() || isBaseAppEnvironment() || isWalletAppEnvironment() ? (
+              <>🔗 {t('paymentLink.payWithWallet')}</>
+            ) : (
+              t('paymentLink.payWithWallet')
+            )}
+          </>
         )}
       </button>
 
@@ -757,16 +992,15 @@ const createNotification = async (
         <div className="mt-2 text-red-600 dark:text-red-400 text-sm" style={{color: "red"}}>{error}</div>
       )}
 
-      {/* Enhanced mobile wallet options with better deep linking */}
+      {/* Mobile wallet options - Only show if no wallet detected */}
       {!window.ethereum && isMobile() && (
         <div className="mt-4 text-center">
-          <div className="mb-3 text-sm text-gray-600">Choose your preferred wallet:</div>
+          <div className="mb-3 text-sm text-gray-600">No wallet detected. Open in your wallet app:</div>
           <div className="flex flex-col gap-3 items-center">
             <button
               onClick={() => {
                 const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
                 const metamaskUrl = `metamask://dapp/${typeof window !== 'undefined' ? window.location.host + window.location.pathname + window.location.search : ''}`;
-                // Try to open MetaMask, fallback to app store if not installed
                 window.location.href = metamaskUrl;
                 setTimeout(() => {
                   window.location.href = 'https://metamask.app.link/dapp/' + encodeURIComponent(currentUrl);
@@ -780,7 +1014,6 @@ const createNotification = async (
               onClick={() => {
                 const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
                 const coinbaseUrl = `cbwallet://dapp?url=${encodeURIComponent(currentUrl)}`;
-                // Try to open Coinbase Wallet, fallback to app store if not installed
                 window.location.href = coinbaseUrl;
                 setTimeout(() => {
                   window.location.href = 'https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(currentUrl);
@@ -790,9 +1023,6 @@ const createNotification = async (
             >
               <span>🔵</span> Open in Coinbase Wallet
             </button>
-            <div className="w-full max-w-xs">
-              <WalletConnectButton to={to} amount={amount} currency={currency} description={description || ''} />
-            </div>
           </div>
           <div className="mt-3 text-xs text-gray-500">
             If wallet doesn't open, please copy the URL and paste it in your wallet's browser
