@@ -249,16 +249,14 @@ export default function PayPage({ params }: { params: { id: string } }) {
           <div className="flex justify-center">
             <PaymentQRCode to={merchantAddress} amount={amount || ""} currency={currency || ""} description={description || ""} />
           </div>
+          <p className="text-center text-xs text-gray-500 mt-2">{t('paymentLink.scanWithWalletApp')}</p>
+        </div>
+
+        <div className="text-center text-sm text-gray-600 bg-amber-50 p-4 rounded-xl">
+          <p className="mb-1">🔒 {t('paymentLink.connectYourBaseAccount')}</p>
         </div>
 
         <PayWithWallet to={merchantAddress} amount={amount || ""} currency={currency || ""} description={description || ""} linkId={params.id} />
-
-        <div className="text-center text-sm text-gray-600 bg-amber-50 p-4 rounded-xl">
-          <p className="mb-1">
-            {t('paymentLink.sendExactly')} <span className="font-semibold text-blue-600">{amount} {currency}</span> {t('paymentLink.toCompletePayment')}
-          </p>
-          <p>{t('paymentLink.transactionConfirmation')}</p>
-        </div>
       </div>
     </div>
   );
