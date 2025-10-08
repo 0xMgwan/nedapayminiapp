@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useConnectorClient } from 'wagmi';
+import { usePrivy } from '@privy-io/react-auth';
 
 import { stablecoins } from "../data/stablecoins";
 import { ethers } from 'ethers';
 import QRCode from 'qrcode';
 import { calculateDynamicFee, isProtocolEnabled } from '../utils/nedaPayProtocol';
 import { getNedaPayProtocolAddress } from '../config/contracts';
+import WalletSelector from '../components/WalletSelector';
 
 interface PaymentData {
   id: string;
@@ -23,19 +25,38 @@ interface PaymentData {
 
 function PaymentRequestPageContent() {
   const searchParams = useSearchParams();
-  const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { data: walletClient } = useConnectorClient();
+  const { address, isConnected } = useAccount();
+  const { user, authenticated, ready, login } = usePrivy();
+  const walletSelectorRef = useRef<{ triggerLogin: () => void }>(null);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [qrCode, setQrCode] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [transactionHash, setTransactionHash] = useState("");
   const [isFrameReady, setIsFrameReady] = useState(false);
+  const [qrCode, setQrCode] = useState<string>('');
 
-  const walletAddress = address;
+  const isFarcasterEnvironment = typeof window !== 'undefined' && (
+    window.location.href.includes('farcaster') || 
+    window.location.href.includes('warpcast') ||
+    document.referrer.includes('farcaster') ||
+    document.referrer.includes('warpcast') ||
+    window.location.href.includes('base.org') || 
+    window.location.href.includes('base.dev')
+  );
 
+  const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('localhost')
+  );
+
+  // Use Privy wallet address if available, otherwise fall back to wagmi
+  const privyWalletAddress = user?.wallet?.address;
+  const walletAddress = privyWalletAddress || address;
+  const isWalletConnected = authenticated && (privyWalletAddress || isConnected);
   // Format numbers with commas for better readability
   const formatNumber = (num: string | number): string => {
     const numStr = typeof num === 'string' ? num : num.toString();
@@ -65,6 +86,38 @@ function PaymentRequestPageContent() {
 
     checkFrameEnvironment();
   }, []);
+
+  // Auto-connect wallet in Farcaster/Base environments (but not localhost)
+  useEffect(() => {
+    if (isFarcasterEnvironment && !isLocalhost && !isConnected && connectors && connectors.length > 0) {
+      console.log('🔄 Auto-connecting wallet in Farcaster/Base environment...');
+      
+      const autoConnect = async () => {
+        try {
+          // Try to find Farcaster-specific connector first
+          const farcasterConnector = connectors.find(c => 
+            c.name.toLowerCase().includes('farcaster') || 
+            c.name.toLowerCase().includes('miniapp') ||
+            c.name.toLowerCase().includes('base')
+          );
+          
+          if (farcasterConnector) {
+            console.log('🔗 Auto-connecting with Farcaster connector:', farcasterConnector.name);
+            await connect({ connector: farcasterConnector });
+          } else {
+            console.log('🔗 Auto-connecting with first available connector:', connectors[0].name);
+            await connect({ connector: connectors[0] });
+          }
+        } catch (error) {
+          console.error('❌ Auto-connect failed:', error);
+        }
+      };
+
+      // Delay auto-connect slightly to ensure connectors are ready
+      const timer = setTimeout(autoConnect, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isFarcasterEnvironment, isLocalhost, isConnected, connectors, connect]);
 
   // Update metadata dynamically for specific payment details
   useEffect(() => {
@@ -379,6 +432,57 @@ function PaymentRequestPageContent() {
       throw new Error('Wallet not connected');
     }
 
+    // Check if we're in a Farcaster/Base environment for USDC
+    const isFarcaster = typeof window !== 'undefined' && (
+      window.location.href.includes('farcaster') || 
+      window.location.href.includes('warpcast') ||
+      document.referrer.includes('farcaster') ||
+      document.referrer.includes('warpcast')
+    );
+    
+    const isBaseApp = typeof window !== 'undefined' && (
+      window.location.href.includes('base.org') || 
+      window.location.href.includes('base.dev')
+    );
+
+    // For USDC on Base in Farcaster/Base environments, use simplified approach
+    if (tokenSymbol === 'USDC' && (isFarcaster || isBaseApp)) {
+      console.log('🔄 Detected Farcaster/Base environment for USDC payment');
+      console.log('🔍 Environment details:', {
+        isFarcaster,
+        isBaseApp,
+        userAgent: navigator.userAgent,
+        referrer: document.referrer,
+        href: window.location.href
+      });
+      
+      try {
+        // Use the wallet transaction function from utils with proper parameters
+        const { executeTokenTransaction: utilsExecuteTokenTransaction } = await import('../utils/wallet');
+        
+        const tokenData = {
+          baseToken: 'USDC',
+          contractAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+          decimals: 6
+        };
+
+        console.log('🚀 Executing Farcaster/Base optimized transaction...');
+        const result = await utilsExecuteTokenTransaction(
+          toAddress,
+          amount,
+          walletClient.transport,
+          tokenData,
+          description
+        );
+
+        console.log('✅ Farcaster/Base transaction result:', result);
+        return result.success;
+      } catch (error) {
+        console.error('❌ Farcaster/Base payment failed, falling back to regular transaction:', error);
+        // Fall back to regular transaction
+      }
+    }
+
     try {
       console.log('💰 Starting token transaction:', {
         to: toAddress,
@@ -652,11 +756,46 @@ function PaymentRequestPageContent() {
   };
 
   const handlePayment = async () => {
-    if (!isConnected) {
-      if (connectors && connectors.length > 0) {
-        await connect({ connector: connectors[0] });
+    // Use smart wallet login if not authenticated
+    if (!isWalletConnected) {
+      console.log('🔄 Wallet not connected, using smart wallet login...');
+      console.log('🔍 Privy ready:', ready);
+      console.log('🔍 Authenticated:', authenticated);
+      console.log('🔍 Environment:', { isFarcasterEnvironment, isLocalhost });
+      
+      if (!ready) {
+        alert('⏳ Wallet system is loading. Please wait a moment and try again.');
+        return;
       }
-      return;
+
+      try {
+        // Use the WalletSelector's login method
+        if (walletSelectorRef.current) {
+          console.log('🔗 Triggering smart wallet login...');
+          walletSelectorRef.current.triggerLogin();
+          // Wait a bit for authentication to complete
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          // Fallback to direct Privy login
+          console.log('🔗 Using direct Privy login...');
+          await login();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error('❌ Smart wallet login failed:', error);
+        if (isLocalhost) {
+          alert('❌ Wallet connection failed on localhost. Please install MetaMask or another Web3 wallet and try again.');
+        } else {
+          alert('❌ Unable to connect wallet. Please try again or use a different wallet.');
+        }
+        return;
+      }
+      
+      // Check if authentication was successful
+      if (!isWalletConnected) {
+        alert('❌ Wallet connection was not established. Please try again.');
+        return;
+      }
     }
 
     if (!paymentData || !walletAddress) {
@@ -974,12 +1113,33 @@ function PaymentRequestPageContent() {
             </div>
           ) : paymentData.status === 'completed' ? (
             '✅ Payment Completed'
-          ) : isConnected ? (
-            'Pay with Wallet'
+          ) : isWalletConnected ? (
+            isFarcasterEnvironment && paymentData.token === 'USDC' ? 
+              '🚀 Pay with Base Wallet' : 
+              'Pay with Wallet'
           ) : (
-            'Connect Wallet to Pay'
+            ready ? 
+              '🔗 Connect Smart Wallet' :
+              '⏳ Loading...'
           )}
         </button>
+
+        {isFarcasterEnvironment && paymentData.token === 'USDC' && paymentData.status === 'pending' && (
+          <div className="mt-3 p-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-lg">
+            <p className="text-xs text-blue-300 text-center flex items-center justify-center gap-1">
+              <span>🔗</span>
+              <span>Optimized for Farcaster & Base</span>
+            </p>
+          </div>
+        )}
+
+        {!isWalletConnected && ready && paymentData.status === 'pending' && (
+          <div className="mt-3 p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+            <p className="text-xs text-blue-300 text-center">
+              <span>🔐</span> Secure login with email, phone, or social accounts
+            </p>
+          </div>
+        )}
 
         {isConnected && paymentData.status === 'pending' && (
           <div className="mt-4 p-3 bg-blue-600/20 border border-blue-600/30 rounded-lg">
@@ -990,6 +1150,11 @@ function PaymentRequestPageContent() {
             </p>
           </div>
         )}
+
+        {/* Hidden WalletSelector for smart wallet functionality */}
+        <div className="hidden">
+          <WalletSelector ref={walletSelectorRef} />
+        </div>
       </div>
       
       {showSuccessModal && <SuccessModal />}
