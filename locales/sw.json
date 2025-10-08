@@ -194,7 +194,8 @@
     "transactionConfirmation": "Uthibitisho wa muamala utaonekana kiotomatiki.",
     "validating": "Inathibitisha Kiungo cha Malipo...",
     "invalidLink": "Kiungo cha Malipo si Sahihi",
-    "scanWithWallet": "Changanua kwa programu ya mkoba"
+    "scanWithWalletApp": "Changanua kwa programu ya mkoba",
+    "connectYourBaseAccount": "Unganisha Akaunti yako ya Base au mkoba wowote kuendelea"
   },
   "errors": {
     "networkError": "Hitilafu ya mtandao imetokea",

@@ -252,10 +252,6 @@ export default function PayPage({ params }: { params: { id: string } }) {
           <p className="text-center text-xs text-gray-500 mt-2">{t('paymentLink.scanWithWalletApp')}</p>
         </div>
 
-        <div className="text-center text-sm text-gray-600 bg-amber-50 p-4 rounded-xl">
-          <p className="mb-1">🔒 {t('paymentLink.connectYourBaseAccount')}</p>
-        </div>
-
         <PayWithWallet to={merchantAddress} amount={amount || ""} currency={currency || ""} description={description || ""} linkId={params.id} />
       </div>
     </div>

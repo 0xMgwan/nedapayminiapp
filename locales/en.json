@@ -193,7 +193,8 @@
     "transactionConfirmation": "Transaction confirmation will appear automatically.",
     "validating": "Validating Payment Link...",
     "invalidLink": "Invalid Payment Link",
-    "scanWithWallet": "Scan with wallet app"
+    "scanWithWalletApp": "Scan with wallet app",
+    "connectYourBaseAccount": "Connect your Base Account or any wallet to continue"
   },
   "errors": {
     "networkError": "A network error occurred",

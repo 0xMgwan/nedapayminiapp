@@ -631,16 +631,18 @@ const createNotification = async (
     setLoading(false);
   };
 
+  // Check if Base Account is available
+  const isBaseAccountAvailable = () => {
+    return typeof window !== 'undefined' && 
+           window.ethereum && 
+           window.ethereum.isMetaMask === false; // Not MetaMask, could be Base Account
+  };
+
   // Main payment handler that tries Base Account SDK first, then falls back
   const handlePay = async () => {
-    try {
-      // Try Base Account SDK first for better UX
-      await handlePayWithBaseAccount();
-    } catch (e: any) {
-      console.warn("Base Account SDK failed, falling back to traditional method:", e);
-      // Fallback to traditional method
-      await handlePayFallback();
-    }
+    // Always try traditional method first to avoid multiple signing issues
+    // Base Account SDK integration can be added later when properly configured
+    await handlePayFallback();
   };
 
   // Cleanup effect to prevent memory leaks
