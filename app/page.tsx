@@ -139,10 +139,34 @@ interface RateData {
 }
 
 export default function FarcasterMiniApp() {
-  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v3...');
+  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v4 - DIRECT FIX...');
   console.log('🔍 Stablecoins array length:', stablecoins.length);
   console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
   const { t, i18n } = useTranslation();
+
+  // DIRECT FARCASTER USER STATE
+  const [farcasterUser, setFarcasterUser] = useState<any>(null);
+  
+  // FETCH REAL USER DATA IMMEDIATELY
+  useEffect(() => {
+    const fetchUser = async () => {
+      console.log('🎯 FETCHING REAL FARCASTER USER DATA...');
+      try {
+        const response = await fetch('/api/farcaster-user');
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ REAL USER DATA:', userData);
+          setFarcasterUser(userData);
+        } else {
+          console.error('❌ Failed to fetch user:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error:', error);
+      }
+    };
+    
+    fetchUser();
+  }, []);
 
   // Helper function to render token icon
   const renderTokenIcon = (token: any, className: string = "w-4 h-4") => {
@@ -5056,59 +5080,25 @@ export default function FarcasterMiniApp() {
                   <div className="absolute inset-0 w-2 h-2 bg-green-400/50 rounded-full animate-pulse" />
                 </div>
                 <div className="text-white text-xs font-mono">
-                  {(() => {
-                    // Direct MiniKit user access - bypass all hooks
-                    if (typeof window !== 'undefined' && (window as any).MiniKit?.user) {
-                      const miniKitUser = (window as any).MiniKit.user;
-                      console.log('🎯 DIRECT MINIKIT USER ACCESS:', miniKitUser);
-                      
-                      if (miniKitUser.fid || miniKitUser.username) {
-                        return (
-                          <div className="flex items-center gap-1">
-                            <img
-                              src={miniKitUser.pfpUrl || miniKitUser.pfp_url || '/default-avatar.svg'}
-                              alt={`${miniKitUser.username || 'user'} avatar`}
-                              className="w-3 h-3 rounded-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/default-avatar.svg';
-                              }}
-                            />
-                            <span className="text-purple-300">@{miniKitUser.username || `fid-${miniKitUser.fid}`}</span>
-                          </div>
-                        );
-                      }
-                    }
-                    
-                    // Fallback to hook-based profiles
-                    if (directFarcasterProfile || (isFarcasterEnvironment && farcasterProfile)) {
-                      return (
-                        <div className="flex items-center gap-1">
-                          <img
-                            src={(directFarcasterProfile || farcasterProfile)?.pfpUrl || '/default-avatar.svg'}
-                            alt={`${(directFarcasterProfile || farcasterProfile)?.username} avatar`}
-                            className="w-3 h-3 rounded-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/default-avatar.svg';
-                            }}
-                          />
-                          <span className="text-purple-300">@{(directFarcasterProfile || farcasterProfile)?.username}</span>
-                        </div>
-                      );
-                    }
-                    
-                    // Final fallback to wallet address
-                    if (walletAddress) {
-                      return (
-                        <Identity address={walletAddress as `0x${string}`} chain={base}>
-                          <Name className="text-white text-xs font-mono">
-                            {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                          </Name>
-                        </Identity>
-                      );
-                    }
-                    
-                    return '0xF939...84f1';
-                  })()}
+                  {farcasterUser ? (
+                    <div className="flex items-center gap-1">
+                      <img
+                        src={farcasterUser.pfpUrl || '/default-avatar.svg'}
+                        alt={`${farcasterUser.username} avatar`}
+                        className="w-3 h-3 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/default-avatar.svg';
+                        }}
+                      />
+                      <span className="text-purple-300">@{farcasterUser.username}</span>
+                    </div>
+                  ) : walletAddress ? (
+                    <Identity address={walletAddress as `0x${string}`} chain={base}>
+                      <Name className="text-white text-xs font-mono">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      </Name>
+                    </Identity>
+                  ) : '0xF939...84f1'}
                 </div>
                 <button
                   onClick={async () => {
