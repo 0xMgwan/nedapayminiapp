@@ -147,24 +147,28 @@ export default function FarcasterMiniApp() {
   // DIRECT FARCASTER USER STATE
   const [farcasterUser, setFarcasterUser] = useState<any>(null);
   
-  // FETCH REAL USER DATA IMMEDIATELY
+  // FETCH REAL USER DATA ONCE
   useEffect(() => {
     const fetchUser = async () => {
       console.log('🎯 FETCHING REAL FARCASTER USER DATA...');
       try {
         const response = await fetch('/api/farcaster-user');
+        console.log('📡 Frontend API response status:', response.status);
+        
         if (response.ok) {
           const userData = await response.json();
           console.log('✅ REAL USER DATA:', userData);
           setFarcasterUser(userData);
         } else {
-          console.error('❌ Failed to fetch user:', response.status);
+          const errorText = await response.text();
+          console.error('❌ Failed to fetch user:', response.status, errorText);
         }
       } catch (error) {
         console.error('❌ Error:', error);
       }
     };
     
+    // Only fetch once on mount
     fetchUser();
   }, []);
 
