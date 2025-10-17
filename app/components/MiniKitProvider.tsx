@@ -26,62 +26,26 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initializeMiniKit = async () => {
-      console.log('🔍 Initializing Farcaster Frame SDK from npm package...');
+      console.log('🔍 Getting Farcaster context...');
       
-      if (!sdk) {
-        console.log('❌ Frame SDK not imported correctly');
-        return;
-      }
+      const ctx: any = await sdk.context;
+      console.log('📊 SDK context:', ctx);
       
-      console.log('✅ Frame SDK imported successfully');
-      console.log('📊 SDK object:', sdk);
-      console.log('📊 SDK keys:', Object.keys(sdk));
+      setContext(ctx);
+      setIsReady(true);
 
-      try {
-        // Initialize the SDK and get context
-        console.log('🚀 Calling sdk.actions.ready()...');
-        const sdkContext: any = await sdk.actions.ready();
-        
-        console.log('✅ Frame SDK initialized!');
-        console.log('📊 SDK Context:', sdkContext);
-        
-        setContext(sdkContext);
-        setIsReady(true);
-
-        // Extract user FID from context
-        let detectedFid: number | null = null;
-
-        // Try context.user.fid
-        if (sdkContext?.user?.fid) {
-          detectedFid = sdkContext.user.fid;
-          console.log('🎯 Found user FID:', detectedFid);
-        }
-        // Try context.castAuthor.fid (if opened from a cast)
-        else if (sdkContext?.castAuthor?.fid) {
-          detectedFid = sdkContext.castAuthor.fid;
-          console.log('🎯 Found cast author FID:', detectedFid);
-        }
-
-        if (detectedFid && detectedFid !== 9152) {
-          setUserFid(detectedFid);
-          console.log('✅ User FID set:', detectedFid);
-          
-          // Dispatch custom event for other components
+      let fid = ctx?.user?.fid || null;
+      
+      if (fid) {
+        console.log('✅ Found FID:', fid);
+        if (fid !== 9152) {
+          setUserFid(fid);
           window.dispatchEvent(new CustomEvent('minikit-user-detected', {
-            detail: { fid: detectedFid, context: sdkContext }
+            detail: { fid, context: ctx }
           }));
-        } else {
-          console.log('⚠️ No valid user FID found in context');
         }
-
-        // Send ready signal to Frame
-        if (sdk.actions.ready) {
-          sdk.actions.ready();
-          console.log('📤 Frame ready signal sent!');
-        }
-
-      } catch (error) {
-        console.error('❌ Error initializing Frame SDK:', error);
+      } else {
+        console.log('❌ No FID found');
       }
     };
 
