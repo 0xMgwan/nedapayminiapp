@@ -170,6 +170,8 @@ export default function FarcasterMiniApp() {
 
   // DIRECT FARCASTER USER STATE
   const [farcasterUser, setFarcasterUser] = useState<any>(null);
+  const [showFidInput, setShowFidInput] = useState(false);
+  const [inputFid, setInputFid] = useState('');
   
   // LISTEN FOR FRAME MESSAGES THAT MIGHT CONTAIN USER DATA
   useEffect(() => {
@@ -5157,13 +5159,11 @@ export default function FarcasterMiniApp() {
                             }
                           }
                           
-                          // Method 4: Prompt user for their FID as last resort
+                          // Method 4: Show input UI for FID as last resort
                           if (!yourRealFid) {
-                            const inputFid = prompt('Enter your Farcaster FID (you can find it at farcaster.id):');
-                            if (inputFid && inputFid !== '9152' && !isNaN(parseInt(inputFid))) {
-                              yourRealFid = parseInt(inputFid);
-                              console.log('✅ Using user-provided FID:', yourRealFid);
-                            }
+                            console.log('❌ Could not auto-detect FID, showing input UI');
+                            setShowFidInput(true);
+                            return; // Exit here, user will enter FID manually
                           }
                         }
                         
@@ -5192,6 +5192,60 @@ export default function FarcasterMiniApp() {
                     >
                       Get My Profile
                     </button>
+                  )}
+                  
+                  {/* FID Input UI when auto-detection fails */}
+                  {showFidInput && (
+                    <div className="flex flex-col gap-2 mt-2 p-2 bg-purple-900/20 rounded border border-purple-300">
+                      <div className="text-xs text-purple-300">
+                        Enter your Farcaster FID (find it at farcaster.id):
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={inputFid}
+                          onChange={(e) => setInputFid(e.target.value)}
+                          placeholder="e.g. 12345"
+                          className="flex-1 px-2 py-1 text-xs bg-purple-900/30 border border-purple-300 rounded text-white placeholder-purple-400"
+                        />
+                        <button
+                          onClick={async () => {
+                            const fid = parseInt(inputFid);
+                            if (fid && fid !== 9152 && !isNaN(fid)) {
+                              console.log('🎯 Using manually entered FID:', fid);
+                              try {
+                                const response = await fetch(`/api/farcaster-user?fid=${fid}`);
+                                if (response.ok) {
+                                  const userData = await response.json();
+                                  console.log('✅ YOUR REAL PROFILE DATA:', userData);
+                                  setFarcasterUser(userData);
+                                  setShowFidInput(false);
+                                  setInputFid('');
+                                } else {
+                                  alert('Failed to fetch profile. Please check your FID.');
+                                }
+                              } catch (error) {
+                                alert('Error fetching profile. Please try again.');
+                              }
+                            } else {
+                              alert('Please enter a valid FID number.');
+                            }
+                          }}
+                          className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-500 text-white rounded"
+                        >
+                          Get
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowFidInput(false);
+                            setInputFid('');
+                          }}
+                          className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   )}
                   {!farcasterUser && walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
