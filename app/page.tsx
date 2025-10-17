@@ -5121,31 +5121,76 @@ export default function FarcasterMiniApp() {
                   ) : (
                     <button
                       onClick={async () => {
-                        console.log('🎯 TESTING WITH REAL USER FID...');
+                        console.log('🎯 EXTRACTING YOUR REAL FID FROM FARCASTER...');
                         
-                        // Use a real user FID for testing - replace with actual user detection later
-                        const testUserFid = 3; // Dan Romero's FID - a real user for testing
+                        let yourRealFid = null;
                         
-                        console.log('🧪 Testing with FID:', testUserFid);
-                        
-                        try {
-                          const response = await fetch(`/api/farcaster-user?fid=${testUserFid}`);
+                        // Method 1: Check if MiniKit has user context (different from client)
+                        if (typeof window !== 'undefined') {
+                          const miniKit = (window as any).MiniKit;
                           
-                          if (response.ok) {
-                            const userData = await response.json();
-                            console.log('✅ REAL USER DATA FETCHED:', userData);
-                            setFarcasterUser(userData);
-                          } else {
-                            const errorText = await response.text();
-                            console.error('❌ Failed to fetch user data:', response.status, errorText);
+                          // Look for user data in MiniKit context
+                          if (miniKit?.context?.user?.fid && miniKit.context.user.fid !== 9152) {
+                            yourRealFid = miniKit.context.user.fid;
+                            console.log('✅ Found your FID from MiniKit context:', yourRealFid);
                           }
-                        } catch (error) {
-                          console.error('❌ Error fetching user:', error);
+                          
+                          // Method 2: Check if there's a different user object
+                          else if (miniKit?.user?.fid && miniKit.user.fid !== 9152) {
+                            yourRealFid = miniKit.user.fid;
+                            console.log('✅ Found your FID from MiniKit user:', yourRealFid);
+                          }
+                          
+                          // Method 3: Try to get from frame URL parameters
+                          else {
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const possibleFids = [
+                              urlParams.get('fid'),
+                              urlParams.get('user_fid'), 
+                              urlParams.get('fc_fid'),
+                              urlParams.get('author_fid')
+                            ].filter(fid => fid && fid !== '9152');
+                            
+                            if (possibleFids.length > 0) {
+                              yourRealFid = parseInt(possibleFids[0]);
+                              console.log('✅ Found your FID from URL params:', yourRealFid);
+                            }
+                          }
+                          
+                          // Method 4: Prompt user for their FID as last resort
+                          if (!yourRealFid) {
+                            const inputFid = prompt('Enter your Farcaster FID (you can find it at farcaster.id):');
+                            if (inputFid && inputFid !== '9152' && !isNaN(parseInt(inputFid))) {
+                              yourRealFid = parseInt(inputFid);
+                              console.log('✅ Using user-provided FID:', yourRealFid);
+                            }
+                          }
+                        }
+                        
+                        if (yourRealFid) {
+                          console.log('🎯 Fetching YOUR profile with FID:', yourRealFid);
+                          
+                          try {
+                            const response = await fetch(`/api/farcaster-user?fid=${yourRealFid}`);
+                            
+                            if (response.ok) {
+                              const userData = await response.json();
+                              console.log('✅ YOUR REAL PROFILE DATA:', userData);
+                              setFarcasterUser(userData);
+                            } else {
+                              const errorText = await response.text();
+                              console.error('❌ Failed to fetch your profile:', response.status, errorText);
+                            }
+                          } catch (error) {
+                            console.error('❌ Error fetching your profile:', error);
+                          }
+                        } else {
+                          alert('Could not detect your Farcaster FID. Please make sure you are accessing this from within Farcaster, or manually enter your FID.');
                         }
                       }}
                       className="text-purple-300 text-xs hover:text-purple-200 px-2 py-1 border border-purple-300 rounded"
                     >
-                      Test Profile
+                      Get My Profile
                     </button>
                   )}
                   {!farcasterUser && walletAddress ? (
