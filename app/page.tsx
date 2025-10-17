@@ -5110,13 +5110,6 @@ export default function FarcasterMiniApp() {
                       <span className="text-purple-300">@{farcasterUser.username}</span>
                     </div>
                   )}
-                  {!farcasterUser && walletAddress ? (
-                    <Identity address={walletAddress as `0x${string}`} chain={base}>
-                      <Name className="text-white text-xs font-mono">
-                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                      </Name>
-                    </Identity>
-                  ) : '0xF939...84f1'}
                 </div>
                 <button
                   onClick={async () => {
