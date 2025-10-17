@@ -671,58 +671,7 @@ export default function FarcasterMiniApp() {
   // Farcaster profile integration
   const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
   
-  // HARDCODED TEST - Direct Farcaster profile fetch using known FID 9152
-  const [directFarcasterProfile, setDirectFarcasterProfile] = useState<any>(null);
-  
-  useEffect(() => {
-    const fetchDirectProfile = async () => {
-      console.log('🎭🎭🎭 HARDCODED FARCASTER PROFILE FETCH STARTING...');
-      
-      // HARDCODE the FID we know exists: 9152
-      const fid = 9152;
-      
-      console.log('🔍 Using hardcoded FID:', fid);
-      
-      try {
-        console.log('🔄 Fetching profile for hardcoded FID:', fid);
-        const response = await fetch(`/api/farcaster-profile?fid=${fid}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        console.log('📡 API response status:', response.status);
-        console.log('📡 API response headers:', Object.fromEntries(response.headers.entries()));
-        
-        if (response.ok) {
-          const profileData = await response.json();
-          console.log('✅ Got profile data:', profileData);
-          setDirectFarcasterProfile(profileData);
-        } else {
-          console.error('❌ API call failed:', response.status);
-          const errorText = await response.text();
-          console.error('❌ Error details:', errorText);
-          
-          // Try to parse error as JSON
-          try {
-            const errorJson = JSON.parse(errorText);
-            console.error('❌ Error JSON:', errorJson);
-          } catch (e) {
-            console.error('❌ Error text:', errorText);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error fetching profile:', error);
-        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
-      }
-    };
-    
-    // Run immediately and also after delays
-    fetchDirectProfile();
-    setTimeout(fetchDirectProfile, 2000);
-    setTimeout(fetchDirectProfile, 5000);
-  }, []);
+  // Removed hardcoded FID 9152 fetch - no more automatic calls
   
   // Debug Farcaster profile integration
   useEffect(() => {
@@ -731,12 +680,11 @@ export default function FarcasterMiniApp() {
         isFarcasterEnvironment,
         farcasterProfile,
         farcasterLoading,
-        directFarcasterProfile,
         hasMiniKit: !!(window as any).MiniKit,
         miniKitUser: (window as any).MiniKit?.user
       });
     }
-  }, [isFarcasterEnvironment, farcasterProfile, farcasterLoading, directFarcasterProfile]);
+  }, [isFarcasterEnvironment, farcasterProfile, farcasterLoading]);
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
