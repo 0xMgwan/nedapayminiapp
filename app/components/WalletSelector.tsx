@@ -189,6 +189,24 @@ const WalletSelector = forwardRef<
 
   // Farcaster profile integration
   const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
+  
+  // Debug logging for Farcaster integration
+  useEffect(() => {
+    console.log('🎭 WalletSelector Farcaster State:', {
+      farcasterProfile,
+      farcasterLoading,
+      isFarcasterEnvironment,
+      hasMiniKit: !!(window as any).MiniKit,
+      miniKitUser: (window as any).MiniKit?.user,
+      urlParams: new URLSearchParams(window.location.search).toString(),
+      hasTestParam: new URLSearchParams(window.location.search).has('test-farcaster')
+    });
+    
+    // Force test if MiniKit is available
+    if ((window as any).MiniKit && !isFarcasterEnvironment) {
+      console.log('⚠️ MiniKit detected but isFarcasterEnvironment is false - this is the issue!');
+    }
+  }, [farcasterProfile, farcasterLoading, isFarcasterEnvironment]);
 
   // Link account hook
   const { linkEmail } = useLinkAccount({
