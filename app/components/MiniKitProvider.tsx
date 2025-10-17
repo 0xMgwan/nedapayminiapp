@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, createContext, useContext } from 'react';
+import sdk from '@farcaster/frame-sdk';
 
 interface MiniKitContextType {
   isReady: boolean;
@@ -25,57 +26,21 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initializeMiniKit = async () => {
-      console.log('🔍 Initializing Farcaster Frame SDK...');
+      console.log('🔍 Initializing Farcaster Frame SDK from npm package...');
       
-      // Wait for the SDK script to load - check multiple possible names
-      const waitForSDK = async (maxAttempts = 20): Promise<any> => {
-        for (let i = 0; i < maxAttempts; i++) {
-          if (typeof window !== 'undefined') {
-            // Check different possible SDK locations
-            const possibleSDKs = [
-              (window as any).sdk,
-              (window as any).FrameSDK,
-              (window as any).farcaster,
-              (window as any).Farcaster
-            ];
-            
-            const foundSDK = possibleSDKs.find(sdk => sdk !== undefined);
-            
-            if (foundSDK) {
-              console.log('✅ Farcaster Frame SDK loaded!');
-              console.log('📊 SDK object:', foundSDK);
-              console.log('📊 SDK keys:', Object.keys(foundSDK));
-              return foundSDK;
-            }
-            
-            // Log what's available on window for debugging
-            if (i === 0) {
-              console.log('🔍 Checking window for Frame SDK...');
-              console.log('  window.sdk:', !!(window as any).sdk);
-              console.log('  window.FrameSDK:', !!(window as any).FrameSDK);
-              console.log('  window.farcaster:', !!(window as any).farcaster);
-              console.log('  window.Farcaster:', !!(window as any).Farcaster);
-            }
-          }
-          console.log(`⏳ Waiting for Frame SDK... (attempt ${i + 1}/${maxAttempts})`);
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        return null;
-      };
-
-      const sdk = await waitForSDK();
-
       if (!sdk) {
-        console.log('❌ Farcaster Frame SDK not found after', 20, 'attempts');
-        console.log('💡 SDK might not be loaded or exposed under different name');
-        console.log('🔍 Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('frame') || k.toLowerCase().includes('farcaster') || k.toLowerCase().includes('sdk')));
+        console.log('❌ Frame SDK not imported correctly');
         return;
       }
+      
+      console.log('✅ Frame SDK imported successfully');
+      console.log('📊 SDK object:', sdk);
+      console.log('📊 SDK keys:', Object.keys(sdk));
 
       try {
         // Initialize the SDK and get context
         console.log('🚀 Calling sdk.actions.ready()...');
-        const sdkContext = await sdk.actions.ready();
+        const sdkContext: any = await sdk.actions.ready();
         
         console.log('✅ Frame SDK initialized!');
         console.log('📊 SDK Context:', sdkContext);
@@ -84,7 +49,7 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
         setIsReady(true);
 
         // Extract user FID from context
-        let detectedFid = null;
+        let detectedFid: number | null = null;
 
         // Try context.user.fid
         if (sdkContext?.user?.fid) {
