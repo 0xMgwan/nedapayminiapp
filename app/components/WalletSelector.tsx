@@ -194,12 +194,14 @@ const WalletSelector = forwardRef<
   const [directMiniKitCheck, setDirectMiniKitCheck] = useState(false);
   const [miniKitProfile, setMiniKitProfile] = useState<any>(null);
   
-  // Debug log to ensure component is rendering
-  console.log('🚀 WalletSelector component rendering with state:', {
+  // Debug log to ensure component is rendering - DEPLOYMENT TEST
+  console.log('🚀🚀🚀 DEPLOYMENT TEST - WalletSelector component rendering:', {
     directMiniKitCheck,
     miniKitProfile,
     isFarcasterEnvironment,
-    farcasterProfile
+    farcasterProfile,
+    timestamp: new Date().toISOString(),
+    deploymentVersion: 'v2.0-farcaster-integration'
   });
   
   useEffect(() => {
