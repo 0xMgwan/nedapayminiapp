@@ -204,46 +204,89 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // SIMPLE WORKING USER DETECTION
+  // PROPER FARCASTER MINIKIT USER DETECTION
   useEffect(() => {
-    const loadUser = async () => {
-      console.log('🔍 LOADING USER PROFILE...');
+    const detectUserFromMiniKit = async () => {
+      console.log('🔍 DETECTING USER FROM FARCASTER MINIKIT...');
       
-      // Method 1: Check URL for user FID
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlFid = urlParams.get('fid');
+      // Wait for MiniKit to be ready
+      const checkMiniKit = async (attempt = 1, maxAttempts = 10) => {
+        if (typeof window === 'undefined') return null;
+        
+        const miniKit = (window as any).MiniKit;
+        
+        if (miniKit?.isReady) {
+          console.log('✅ MiniKit is ready');
+          
+          // Log full MiniKit context for debugging
+          console.log('📊 MiniKit full context:', {
+            hasContext: !!miniKit.context,
+            contextKeys: miniKit.context ? Object.keys(miniKit.context) : [],
+            client: miniKit.context?.client,
+            user: miniKit.context?.user,
+            cast: miniKit.context?.cast,
+            directUser: miniKit.user
+          });
+          
+          // Try to get user from context.user.fid (proper way for frames)
+          if (miniKit.context?.user?.fid) {
+            const userFid = miniKit.context.user.fid;
+            console.log('🎯 Found user FID from context.user:', userFid);
+            
+            // Only use if it's not the client FID
+            if (userFid !== 9152) {
+              return userFid;
+            } else {
+              console.log('⚠️ context.user.fid is client FID, checking other sources...');
+            }
+          }
+          
+          // Try context.cast.author.fid (if opened from a cast)
+          if (miniKit.context?.cast?.author?.fid) {
+            const authorFid = miniKit.context.cast.author.fid;
+            console.log('🎯 Found cast author FID:', authorFid);
+            if (authorFid !== 9152) {
+              return authorFid;
+            }
+          }
+          
+          console.log('❌ No valid user FID found in MiniKit context');
+          return null;
+        }
+        
+        if (attempt < maxAttempts) {
+          console.log(`⏳ MiniKit not ready yet, retry ${attempt}/${maxAttempts}...`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return checkMiniKit(attempt + 1, maxAttempts);
+        }
+        
+        console.log('❌ MiniKit not available after', maxAttempts, 'attempts');
+        return null;
+      };
       
-      if (urlFid && urlFid !== '9152' && !isNaN(parseInt(urlFid))) {
-        console.log('✅ Found FID in URL:', urlFid);
+      const detectedFid = await checkMiniKit();
+      
+      if (detectedFid) {
+        console.log('🎯 Loading profile for FID:', detectedFid);
         try {
-          const response = await fetch(`/api/farcaster-user?fid=${urlFid}`);
+          const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
           if (response.ok) {
             const userData = await response.json();
-            console.log('✅ USER LOADED FROM URL FID:', userData);
+            console.log('✅ USER PROFILE LOADED:', userData);
             setFarcasterUser(userData);
-            return;
+          } else {
+            console.error('❌ Failed to load profile for FID:', detectedFid);
           }
         } catch (error) {
-          console.error('❌ Error loading from URL FID:', error);
+          console.error('❌ Error loading profile:', error);
         }
-      }
-      
-      // Method 2: For testing, use your known working FID temporarily
-      // TODO: Replace with proper frame-based detection
-      console.log('🧪 Using test FID for development...');
-      try {
-        const response = await fetch('/api/farcaster-user?fid=869527');
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('✅ TEST USER LOADED:', userData);
-          setFarcasterUser(userData);
-        }
-      } catch (error) {
-        console.error('❌ Error loading test user:', error);
+      } else {
+        console.log('⚠️ No user FID detected - user may not be in Farcaster context');
+        console.log('💡 This is normal if testing outside of Farcaster app');
       }
     };
     
-    loadUser();
+    detectUserFromMiniKit();
   }, []);
 
   // Helper function to render token icon
