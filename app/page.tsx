@@ -5152,7 +5152,7 @@ export default function FarcasterMiniApp() {
                             ].filter(fid => fid && fid !== '9152');
                             
                             if (possibleFids.length > 0) {
-                              yourRealFid = parseInt(possibleFids[0]);
+                              yourRealFid = parseInt(possibleFids[0]!);
                               console.log('✅ Found your FID from URL params:', yourRealFid);
                             }
                           }
