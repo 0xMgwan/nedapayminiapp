@@ -158,25 +158,29 @@ export default function FarcasterMiniApp() {
   // DIRECT FARCASTER USER STATE
   const [farcasterUser, setFarcasterUser] = useState<any>(null);
   
-  // FETCH REAL USER DATA ONCE
+  // FETCH REAL USER DATA WITH DELAYS FOR MINIKIT
   useEffect(() => {
-    const fetchUser = async () => {
-      console.log('🎯 FETCHING REAL FARCASTER USER DATA...');
+    const fetchUser = async (attempt = 1) => {
+      console.log(`🎯 FETCHING REAL FARCASTER USER DATA - Attempt ${attempt}...`);
       
-      // First, let's check what MiniKit actually provides
+      // Check MiniKit with multiple attempts
       if (typeof window !== 'undefined') {
-        console.log('🔍 MINIKIT DEBUG - Full object:', (window as any).MiniKit);
-        console.log('🔍 MINIKIT.user:', (window as any).MiniKit?.user);
-        console.log('🔍 MINIKIT.context:', (window as any).MiniKit?.context);
-        console.log('🔍 MINIKIT.context.user:', (window as any).MiniKit?.context?.user);
+        console.log(`🔍 MINIKIT DEBUG - Attempt ${attempt}:`, {
+          hasMiniKit: !!(window as any).MiniKit,
+          miniKitKeys: (window as any).MiniKit ? Object.keys((window as any).MiniKit) : [],
+          context: (window as any).MiniKit?.context,
+          contextUser: (window as any).MiniKit?.context?.user,
+          directUser: (window as any).MiniKit?.user
+        });
         
-        // Check if we can get the actual user FID from context
-        const contextUser = (window as any).MiniKit?.context?.user;
-        if (contextUser && contextUser.fid && contextUser.fid !== 9152) {
-          console.log('🎯 FOUND REAL USER FID:', contextUser.fid);
-          // Use the real user FID
+        // Try to get user FID from MiniKit context
+        const miniKit = (window as any).MiniKit;
+        if (miniKit?.context?.user?.fid) {
+          const userFid = miniKit.context.user.fid;
+          console.log('🎯 FOUND USER FID FROM CONTEXT:', userFid);
+          
           try {
-            const response = await fetch(`/api/farcaster-profile?fid=${contextUser.fid}`);
+            const response = await fetch(`/api/farcaster-user?fid=${userFid}`);
             if (response.ok) {
               const userData = await response.json();
               console.log('✅ REAL USER DATA FROM CONTEXT FID:', userData);
@@ -187,8 +191,35 @@ export default function FarcasterMiniApp() {
             console.error('❌ Error fetching with context FID:', error);
           }
         }
+        
+        // Try to get from direct user object
+        if (miniKit?.user?.fid) {
+          const userFid = miniKit.user.fid;
+          console.log('🎯 FOUND USER FID FROM DIRECT USER:', userFid);
+          
+          try {
+            const response = await fetch(`/api/farcaster-user?fid=${userFid}`);
+            if (response.ok) {
+              const userData = await response.json();
+              console.log('✅ REAL USER DATA FROM DIRECT USER FID:', userData);
+              setFarcasterUser(userData);
+              return;
+            }
+          } catch (error) {
+            console.error('❌ Error fetching with direct user FID:', error);
+          }
+        }
       }
       
+      // If MiniKit isn't ready and we haven't tried enough times, retry
+      if (attempt < 3) {
+        console.log(`⏳ MiniKit not ready, retrying in ${attempt * 1000}ms...`);
+        setTimeout(() => fetchUser(attempt + 1), attempt * 1000);
+        return;
+      }
+      
+      // Fallback to default API call
+      console.log('🔄 Using fallback API call...');
       try {
         const response = await fetch('/api/farcaster-user');
         console.log('📡 Frontend API response status:', response.status);
@@ -206,7 +237,7 @@ export default function FarcasterMiniApp() {
       }
     };
     
-    // Only fetch once on mount
+    // Start fetching immediately, then retry if needed
     fetchUser();
   }, []);
 
