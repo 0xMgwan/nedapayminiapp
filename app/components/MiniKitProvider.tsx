@@ -30,6 +30,9 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
       
       const ctx: any = await sdk.context;
       console.log('📊 SDK context:', ctx);
+      console.log('📊 Context user:', ctx?.user);
+      console.log('📊 User wallet addresses:', ctx?.user?.verifications);
+      console.log('📊 User custody address:', ctx?.user?.custodyAddress);
       
       setContext(ctx);
       setIsReady(true);
@@ -40,8 +43,16 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
         console.log('✅ Found FID:', fid);
         if (fid !== 9152) {
           setUserFid(fid);
+          
+          // Get verified wallet address from context
+          const verifiedAddress = ctx?.user?.custodyAddress || ctx?.user?.verifications?.[0];
+          
           window.dispatchEvent(new CustomEvent('minikit-user-detected', {
-            detail: { fid, context: ctx }
+            detail: { 
+              fid, 
+              context: ctx,
+              verifiedAddress 
+            }
           }));
         }
       } else {

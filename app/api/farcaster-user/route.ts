@@ -92,12 +92,24 @@ export async function GET(request: NextRequest) {
     
     if (data.users && data.users.length > 0) {
       const user = data.users[0];
+      
+      // Extract verified addresses
+      const verifications = user.verifications || [];
+      const custodyAddress = user.custody_address;
+      const verifiedAddresses = user.verified_addresses?.eth_addresses || [];
+      
+      console.log('🔍 User verifications:', { verifications, custodyAddress, verifiedAddresses });
+      
       const userData = {
         fid: user.fid,
         username: user.username,
         displayName: user.display_name,
         pfpUrl: user.pfp_url,
-        bio: user.profile?.bio?.text || ''
+        bio: user.profile?.bio?.text || '',
+        custodyAddress,
+        verifiedAddresses,
+        // Use first verified address or custody address
+        primaryAddress: verifiedAddresses[0] || custodyAddress
       };
       
       // Cache the result
