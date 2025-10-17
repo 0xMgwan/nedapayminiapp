@@ -211,10 +211,11 @@ export default function FarcasterMiniApp() {
         }
       }
       
-      // If MiniKit isn't ready and we haven't tried enough times, retry
+      // If MiniKit isn't ready and we haven't tried enough times, retry with longer delays
       if (attempt < 3) {
-        console.log(`⏳ MiniKit not ready, retrying in ${attempt * 1000}ms...`);
-        setTimeout(() => fetchUser(attempt + 1), attempt * 1000);
+        const delay = attempt * 3000; // 3s, 6s, 9s delays to avoid rate limiting
+        console.log(`⏳ MiniKit not ready, retrying in ${delay}ms...`);
+        setTimeout(() => fetchUser(attempt + 1), delay);
         return;
       }
       

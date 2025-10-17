@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 // Cache for user data to avoid rate limiting
 let cachedUserData: any = null;
 let cacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let lastApiCall: number = 0;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - longer cache to avoid rate limits
+const MIN_API_INTERVAL = 30 * 1000; // Minimum 30 seconds between API calls
 
 // Dynamic endpoint to get user data for any FID
 export async function GET(request: NextRequest) {
@@ -31,7 +33,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Check if we're making API calls too frequently
+    const now = Date.now();
+    if (lastApiCall && (now - lastApiCall) < MIN_API_INTERVAL) {
+      console.log('⚠️ Rate limiting protection - using cached data');
+      if (cachedUserData) {
+        return NextResponse.json(cachedUserData);
+      }
+      return NextResponse.json({ error: 'Rate limited, try again later' }, { status: 429 });
+    }
     
+    lastApiCall = now;
     console.log('🔄 Fetching fresh data from Neynar for FID:', fid);
     
     const response = await fetch(
