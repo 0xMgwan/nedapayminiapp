@@ -37,6 +37,9 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
       // Check for MiniKit SDK
       const hasMiniKit = !!(window as any).MiniKit;
       
+      // Check for Farcaster Frame context
+      const hasFrameContext = window.parent !== window;
+      
       // Check URL patterns
       const url = window.location.href.toLowerCase();
       const referrer = document.referrer.toLowerCase();
@@ -45,7 +48,8 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
         'farcaster.xyz',
         'warpcast.com',
         'farcaster',
-        'warpcast'
+        'warpcast',
+        'frame'
       ];
       
       const isFarcasterUrl = farcasterPatterns.some(pattern => 
@@ -56,7 +60,37 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
       const userAgent = navigator.userAgent.toLowerCase();
       const isFarcasterApp = userAgent.includes('farcaster') || userAgent.includes('warpcast');
       
-      return hasMiniKit || isFarcasterUrl || isFarcasterApp;
+      // Check for frame-specific headers or parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasFrameParams = urlParams.has('frame') || urlParams.has('farcaster');
+      
+      // More comprehensive detection
+      const isInFrame = window.self !== window.top;
+      const hasPostMessage = typeof window.postMessage === 'function';
+      
+      // Temporary override for testing - check for URL parameter
+      const forceFrameMode = urlParams.has('test-farcaster');
+      
+      const isFarcaster = hasMiniKit || isFarcasterUrl || isFarcasterApp || hasFrameParams || (isInFrame && hasPostMessage) || forceFrameMode;
+      
+      // Debug logging
+      console.log('🔍 Farcaster Environment Detection:', {
+        hasMiniKit,
+        hasFrameContext,
+        isFarcasterUrl,
+        isFarcasterApp,
+        hasFrameParams,
+        isInFrame,
+        forceFrameMode,
+        url: window.location.href,
+        referrer: document.referrer,
+        userAgent: navigator.userAgent,
+        isFarcaster,
+        miniKitAvailable: !!(window as any).MiniKit,
+        miniKitUser: (window as any).MiniKit?.user
+      });
+      
+      return isFarcaster;
     };
 
     setIsFarcasterEnvironment(detectFarcasterEnvironment());
@@ -77,10 +111,10 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
         // Try to get profile from MiniKit SDK first
         if ((window as any).MiniKit?.user) {
           const miniKitUser = (window as any).MiniKit.user;
-          console.log('MiniKit user data:', miniKitUser);
+          console.log('✅ MiniKit user data found:', miniKitUser);
           
           if (miniKitUser.fid) {
-            setProfile({
+            const profileData = {
               fid: miniKitUser.fid,
               username: miniKitUser.username || `fid:${miniKitUser.fid}`,
               displayName: miniKitUser.displayName || miniKitUser.username || `User ${miniKitUser.fid}`,
@@ -89,11 +123,16 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
               followerCount: miniKitUser.followerCount || 0,
               followingCount: miniKitUser.followingCount || 0,
               verifications: miniKitUser.verifications || []
-            });
+            };
+            console.log('✅ Setting Farcaster profile from MiniKit:', profileData);
+            setProfile(profileData);
             setIsLoading(false);
             return;
           }
         }
+        
+        // If no MiniKit user but we're in Farcaster environment, create a default profile
+        console.log('⚠️ No MiniKit user found, creating default Farcaster profile');
 
         // Fallback: Try to fetch from Neynar API using the wallet address
         const neynarApiKey = process.env.NEXT_PUBLIC_NEYNAR_API_KEY;
@@ -132,7 +171,7 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
           }
         } else {
           // No API key available, create a minimal profile
-          setProfile({
+          const defaultProfile = {
             fid: 0,
             username: 'farcaster-user',
             displayName: 'Farcaster User',
@@ -141,7 +180,9 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
             followerCount: 0,
             followingCount: 0,
             verifications: []
-          });
+          };
+          console.log('📝 Setting default Farcaster profile:', defaultProfile);
+          setProfile(defaultProfile);
         }
       } catch (err) {
         console.error('Error fetching Farcaster profile:', err);
