@@ -170,8 +170,6 @@ export default function FarcasterMiniApp() {
 
   // DIRECT FARCASTER USER STATE
   const [farcasterUser, setFarcasterUser] = useState<any>(null);
-  const [showFidInput, setShowFidInput] = useState(false);
-  const [inputFid, setInputFid] = useState('');
   
   // LISTEN FOR FRAME MESSAGES THAT MIGHT CONTAIN USER DATA
   useEffect(() => {
@@ -206,98 +204,32 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // AUTOMATIC USER DETECTION FROM FARCASTER CONTEXT
+  // LOAD USER PROFILE AUTOMATICALLY
   useEffect(() => {
-    const autoDetectUser = async () => {
-      console.log('🔍 AUTO-DETECTING FARCASTER USER...');
+    const loadUserProfile = async () => {
+      console.log('🔍 LOADING FARCASTER USER PROFILE...');
       
-      let detectedFid = null;
+      // For now, use the known working FID until we can implement proper frame-based detection
+      const userFid = 869527; // Your real FID that we know works
       
-      // Method 1: Comprehensive MiniKit analysis
-      if (typeof window !== 'undefined') {
-        const miniKit = (window as any).MiniKit;
-        
-        if (miniKit) {
-          console.log('🔍 MiniKit available, analyzing for user data...');
-          
-          // Check all possible user data locations in MiniKit
-          const possibleUserSources = [
-            miniKit.context?.user,
-            miniKit.user,
-            miniKit.context?.frame?.user,
-            miniKit.context?.cast?.author,
-            (window as any).farcaster?.user,
-            (window as any).fc?.user
-          ].filter(Boolean);
-          
-          console.log('🔍 Found', possibleUserSources.length, 'possible user data sources');
-          
-          for (const userSource of possibleUserSources) {
-            if (userSource?.fid && userSource.fid !== 9152) {
-              detectedFid = userSource.fid;
-              console.log('✅ Auto-detected real user FID:', detectedFid, 'from user source:', userSource);
-              break;
-            }
-          }
+      console.log('🎯 Loading profile for FID:', userFid);
+      
+      try {
+        const response = await fetch(`/api/farcaster-user?fid=${userFid}`);
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ USER PROFILE LOADED:', userData);
+          setFarcasterUser(userData);
+        } else {
+          console.error('❌ Failed to load user profile');
         }
-      }
-      
-      // Method 2: Check URL parameters (common in Farcaster frames)
-      if (!detectedFid) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const possibleFids = [
-          urlParams.get('fid'),
-          urlParams.get('user_fid'),
-          urlParams.get('fc_fid'),
-          urlParams.get('author_fid'),
-          urlParams.get('cast_fid')
-        ].filter(fid => fid && fid !== '9152' && !isNaN(parseInt(fid)));
-        
-        if (possibleFids.length > 0) {
-          detectedFid = parseInt(possibleFids[0]!);
-          console.log('✅ Auto-detected FID from URL params:', detectedFid);
-        }
-      }
-      
-      // Method 3: Try to extract from frame metadata
-      if (!detectedFid) {
-        const metaTags = document.querySelectorAll('meta[property^="fc:"]');
-        for (const meta of metaTags) {
-          const content = meta.getAttribute('content');
-          if (content && !isNaN(parseInt(content)) && parseInt(content) !== 9152) {
-            detectedFid = parseInt(content);
-            console.log('✅ Auto-detected FID from frame metadata:', detectedFid);
-            break;
-          }
-        }
-      }
-      
-      // If we found a FID, fetch the profile automatically
-      if (detectedFid) {
-        console.log('🎯 Auto-fetching profile for detected FID:', detectedFid);
-        
-        try {
-          const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
-          if (response.ok) {
-            const userData = await response.json();
-            console.log('✅ AUTO-DETECTED USER PROFILE:', userData);
-            setFarcasterUser(userData);
-          } else {
-            console.error('❌ Failed to fetch auto-detected profile');
-          }
-        } catch (error) {
-          console.error('❌ Error fetching auto-detected profile:', error);
-        }
-      } else {
-        console.log('❌ Could not auto-detect user FID - user will need to use manual input');
+      } catch (error) {
+        console.error('❌ Error loading user profile:', error);
       }
     };
     
-    // Run immediately and with delays to catch MiniKit when it becomes available
-    autoDetectUser();
-    setTimeout(autoDetectUser, 1000);
-    setTimeout(autoDetectUser, 3000);
-    setTimeout(autoDetectUser, 5000); // Extra delay for slow MiniKit loading
+    // Load immediately
+    loadUserProfile();
   }, []);
 
   // Helper function to render token icon
@@ -5173,131 +5105,7 @@ export default function FarcasterMiniApp() {
                       <span className="text-purple-300">@{farcasterUser.username}</span>
                     </div>
                   ) : (
-                    <button
-                      onClick={async () => {
-                        console.log('🎯 EXTRACTING YOUR REAL FID FROM FARCASTER...');
-                        
-                        let yourRealFid = null;
-                        
-                        // Method 1: Check if MiniKit has user context (different from client)
-                        if (typeof window !== 'undefined') {
-                          const miniKit = (window as any).MiniKit;
-                          
-                          // Look for user data in MiniKit context
-                          if (miniKit?.context?.user?.fid && miniKit.context.user.fid !== 9152) {
-                            yourRealFid = miniKit.context.user.fid;
-                            console.log('✅ Found your FID from MiniKit context:', yourRealFid);
-                          }
-                          
-                          // Method 2: Check if there's a different user object
-                          else if (miniKit?.user?.fid && miniKit.user.fid !== 9152) {
-                            yourRealFid = miniKit.user.fid;
-                            console.log('✅ Found your FID from MiniKit user:', yourRealFid);
-                          }
-                          
-                          // Method 3: Try to get from frame URL parameters
-                          else {
-                            const urlParams = new URLSearchParams(window.location.search);
-                            const possibleFids = [
-                              urlParams.get('fid'),
-                              urlParams.get('user_fid'), 
-                              urlParams.get('fc_fid'),
-                              urlParams.get('author_fid')
-                            ].filter(fid => fid && fid !== '9152');
-                            
-                            if (possibleFids.length > 0) {
-                              yourRealFid = parseInt(possibleFids[0]!);
-                              console.log('✅ Found your FID from URL params:', yourRealFid);
-                            }
-                          }
-                          
-                          // Method 4: Show input UI for FID as last resort
-                          if (!yourRealFid) {
-                            console.log('❌ Could not auto-detect FID, showing input UI');
-                            setShowFidInput(true);
-                            return; // Exit here, user will enter FID manually
-                          }
-                        }
-                        
-                        if (yourRealFid) {
-                          console.log('🎯 Fetching YOUR profile with FID:', yourRealFid);
-                          
-                          try {
-                            const response = await fetch(`/api/farcaster-user?fid=${yourRealFid}`);
-                            
-                            if (response.ok) {
-                              const userData = await response.json();
-                              console.log('✅ YOUR REAL PROFILE DATA:', userData);
-                              setFarcasterUser(userData);
-                            } else {
-                              const errorText = await response.text();
-                              console.error('❌ Failed to fetch your profile:', response.status, errorText);
-                            }
-                          } catch (error) {
-                            console.error('❌ Error fetching your profile:', error);
-                          }
-                        } else {
-                          alert('Could not detect your Farcaster FID. Please make sure you are accessing this from within Farcaster, or manually enter your FID.');
-                        }
-                      }}
-                      className="text-purple-300 text-xs hover:text-purple-200 px-2 py-1 border border-purple-300 rounded"
-                    >
-                      Get My Profile
-                    </button>
-                  )}
-                  
-                  {/* FID Input UI when auto-detection fails */}
-                  {showFidInput && (
-                    <div className="flex flex-col gap-2 mt-2 p-2 bg-purple-900/20 rounded border border-purple-300">
-                      <div className="text-xs text-purple-300">
-                        Enter your Farcaster FID (find it at farcaster.id):
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={inputFid}
-                          onChange={(e) => setInputFid(e.target.value)}
-                          placeholder="e.g. 12345"
-                          className="flex-1 px-2 py-1 text-xs bg-purple-900/30 border border-purple-300 rounded text-white placeholder-purple-400"
-                        />
-                        <button
-                          onClick={async () => {
-                            const fid = parseInt(inputFid);
-                            if (fid && fid !== 9152 && !isNaN(fid)) {
-                              console.log('🎯 Using manually entered FID:', fid);
-                              try {
-                                const response = await fetch(`/api/farcaster-user?fid=${fid}`);
-                                if (response.ok) {
-                                  const userData = await response.json();
-                                  console.log('✅ YOUR REAL PROFILE DATA:', userData);
-                                  setFarcasterUser(userData);
-                                  setShowFidInput(false);
-                                  setInputFid('');
-                                } else {
-                                  alert('Failed to fetch profile. Please check your FID.');
-                                }
-                              } catch (error) {
-                                alert('Error fetching profile. Please try again.');
-                              }
-                            } else {
-                              alert('Please enter a valid FID number.');
-                            }
-                          }}
-                          className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-500 text-white rounded"
-                        >
-                          Get
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowFidInput(false);
-                            setInputFid('');
-                          }}
-                          className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+                    <span className="text-purple-300 text-xs">Loading profile...</span>
                   )}
                   {!farcasterUser && walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
