@@ -139,25 +139,31 @@ interface RateData {
 }
 
 export default function FarcasterMiniApp() {
-  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v5 - FIND REAL FID...');
+  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v6 - FIX CORS ISSUE...');
   console.log('🔍 Stablecoins array length:', stablecoins.length);
   console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
   
-  // IMMEDIATE MINIKIT CHECK - FIND REAL USER FID
+  // SAFE MINIKIT CHECK - AVOID CORS ERRORS
   if (typeof window !== 'undefined') {
-    console.log('🔍 IMMEDIATE MINIKIT CHECK - SEARCHING FOR REAL USER FID:', {
-      hasMiniKit: !!(window as any).MiniKit,
-      miniKitKeys: (window as any).MiniKit ? Object.keys((window as any).MiniKit) : [],
-      contextUser: (window as any).MiniKit?.context?.user,
-      directUser: (window as any).MiniKit?.user,
-      // Check frame message data
-      frameMessage: (window as any).frameMessage,
-      frameData: (window as any).frameData,
-      // Check postMessage data
-      lastPostMessage: (window as any).lastPostMessage,
-      // Check if parent has user data
-      parentMiniKit: window.parent !== window ? (window.parent as any).MiniKit : null
-    });
+    try {
+      console.log('🔍 SAFE MINIKIT CHECK - AVOIDING CORS ERRORS:', {
+        hasMiniKit: !!(window as any).MiniKit,
+        miniKitKeys: (window as any).MiniKit ? Object.keys((window as any).MiniKit) : [],
+        // Only check current window, not parent (to avoid CORS)
+        currentWindowLocation: window.location.href,
+        isInFrame: window.self !== window.top,
+        // Check URL parameters for user data
+        urlSearchParams: new URLSearchParams(window.location.search).toString(),
+        // Check hash for user data
+        urlHash: window.location.hash,
+        // Check localStorage for user data
+        hasLocalStorage: !!localStorage,
+        // Check sessionStorage for user data  
+        hasSessionStorage: !!sessionStorage
+      });
+    } catch (error) {
+      console.log('🚫 CORS Error avoided:', error.message);
+    }
   }
   
   const { t, i18n } = useTranslation();
@@ -202,6 +208,26 @@ export default function FarcasterMiniApp() {
   useEffect(() => {
     const fetchUser = async (attempt = 1) => {
       console.log(`🎯 FETCHING REAL FARCASTER USER DATA - Attempt ${attempt}...`);
+      
+      // FIRST: Try server-side user detection to bypass CORS issues
+      if (attempt === 1) {
+        console.log('🔍 Trying server-side user detection...');
+        try {
+          const response = await fetch('/api/detect-user');
+          if (response.ok) {
+            const detectionResult = await response.json();
+            console.log('📊 User detection result:', detectionResult);
+            
+            if (detectionResult.fid && detectionResult.username) {
+              console.log('✅ REAL USER DETECTED FROM SERVER:', detectionResult);
+              setFarcasterUser(detectionResult);
+              return; // Success! Exit early
+            }
+          }
+        } catch (error) {
+          console.error('❌ Server-side detection failed:', error);
+        }
+      }
       
       // Check MiniKit with multiple attempts
       if (typeof window !== 'undefined') {
