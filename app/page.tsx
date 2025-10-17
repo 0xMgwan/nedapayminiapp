@@ -570,13 +570,17 @@ export default function FarcasterMiniApp() {
   const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
   
   // Debug Farcaster profile integration
-  console.log('🎭 FARCASTER PROFILE DEBUG:', {
-    isFarcasterEnvironment,
-    farcasterProfile,
-    farcasterLoading,
-    hasMiniKit: !!(window as any).MiniKit,
-    miniKitUser: (window as any).MiniKit?.user
-  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log('🎭 FARCASTER PROFILE DEBUG:', {
+        isFarcasterEnvironment,
+        farcasterProfile,
+        farcasterLoading,
+        hasMiniKit: !!(window as any).MiniKit,
+        miniKitUser: (window as any).MiniKit?.user
+      });
+    }
+  }, [isFarcasterEnvironment, farcasterProfile, farcasterLoading]);
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
