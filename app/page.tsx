@@ -151,13 +151,40 @@ export default function FarcasterMiniApp() {
   useEffect(() => {
     const fetchUser = async () => {
       console.log('🎯 FETCHING REAL FARCASTER USER DATA...');
+      
+      // First, let's check what MiniKit actually provides
+      if (typeof window !== 'undefined') {
+        console.log('🔍 MINIKIT DEBUG - Full object:', (window as any).MiniKit);
+        console.log('🔍 MINIKIT.user:', (window as any).MiniKit?.user);
+        console.log('🔍 MINIKIT.context:', (window as any).MiniKit?.context);
+        console.log('🔍 MINIKIT.context.user:', (window as any).MiniKit?.context?.user);
+        
+        // Check if we can get the actual user FID from context
+        const contextUser = (window as any).MiniKit?.context?.user;
+        if (contextUser && contextUser.fid && contextUser.fid !== 9152) {
+          console.log('🎯 FOUND REAL USER FID:', contextUser.fid);
+          // Use the real user FID
+          try {
+            const response = await fetch(`/api/farcaster-profile?fid=${contextUser.fid}`);
+            if (response.ok) {
+              const userData = await response.json();
+              console.log('✅ REAL USER DATA FROM CONTEXT FID:', userData);
+              setFarcasterUser(userData);
+              return;
+            }
+          } catch (error) {
+            console.error('❌ Error fetching with context FID:', error);
+          }
+        }
+      }
+      
       try {
         const response = await fetch('/api/farcaster-user');
         console.log('📡 Frontend API response status:', response.status);
         
         if (response.ok) {
           const userData = await response.json();
-          console.log('✅ REAL USER DATA:', userData);
+          console.log('✅ FALLBACK USER DATA:', userData);
           setFarcasterUser(userData);
         } else {
           const errorText = await response.text();
