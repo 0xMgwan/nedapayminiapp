@@ -190,22 +190,40 @@ const WalletSelector = forwardRef<
   // Farcaster profile integration
   const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
   
-  // Debug logging for Farcaster integration
+  // Temporary direct MiniKit check for debugging
+  const [directMiniKitCheck, setDirectMiniKitCheck] = useState(false);
+  const [miniKitProfile, setMiniKitProfile] = useState<any>(null);
+  
   useEffect(() => {
-    console.log('🎭 WalletSelector Farcaster State:', {
-      farcasterProfile,
-      farcasterLoading,
-      isFarcasterEnvironment,
-      hasMiniKit: !!(window as any).MiniKit,
-      miniKitUser: (window as any).MiniKit?.user,
-      urlParams: new URLSearchParams(window.location.search).toString(),
-      hasTestParam: new URLSearchParams(window.location.search).has('test-farcaster')
-    });
+    const checkMiniKit = () => {
+      const hasMiniKit = !!(window as any).MiniKit;
+      const miniKitUser = (window as any).MiniKit?.user;
+      
+      console.log('🎭 WalletSelector Direct MiniKit Check:', {
+        hasMiniKit,
+        miniKitUser,
+        farcasterProfile,
+        farcasterLoading,
+        isFarcasterEnvironment
+      });
+      
+      setDirectMiniKitCheck(hasMiniKit);
+      
+      if (hasMiniKit && miniKitUser?.fid) {
+        setMiniKitProfile({
+          fid: miniKitUser.fid,
+          username: miniKitUser.username || `fid:${miniKitUser.fid}`,
+          displayName: miniKitUser.displayName || miniKitUser.username || `User ${miniKitUser.fid}`,
+          pfpUrl: miniKitUser.pfpUrl || '/default-avatar.svg'
+        });
+        console.log('✅ Created direct MiniKit profile:', miniKitProfile);
+      }
+    };
     
-    // Force test if MiniKit is available
-    if ((window as any).MiniKit && !isFarcasterEnvironment) {
-      console.log('⚠️ MiniKit detected but isFarcasterEnvironment is false - this is the issue!');
-    }
+    checkMiniKit();
+    // Check again after a delay in case MiniKit loads later
+    const timer = setTimeout(checkMiniKit, 1000);
+    return () => clearTimeout(timer);
   }, [farcasterProfile, farcasterLoading, isFarcasterEnvironment]);
 
   // Link account hook
@@ -490,11 +508,11 @@ const WalletSelector = forwardRef<
 
           {pathname !== "/" && (
             <div className="wallet-address-container flex-1 min-w-0">
-              {isFarcasterEnvironment && farcasterProfile ? (
+              {(isFarcasterEnvironment && farcasterProfile) || (directMiniKitCheck && miniKitProfile) ? (
                 <div className="flex items-center space-x-2">
                   <img
-                    src={farcasterProfile.pfpUrl}
-                    alt={`${farcasterProfile.username} avatar`}
+                    src={(farcasterProfile || miniKitProfile)?.pfpUrl}
+                    alt={`${(farcasterProfile || miniKitProfile)?.username} avatar`}
                     className="w-5 h-5 rounded-full object-cover border border-gray-200"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/default-avatar.svg';
@@ -502,10 +520,10 @@ const WalletSelector = forwardRef<
                   />
                   <div className="flex flex-col min-w-0">
                     <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors truncate">
-                      {farcasterProfile.displayName}
+                      {(farcasterProfile || miniKitProfile)?.displayName}
                     </span>
                     <span className="text-xs text-gray-500 truncate">
-                      @{farcasterProfile.username}
+                      @{(farcasterProfile || miniKitProfile)?.username}
                     </span>
                   </div>
                 </div>
@@ -567,7 +585,7 @@ const WalletSelector = forwardRef<
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-gray-900">
-                {isFarcasterEnvironment && farcasterProfile ? 'Farcaster Profile' : 'Connected Account'}
+                {(isFarcasterEnvironment && farcasterProfile) || (directMiniKitCheck && miniKitProfile) ? 'Farcaster Profile' : 'Connected Account'}
               </h3>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
@@ -575,13 +593,15 @@ const WalletSelector = forwardRef<
               </span>
             </div>
             
-            {isFarcasterEnvironment && farcasterProfile ? (
+            {(isFarcasterEnvironment && farcasterProfile) || (directMiniKitCheck && miniKitProfile) ? (
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-3 border border-purple-100">
-                <FarcasterProfile 
-                  profile={farcasterProfile} 
-                  compact={true}
-                  className="bg-transparent border-0 p-0 shadow-none"
-                />
+                {(farcasterProfile || miniKitProfile) && (
+                  <FarcasterProfile 
+                    profile={farcasterProfile || miniKitProfile} 
+                    compact={true}
+                    className="bg-transparent border-0 p-0 shadow-none"
+                  />
+                )}
                 {walletAddress && (
                   <div className="mt-3 pt-3 border-t border-purple-200">
                     <div className="text-xs font-medium text-gray-500 mb-1">Wallet Address</div>
