@@ -206,8 +206,9 @@ export default function FarcasterMiniApp() {
 
   // LISTEN FOR MINIKIT USER DETECTION FROM PROVIDER
   useEffect(() => {
-    const handleUserDetected = async (event: CustomEvent) => {
-      const { fid, context } = event.detail;
+    const handleUserDetected = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { fid, context } = customEvent.detail;
       console.log('🎯 MiniKit user detected event received!');
       console.log('  FID:', fid);
       console.log('  Context:', context);
@@ -229,10 +230,10 @@ export default function FarcasterMiniApp() {
       }
     };
     
-    window.addEventListener('minikit-user-detected', handleUserDetected as EventListener);
+    window.addEventListener('minikit-user-detected', handleUserDetected);
     
     return () => {
-      window.removeEventListener('minikit-user-detected', handleUserDetected as EventListener);
+      window.removeEventListener('minikit-user-detected', handleUserDetected);
     };
   }, []);
 
