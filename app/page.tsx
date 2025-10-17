@@ -569,6 +569,47 @@ export default function FarcasterMiniApp() {
   // Farcaster profile integration
   const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
   
+  // Direct Farcaster profile fetch using known FID
+  const [directFarcasterProfile, setDirectFarcasterProfile] = useState<any>(null);
+  
+  useEffect(() => {
+    const fetchDirectProfile = async () => {
+      if (typeof window === 'undefined') return;
+      
+      console.log('🎭 DIRECT FARCASTER PROFILE FETCH STARTING...');
+      
+      // Get FID from MiniKit context - we know it's 9152
+      let fid = null;
+      if ((window as any).MiniKit?.context?.user?.fid) {
+        fid = (window as any).MiniKit.context.user.fid;
+      } else if ((window as any).MiniKit?.user?.fid) {
+        fid = (window as any).MiniKit.user.fid;
+      }
+      
+      console.log('🔍 Detected FID:', fid);
+      
+      if (fid) {
+        try {
+          console.log('🔄 Fetching profile for FID:', fid);
+          const response = await fetch(`/api/farcaster-profile?fid=${fid}`);
+          
+          if (response.ok) {
+            const profileData = await response.json();
+            console.log('✅ Got profile data:', profileData);
+            setDirectFarcasterProfile(profileData);
+          } else {
+            console.error('❌ API call failed:', response.status);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching profile:', error);
+        }
+      }
+    };
+    
+    // Run after a short delay to ensure MiniKit is ready
+    setTimeout(fetchDirectProfile, 2000);
+  }, []);
+  
   // Debug Farcaster profile integration
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -576,11 +617,12 @@ export default function FarcasterMiniApp() {
         isFarcasterEnvironment,
         farcasterProfile,
         farcasterLoading,
+        directFarcasterProfile,
         hasMiniKit: !!(window as any).MiniKit,
         miniKitUser: (window as any).MiniKit?.user
       });
     }
-  }, [isFarcasterEnvironment, farcasterProfile, farcasterLoading]);
+  }, [isFarcasterEnvironment, farcasterProfile, farcasterLoading, directFarcasterProfile]);
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
@@ -5002,17 +5044,17 @@ export default function FarcasterMiniApp() {
                   <div className="absolute inset-0 w-2 h-2 bg-green-400/50 rounded-full animate-pulse" />
                 </div>
                 <div className="text-white text-xs font-mono">
-                  {isFarcasterEnvironment && farcasterProfile ? (
+                  {(directFarcasterProfile || (isFarcasterEnvironment && farcasterProfile)) ? (
                     <div className="flex items-center gap-1">
                       <img
-                        src={farcasterProfile.pfpUrl}
-                        alt={`${farcasterProfile.username} avatar`}
+                        src={(directFarcasterProfile || farcasterProfile)?.pfpUrl || '/default-avatar.svg'}
+                        alt={`${(directFarcasterProfile || farcasterProfile)?.username} avatar`}
                         className="w-3 h-3 rounded-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/default-avatar.svg';
                         }}
                       />
-                      <span className="text-purple-300">@{farcasterProfile.username}</span>
+                      <span className="text-purple-300">@{(directFarcasterProfile || farcasterProfile)?.username}</span>
                     </div>
                   ) : walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
