@@ -204,70 +204,41 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // AUTOMATIC USER DETECTION FOR ANY USER
+  // SERVER-SIDE USER DETECTION
   useEffect(() => {
-    const detectAnyUser = async () => {
-      console.log('🔍 AUTO-DETECTING CURRENT USER...');
+    const detectCurrentUser = async () => {
+      console.log('🔍 DETECTING CURRENT USER VIA SERVER...');
       
-      let detectedFid = null;
+      try {
+        // Try server-side detection first
+        const response = await fetch('/api/current-user');
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ CURRENT USER DETECTED:', userData);
+          setFarcasterUser(userData);
+          return;
+        } else {
+          console.log('❌ Server-side detection failed, trying client-side...');
+        }
+      } catch (error) {
+        console.error('❌ Server-side detection error:', error);
+      }
       
-      // Method 1: Check URL parameters first (most reliable for frames)
+      // Fallback: Client-side detection
+      console.log('🔍 Trying client-side user detection...');
+      
+      // Check URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const urlFids = [
         urlParams.get('fid'),
         urlParams.get('user_fid'),
         urlParams.get('fc_fid'),
-        urlParams.get('author_fid'),
-        urlParams.get('cast_fid')
+        urlParams.get('author_fid')
       ].filter(fid => fid && fid !== '9152' && !isNaN(parseInt(fid)));
       
       if (urlFids.length > 0) {
-        detectedFid = parseInt(urlFids[0]!);
-        console.log('✅ Detected user FID from URL:', detectedFid);
-      }
-      
-      // Method 2: Try to get from referrer or frame context
-      if (!detectedFid && document.referrer) {
-        const referrerUrl = new URL(document.referrer);
-        const referrerFid = referrerUrl.searchParams.get('fid');
-        if (referrerFid && referrerFid !== '9152' && !isNaN(parseInt(referrerFid))) {
-          detectedFid = parseInt(referrerFid);
-          console.log('✅ Detected user FID from referrer:', detectedFid);
-        }
-      }
-      
-      // Method 3: Check MiniKit for any user data
-      if (!detectedFid && typeof window !== 'undefined') {
-        const miniKit = (window as any).MiniKit;
-        if (miniKit) {
-          // Check all possible user locations
-          const userSources = [
-            miniKit.context?.user,
-            miniKit.user,
-            miniKit.context?.frame?.user,
-            miniKit.context?.cast?.author
-          ].filter(Boolean);
-          
-          for (const source of userSources) {
-            if (source?.fid && source.fid !== 9152) {
-              detectedFid = source.fid;
-              console.log('✅ Detected user FID from MiniKit:', detectedFid);
-              break;
-            }
-          }
-        }
-      }
-      
-      // Method 4: Try to extract from frame messages
-      if (!detectedFid) {
-        console.log('🔍 Waiting for frame messages with user data...');
-        // The frame message listener will handle this
-        return;
-      }
-      
-      // If we found a FID, load that user's profile
-      if (detectedFid) {
-        console.log('🎯 Loading profile for detected user FID:', detectedFid);
+        const detectedFid = parseInt(urlFids[0]!);
+        console.log('✅ Found user FID in URL:', detectedFid);
         
         try {
           const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
@@ -275,21 +246,19 @@ export default function FarcasterMiniApp() {
             const userData = await response.json();
             console.log('✅ USER PROFILE LOADED:', userData);
             setFarcasterUser(userData);
-          } else {
-            console.error('❌ Failed to load user profile for FID:', detectedFid);
+            return;
           }
         } catch (error) {
           console.error('❌ Error loading user profile:', error);
         }
-      } else {
-        console.log('❌ Could not detect any user FID - will show generic interface');
       }
+      
+      console.log('❌ Could not detect current user - showing generic interface');
     };
     
-    // Try detection with multiple attempts
-    detectAnyUser();
-    setTimeout(detectAnyUser, 1000);
-    setTimeout(detectAnyUser, 3000);
+    // Try detection immediately and with retries
+    detectCurrentUser();
+    setTimeout(detectCurrentUser, 2000);
   }, []);
 
   // Helper function to render token icon
@@ -754,7 +723,7 @@ export default function FarcasterMiniApp() {
     console.log('Connectors Available:', connectors.length);
     console.log('Wallet Client:', !!walletClient);
     console.log('Is Base App:', isBaseApp);
-    console.log('Client FID:', context?.client?.clientFid);
+    // Removed Client FID log - that's just the Warpcast client, not the user
     
     if (connectedWallet) {
       console.log('🔍 CONNECTED WALLET:', {
