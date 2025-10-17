@@ -16,8 +16,10 @@ import { Name } from "@coinbase/onchainkit/identity";
 import { getBasename } from "../utils/getBaseName";
 import { useUserSync } from "../hooks/useUserSync";
 import { useLinkAccount } from "@privy-io/react-auth";
+import { useFarcasterProfile } from "../hooks/useFarcasterProfile";
 import AuthenticationModal from "./AuthenticationModal";
 import WalletFundsModal from "./WalletFundsModal";
+import { FarcasterProfile } from "./FarcasterProfile";
 import { FaWallet, FaSignOutAlt } from "react-icons/fa";
 
 // Type definitions for BasenameDisplay component
@@ -184,6 +186,9 @@ const WalletSelector = forwardRef<
   // Privy hooks
   const { authenticated, user, connectWallet, logout, ready, login } =
     usePrivy();
+
+  // Farcaster profile integration
+  const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
 
   // Link account hook
   const { linkEmail } = useLinkAccount({
@@ -467,7 +472,26 @@ const WalletSelector = forwardRef<
 
           {pathname !== "/" && (
             <div className="wallet-address-container flex-1 min-w-0">
-              {walletAddress ? (
+              {isFarcasterEnvironment && farcasterProfile ? (
+                <div className="flex items-center space-x-2">
+                  <img
+                    src={farcasterProfile.pfpUrl}
+                    alt={`${farcasterProfile.username} avatar`}
+                    className="w-5 h-5 rounded-full object-cover border border-gray-200"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/default-avatar.svg';
+                    }}
+                  />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors truncate">
+                      {farcasterProfile.displayName}
+                    </span>
+                    <span className="text-xs text-gray-500 truncate">
+                      @{farcasterProfile.username}
+                    </span>
+                  </div>
+                </div>
+              ) : walletAddress ? (
                 <div className="wallet-address text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                   <BasenameDisplay
                     address={walletAddress}
@@ -525,30 +549,54 @@ const WalletSelector = forwardRef<
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-gray-900">
-                Connected Account
+                {isFarcasterEnvironment && farcasterProfile ? 'Farcaster Profile' : 'Connected Account'}
               </h3>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
                 Active
               </span>
             </div>
-            <div className="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
-              <div className="text-xs font-medium text-gray-500 mb-1">Address</div>
-              <div className="text-sm text-gray-900 break-all font-mono">
-                {walletAddress ? (
-                  <BasenameDisplay
-                    address={walletAddress}
-                    basenameClassName="text-sm font-semibold text-gray-900"
-                    addressClassName="text-sm text-gray-700"
-                    isMobile={false}
-                  />
-                ) : emailAddress ? (
-                  emailAddress
-                ) : (
-                  "Connected"
+            
+            {isFarcasterEnvironment && farcasterProfile ? (
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-3 border border-purple-100">
+                <FarcasterProfile 
+                  profile={farcasterProfile} 
+                  compact={true}
+                  className="bg-transparent border-0 p-0 shadow-none"
+                />
+                {walletAddress && (
+                  <div className="mt-3 pt-3 border-t border-purple-200">
+                    <div className="text-xs font-medium text-gray-500 mb-1">Wallet Address</div>
+                    <div className="text-xs text-gray-700 break-all font-mono">
+                      <BasenameDisplay
+                        address={walletAddress}
+                        basenameClassName="text-xs font-semibold text-gray-700"
+                        addressClassName="text-xs text-gray-600"
+                        isMobile={false}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
+            ) : (
+              <div className="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                <div className="text-xs font-medium text-gray-500 mb-1">Address</div>
+                <div className="text-sm text-gray-900 break-all font-mono">
+                  {walletAddress ? (
+                    <BasenameDisplay
+                      address={walletAddress}
+                      basenameClassName="text-sm font-semibold text-gray-900"
+                      addressClassName="text-sm text-gray-700"
+                      isMobile={false}
+                    />
+                  ) : emailAddress ? (
+                    emailAddress
+                  ) : (
+                    "Connected"
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {!hasEmail && walletAddress && (
