@@ -139,9 +139,20 @@ interface RateData {
 }
 
 export default function FarcasterMiniApp() {
-  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v4 - DIRECT FIX...');
+  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v5 - FIND REAL FID...');
   console.log('🔍 Stablecoins array length:', stablecoins.length);
   console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
+  
+  // IMMEDIATE MINIKIT CHECK
+  if (typeof window !== 'undefined') {
+    console.log('🔍 IMMEDIATE MINIKIT CHECK:', {
+      hasMiniKit: !!(window as any).MiniKit,
+      miniKitKeys: (window as any).MiniKit ? Object.keys((window as any).MiniKit) : [],
+      contextUser: (window as any).MiniKit?.context?.user,
+      directUser: (window as any).MiniKit?.user
+    });
+  }
+  
   const { t, i18n } = useTranslation();
 
   // DIRECT FARCASTER USER STATE

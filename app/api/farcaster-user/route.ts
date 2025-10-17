@@ -5,12 +5,21 @@ let cachedUserData: any = null;
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Simple endpoint to get user data for FID 9152 (your FID)
+// Dynamic endpoint to get user data for any FID
 export async function GET(request: NextRequest) {
-  // Check cache first
+  const { searchParams } = new URL(request.url);
+  const requestedFid = searchParams.get('fid');
+  
+  // Use requested FID or fallback to 9152
+  const fid = requestedFid ? parseInt(requestedFid) : 9152;
+  
+  console.log('🎯 API called with FID:', fid, requestedFid ? '(from request)' : '(fallback)');
+  
+  // Check cache first (cache per FID)
+  const cacheKey = `user_${fid}`;
   const now = Date.now();
-  if (cachedUserData && (now - cacheTimestamp) < CACHE_DURATION) {
-    console.log('✅ Returning cached user data');
+  if (cachedUserData && cachedUserData.fid === fid && (now - cacheTimestamp) < CACHE_DURATION) {
+    console.log('✅ Returning cached user data for FID:', fid);
     return NextResponse.json(cachedUserData);
   }
 
@@ -22,8 +31,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Hardcode your FID for now
-    const fid = 9152;
     
     console.log('🔄 Fetching fresh data from Neynar for FID:', fid);
     
