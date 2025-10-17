@@ -206,46 +206,98 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // DIRECT USER DETECTION FROM FARCASTER CONTEXT
+  // AUTOMATIC USER DETECTION FROM FARCASTER CONTEXT
   useEffect(() => {
-    const detectUser = async () => {
-      // Method 1: Check if running in Farcaster and get user from parent
-      if (window.parent !== window) {
-        try {
-          // Request user data from parent frame
-          window.parent.postMessage({ type: 'fc_getUserData' }, '*');
-        } catch (e) {
-          // Ignore CORS errors
-        }
-      }
+    const autoDetectUser = async () => {
+      console.log('🔍 AUTO-DETECTING FARCASTER USER...');
       
-      // Method 2: Use Farcaster SDK if available
-      if ((window as any).fc?.user) {
-        const user = (window as any).fc.user;
-        if (user.fid && user.fid !== 9152) {
-          const response = await fetch(`/api/farcaster-user?fid=${user.fid}`);
-          if (response.ok) {
-            const userData = await response.json();
-            setFarcasterUser(userData);
-            return;
+      let detectedFid = null;
+      
+      // Method 1: Comprehensive MiniKit analysis
+      if (typeof window !== 'undefined') {
+        const miniKit = (window as any).MiniKit;
+        
+        if (miniKit) {
+          console.log('🔍 MiniKit available, analyzing for user data...');
+          
+          // Check all possible user data locations in MiniKit
+          const possibleUserSources = [
+            miniKit.context?.user,
+            miniKit.user,
+            miniKit.context?.frame?.user,
+            miniKit.context?.cast?.author,
+            (window as any).farcaster?.user,
+            (window as any).fc?.user
+          ].filter(Boolean);
+          
+          console.log('🔍 Found', possibleUserSources.length, 'possible user data sources');
+          
+          for (const userSource of possibleUserSources) {
+            if (userSource?.fid && userSource.fid !== 9152) {
+              detectedFid = userSource.fid;
+              console.log('✅ Auto-detected real user FID:', detectedFid, 'from user source:', userSource);
+              break;
+            }
           }
         }
       }
       
-      // Method 3: Check URL parameters for user data (common in Farcaster frames)
-      const urlParams = new URLSearchParams(window.location.search);
-      const fidFromUrl = urlParams.get('fid') || urlParams.get('user_fid') || urlParams.get('fc_fid');
-      if (fidFromUrl && fidFromUrl !== '9152') {
-        const response = await fetch(`/api/farcaster-user?fid=${fidFromUrl}`);
-        if (response.ok) {
-          const userData = await response.json();
-          setFarcasterUser(userData);
-          return;
+      // Method 2: Check URL parameters (common in Farcaster frames)
+      if (!detectedFid) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const possibleFids = [
+          urlParams.get('fid'),
+          urlParams.get('user_fid'),
+          urlParams.get('fc_fid'),
+          urlParams.get('author_fid'),
+          urlParams.get('cast_fid')
+        ].filter(fid => fid && fid !== '9152' && !isNaN(parseInt(fid)));
+        
+        if (possibleFids.length > 0) {
+          detectedFid = parseInt(possibleFids[0]!);
+          console.log('✅ Auto-detected FID from URL params:', detectedFid);
         }
+      }
+      
+      // Method 3: Try to extract from frame metadata
+      if (!detectedFid) {
+        const metaTags = document.querySelectorAll('meta[property^="fc:"]');
+        for (const meta of metaTags) {
+          const content = meta.getAttribute('content');
+          if (content && !isNaN(parseInt(content)) && parseInt(content) !== 9152) {
+            detectedFid = parseInt(content);
+            console.log('✅ Auto-detected FID from frame metadata:', detectedFid);
+            break;
+          }
+        }
+      }
+      
+      // If we found a FID, fetch the profile automatically
+      if (detectedFid) {
+        console.log('🎯 Auto-fetching profile for detected FID:', detectedFid);
+        
+        try {
+          const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
+          if (response.ok) {
+            const userData = await response.json();
+            console.log('✅ AUTO-DETECTED USER PROFILE:', userData);
+            setFarcasterUser(userData);
+          } else {
+            console.error('❌ Failed to fetch auto-detected profile');
+          }
+        } catch (error) {
+          console.error('❌ Error fetching auto-detected profile:', error);
+        }
+      } else {
+        console.log('❌ Could not auto-detect user FID - user will need to use manual input');
       }
     };
     
-    detectUser();
+    // Run immediately and with delays to catch MiniKit when it becomes available
+    autoDetectUser();
+    setTimeout(autoDetectUser, 1000);
+    setTimeout(autoDetectUser, 3000);
+    setTimeout(autoDetectUser, 5000); // Extra delay for slow MiniKit loading
   }, []);
 
   // Helper function to render token icon
