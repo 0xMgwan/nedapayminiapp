@@ -186,12 +186,12 @@ export default function FarcasterMiniApp() {
           const userFid = event.data.user?.fid || event.data.fid;
           console.log('🎯 FOUND USER FID FROM FRAME MESSAGE:', userFid);
           
-          // Fetch user data with this FID
-          if (userFid !== 9152) { // Not the Warpcast client FID
+          // Fetch user data with this FID (for any user, not just specific ones)
+          if (userFid && userFid !== 9152 && !isNaN(parseInt(userFid))) {
             fetch(`/api/farcaster-user?fid=${userFid}`)
               .then(response => response.json())
               .then(userData => {
-                console.log('✅ USER DATA FROM FRAME MESSAGE FID:', userData);
+                console.log('✅ USER DATA FROM FRAME MESSAGE:', userData);
                 setFarcasterUser(userData);
               })
               .catch(error => console.error('❌ Error fetching with frame message FID:', error));
@@ -204,32 +204,92 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // LOAD USER PROFILE AUTOMATICALLY
+  // AUTOMATIC USER DETECTION FOR ANY USER
   useEffect(() => {
-    const loadUserProfile = async () => {
-      console.log('🔍 LOADING FARCASTER USER PROFILE...');
+    const detectAnyUser = async () => {
+      console.log('🔍 AUTO-DETECTING CURRENT USER...');
       
-      // For now, use the known working FID until we can implement proper frame-based detection
-      const userFid = 869527; // Your real FID that we know works
+      let detectedFid = null;
       
-      console.log('🎯 Loading profile for FID:', userFid);
+      // Method 1: Check URL parameters first (most reliable for frames)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlFids = [
+        urlParams.get('fid'),
+        urlParams.get('user_fid'),
+        urlParams.get('fc_fid'),
+        urlParams.get('author_fid'),
+        urlParams.get('cast_fid')
+      ].filter(fid => fid && fid !== '9152' && !isNaN(parseInt(fid)));
       
-      try {
-        const response = await fetch(`/api/farcaster-user?fid=${userFid}`);
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('✅ USER PROFILE LOADED:', userData);
-          setFarcasterUser(userData);
-        } else {
-          console.error('❌ Failed to load user profile');
+      if (urlFids.length > 0) {
+        detectedFid = parseInt(urlFids[0]!);
+        console.log('✅ Detected user FID from URL:', detectedFid);
+      }
+      
+      // Method 2: Try to get from referrer or frame context
+      if (!detectedFid && document.referrer) {
+        const referrerUrl = new URL(document.referrer);
+        const referrerFid = referrerUrl.searchParams.get('fid');
+        if (referrerFid && referrerFid !== '9152' && !isNaN(parseInt(referrerFid))) {
+          detectedFid = parseInt(referrerFid);
+          console.log('✅ Detected user FID from referrer:', detectedFid);
         }
-      } catch (error) {
-        console.error('❌ Error loading user profile:', error);
+      }
+      
+      // Method 3: Check MiniKit for any user data
+      if (!detectedFid && typeof window !== 'undefined') {
+        const miniKit = (window as any).MiniKit;
+        if (miniKit) {
+          // Check all possible user locations
+          const userSources = [
+            miniKit.context?.user,
+            miniKit.user,
+            miniKit.context?.frame?.user,
+            miniKit.context?.cast?.author
+          ].filter(Boolean);
+          
+          for (const source of userSources) {
+            if (source?.fid && source.fid !== 9152) {
+              detectedFid = source.fid;
+              console.log('✅ Detected user FID from MiniKit:', detectedFid);
+              break;
+            }
+          }
+        }
+      }
+      
+      // Method 4: Try to extract from frame messages
+      if (!detectedFid) {
+        console.log('🔍 Waiting for frame messages with user data...');
+        // The frame message listener will handle this
+        return;
+      }
+      
+      // If we found a FID, load that user's profile
+      if (detectedFid) {
+        console.log('🎯 Loading profile for detected user FID:', detectedFid);
+        
+        try {
+          const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
+          if (response.ok) {
+            const userData = await response.json();
+            console.log('✅ USER PROFILE LOADED:', userData);
+            setFarcasterUser(userData);
+          } else {
+            console.error('❌ Failed to load user profile for FID:', detectedFid);
+          }
+        } catch (error) {
+          console.error('❌ Error loading user profile:', error);
+        }
+      } else {
+        console.log('❌ Could not detect any user FID - will show generic interface');
       }
     };
     
-    // Load immediately
-    loadUserProfile();
+    // Try detection with multiple attempts
+    detectAnyUser();
+    setTimeout(detectAnyUser, 1000);
+    setTimeout(detectAnyUser, 3000);
   }, []);
 
   // Helper function to render token icon
