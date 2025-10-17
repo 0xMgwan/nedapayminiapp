@@ -194,7 +194,17 @@ const WalletSelector = forwardRef<
   const [directMiniKitCheck, setDirectMiniKitCheck] = useState(false);
   const [miniKitProfile, setMiniKitProfile] = useState<any>(null);
   
+  // Debug log to ensure component is rendering
+  console.log('🚀 WalletSelector component rendering with state:', {
+    directMiniKitCheck,
+    miniKitProfile,
+    isFarcasterEnvironment,
+    farcasterProfile
+  });
+  
   useEffect(() => {
+    console.log('🔥 WalletSelector useEffect running - checking MiniKit...');
+    
     const checkMiniKit = () => {
       const hasMiniKit = !!(window as any).MiniKit;
       const miniKitUser = (window as any).MiniKit?.user;
@@ -204,27 +214,39 @@ const WalletSelector = forwardRef<
         miniKitUser,
         farcasterProfile,
         farcasterLoading,
-        isFarcasterEnvironment
+        isFarcasterEnvironment,
+        windowMiniKit: (window as any).MiniKit,
+        timestamp: new Date().toISOString()
       });
       
       setDirectMiniKitCheck(hasMiniKit);
       
       if (hasMiniKit && miniKitUser?.fid) {
-        setMiniKitProfile({
+        const profile = {
           fid: miniKitUser.fid,
           username: miniKitUser.username || `fid:${miniKitUser.fid}`,
           displayName: miniKitUser.displayName || miniKitUser.username || `User ${miniKitUser.fid}`,
           pfpUrl: miniKitUser.pfpUrl || '/default-avatar.svg'
-        });
-        console.log('✅ Created direct MiniKit profile:', miniKitProfile);
+        };
+        setMiniKitProfile(profile);
+        console.log('✅ Created direct MiniKit profile:', profile);
+      } else {
+        console.log('❌ No MiniKit user found or missing FID');
       }
     };
     
     checkMiniKit();
-    // Check again after a delay in case MiniKit loads later
-    const timer = setTimeout(checkMiniKit, 1000);
-    return () => clearTimeout(timer);
-  }, [farcasterProfile, farcasterLoading, isFarcasterEnvironment]);
+    // Check again after delays
+    const timer1 = setTimeout(checkMiniKit, 500);
+    const timer2 = setTimeout(checkMiniKit, 1000);
+    const timer3 = setTimeout(checkMiniKit, 2000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, []);
 
   // Link account hook
   const { linkEmail } = useLinkAccount({
