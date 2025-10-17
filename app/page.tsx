@@ -19,6 +19,7 @@ import { getNedaPayProtocolAddress } from './config/contracts';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useFarcasterProfile } from './hooks/useFarcasterProfile';
 import '../lib/i18n';
 
 type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'swap' | 'invoice';
@@ -564,6 +565,18 @@ export default function FarcasterMiniApp() {
   
   // Base App client detection (clientFid 309857 = Base App)
   const isBaseApp = context?.client?.clientFid === 309857;
+
+  // Farcaster profile integration
+  const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
+  
+  // Debug Farcaster profile integration
+  console.log('🎭 FARCASTER PROFILE DEBUG:', {
+    isFarcasterEnvironment,
+    farcasterProfile,
+    farcasterLoading,
+    hasMiniKit: !!(window as any).MiniKit,
+    miniKitUser: (window as any).MiniKit?.user
+  });
 
   // MiniKit Auto-Connection: Farcaster smart wallet integration
   const connectedWallet = (() => {
@@ -4985,7 +4998,19 @@ export default function FarcasterMiniApp() {
                   <div className="absolute inset-0 w-2 h-2 bg-green-400/50 rounded-full animate-pulse" />
                 </div>
                 <div className="text-white text-xs font-mono">
-                  {walletAddress ? (
+                  {isFarcasterEnvironment && farcasterProfile ? (
+                    <div className="flex items-center gap-1">
+                      <img
+                        src={farcasterProfile.pfpUrl}
+                        alt={`${farcasterProfile.username} avatar`}
+                        className="w-3 h-3 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/default-avatar.svg';
+                        }}
+                      />
+                      <span className="text-purple-300">@{farcasterProfile.username}</span>
+                    </div>
+                  ) : walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
                       <Name className="text-white text-xs font-mono">
                         {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
