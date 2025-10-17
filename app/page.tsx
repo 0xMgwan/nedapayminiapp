@@ -204,99 +204,36 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // PROPER FARCASTER MINIKIT USER DETECTION
+  // LISTEN FOR MINIKIT USER DETECTION FROM PROVIDER
   useEffect(() => {
-    const detectUserFromMiniKit = async () => {
-      console.log('🔍 DETECTING USER FROM FARCASTER MINIKIT...');
+    const handleUserDetected = async (event: CustomEvent) => {
+      const { fid, context } = event.detail;
+      console.log('🎯 MiniKit user detected event received!');
+      console.log('  FID:', fid);
+      console.log('  Context:', context);
       
-      // Wait for MiniKit to be available
-      const checkMiniKit = async (attempt = 1, maxAttempts = 10) => {
-        if (typeof window === 'undefined') return null;
-        
-        const miniKit = (window as any).MiniKit;
-        
-        // Check if MiniKit exists at all (don't rely on isReady property)
-        if (miniKit && miniKit.context) {
-          console.log('✅ MiniKit available!');
-          
-          // Log EVERYTHING in MiniKit for debugging
-          console.log('📊 FULL MiniKit object:', miniKit);
-          console.log('📊 MiniKit properties:', Object.keys(miniKit));
-          console.log('📊 MiniKit.context:', miniKit.context);
-          console.log('📊 MiniKit.context properties:', Object.keys(miniKit.context));
-          
-          // Log all possible user data locations
-          console.log('👤 Checking all user data sources:');
-          console.log('  - context.user:', miniKit.context?.user);
-          console.log('  - context.cast:', miniKit.context?.cast);
-          console.log('  - context.client:', miniKit.context?.client);
-          console.log('  - direct user:', miniKit.user);
-          
-          // Try to get user from context.user.fid
-          if (miniKit.context?.user?.fid) {
-            const userFid = miniKit.context.user.fid;
-            console.log('🎯 Found user FID from context.user:', userFid);
-            
-            if (userFid !== 9152) {
-              return userFid;
-            } else {
-              console.log('⚠️ context.user.fid is client FID (9152), checking other sources...');
-            }
-          }
-          
-          // Try context.cast.author.fid
-          if (miniKit.context?.cast?.author?.fid) {
-            const authorFid = miniKit.context.cast.author.fid;
-            console.log('🎯 Found cast author FID:', authorFid);
-            if (authorFid !== 9152) {
-              return authorFid;
-            }
-          }
-          
-          // Try direct user object
-          if (miniKit.user?.fid && miniKit.user.fid !== 9152) {
-            console.log('🎯 Found FID from direct user:', miniKit.user.fid);
-            return miniKit.user.fid;
-          }
-          
-          console.log('❌ No valid user FID found in MiniKit (all sources checked)');
-          return null;
-        }
-        
-        if (attempt < maxAttempts) {
-          console.log(`⏳ MiniKit not available yet (attempt ${attempt}/${maxAttempts}), retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          return checkMiniKit(attempt + 1, maxAttempts);
-        }
-        
-        console.log('❌ MiniKit not found after', maxAttempts, 'attempts');
-        console.log('🔍 Final window.MiniKit value:', (window as any).MiniKit);
-        return null;
-      };
-      
-      const detectedFid = await checkMiniKit();
-      
-      if (detectedFid) {
-        console.log('🎯 Loading profile for FID:', detectedFid);
+      if (fid && fid !== 9152) {
+        console.log('🎯 Loading profile for detected FID:', fid);
         try {
-          const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
+          const response = await fetch(`/api/farcaster-user?fid=${fid}`);
           if (response.ok) {
             const userData = await response.json();
             console.log('✅ USER PROFILE LOADED:', userData);
             setFarcasterUser(userData);
           } else {
-            console.error('❌ Failed to load profile for FID:', detectedFid);
+            console.error('❌ Failed to load profile for FID:', fid);
           }
         } catch (error) {
           console.error('❌ Error loading profile:', error);
         }
-      } else {
-        console.log('⚠️ No user FID detected - user may not be in Farcaster context');
-        console.log('💡 This is normal if testing outside of Farcaster app');
       }
     };
     
-    detectUserFromMiniKit();
+    window.addEventListener('minikit-user-detected', handleUserDetected as EventListener);
+    
+    return () => {
+      window.removeEventListener('minikit-user-detected', handleUserDetected as EventListener);
+    };
   }, []);
 
   // Helper function to render token icon
