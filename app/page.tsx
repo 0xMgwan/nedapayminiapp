@@ -139,7 +139,7 @@ interface RateData {
 }
 
 export default function FarcasterMiniApp() {
-  console.log('🚀 NedaPay MiniApp Loading...');
+  console.log('🚀🚀🚀 NedaPay MiniApp Loading - DEPLOYMENT TEST v3...');
   console.log('🔍 Stablecoins array length:', stablecoins.length);
   console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
   const { t, i18n } = useTranslation();
@@ -569,45 +569,40 @@ export default function FarcasterMiniApp() {
   // Farcaster profile integration
   const { profile: farcasterProfile, isLoading: farcasterLoading, isFarcasterEnvironment } = useFarcasterProfile();
   
-  // Direct Farcaster profile fetch using known FID
+  // HARDCODED TEST - Direct Farcaster profile fetch using known FID 9152
   const [directFarcasterProfile, setDirectFarcasterProfile] = useState<any>(null);
   
   useEffect(() => {
     const fetchDirectProfile = async () => {
-      if (typeof window === 'undefined') return;
+      console.log('🎭🎭🎭 HARDCODED FARCASTER PROFILE FETCH STARTING...');
       
-      console.log('🎭 DIRECT FARCASTER PROFILE FETCH STARTING...');
+      // HARDCODE the FID we know exists: 9152
+      const fid = 9152;
       
-      // Get FID from MiniKit context - we know it's 9152
-      let fid = null;
-      if ((window as any).MiniKit?.context?.user?.fid) {
-        fid = (window as any).MiniKit.context.user.fid;
-      } else if ((window as any).MiniKit?.user?.fid) {
-        fid = (window as any).MiniKit.user.fid;
-      }
+      console.log('🔍 Using hardcoded FID:', fid);
       
-      console.log('🔍 Detected FID:', fid);
-      
-      if (fid) {
-        try {
-          console.log('🔄 Fetching profile for FID:', fid);
-          const response = await fetch(`/api/farcaster-profile?fid=${fid}`);
-          
-          if (response.ok) {
-            const profileData = await response.json();
-            console.log('✅ Got profile data:', profileData);
-            setDirectFarcasterProfile(profileData);
-          } else {
-            console.error('❌ API call failed:', response.status);
-          }
-        } catch (error) {
-          console.error('❌ Error fetching profile:', error);
+      try {
+        console.log('🔄 Fetching profile for hardcoded FID:', fid);
+        const response = await fetch(`/api/farcaster-profile?fid=${fid}`);
+        
+        console.log('📡 API response status:', response.status);
+        
+        if (response.ok) {
+          const profileData = await response.json();
+          console.log('✅ Got profile data:', profileData);
+          setDirectFarcasterProfile(profileData);
+        } else {
+          console.error('❌ API call failed:', response.status);
+          const errorText = await response.text();
+          console.error('❌ Error details:', errorText);
         }
+      } catch (error) {
+        console.error('❌ Error fetching profile:', error);
       }
     };
     
-    // Run after a short delay to ensure MiniKit is ready
-    setTimeout(fetchDirectProfile, 2000);
+    // Run after a short delay to ensure everything is loaded
+    setTimeout(fetchDirectProfile, 3000);
   }, []);
   
   // Debug Farcaster profile integration
