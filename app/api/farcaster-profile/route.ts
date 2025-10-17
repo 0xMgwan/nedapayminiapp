@@ -8,8 +8,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'FID is required' }, { status: 400 });
   }
 
-  const neynarApiKey = process.env.NEYNAR_API_KEY;
+  const neynarApiKey = process.env.NEYNAR_API_KEY || process.env.NEXT_PUBLIC_NEYNAR_API_KEY;
+  
+  console.log('🔑 Environment check:', {
+    hasNeynarApiKey: !!process.env.NEYNAR_API_KEY,
+    hasNextPublicNeynarApiKey: !!process.env.NEXT_PUBLIC_NEYNAR_API_KEY,
+    usingKey: neynarApiKey ? 'Found' : 'Missing'
+  });
+  
   if (!neynarApiKey) {
+    console.error('❌ No Neynar API key found in environment variables');
     return NextResponse.json({ error: 'Neynar API key not configured' }, { status: 500 });
   }
 

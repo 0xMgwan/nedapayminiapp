@@ -583,9 +583,15 @@ export default function FarcasterMiniApp() {
       
       try {
         console.log('🔄 Fetching profile for hardcoded FID:', fid);
-        const response = await fetch(`/api/farcaster-profile?fid=${fid}`);
+        const response = await fetch(`/api/farcaster-profile?fid=${fid}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         
         console.log('📡 API response status:', response.status);
+        console.log('📡 API response headers:', Object.fromEntries(response.headers.entries()));
         
         if (response.ok) {
           const profileData = await response.json();
@@ -595,14 +601,25 @@ export default function FarcasterMiniApp() {
           console.error('❌ API call failed:', response.status);
           const errorText = await response.text();
           console.error('❌ Error details:', errorText);
+          
+          // Try to parse error as JSON
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error('❌ Error JSON:', errorJson);
+          } catch (e) {
+            console.error('❌ Error text:', errorText);
+          }
         }
       } catch (error) {
         console.error('❌ Error fetching profile:', error);
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
       }
     };
     
-    // Run after a short delay to ensure everything is loaded
-    setTimeout(fetchDirectProfile, 3000);
+    // Run immediately and also after delays
+    fetchDirectProfile();
+    setTimeout(fetchDirectProfile, 2000);
+    setTimeout(fetchDirectProfile, 5000);
   }, []);
   
   // Debug Farcaster profile integration
