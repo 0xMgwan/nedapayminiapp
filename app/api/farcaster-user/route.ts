@@ -12,8 +12,24 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const requestedFid = searchParams.get('fid');
   
-  // Use requested FID or fallback to 9152
-  const fid = requestedFid ? parseInt(requestedFid) : 9152;
+  // ONLY use requested FID - NO FALLBACK TO 9152
+  if (!requestedFid) {
+    console.log('❌ No FID provided - refusing to use hardcoded Warpcast FID');
+    return NextResponse.json({ 
+      error: 'No FID provided',
+      message: 'Real user FID required - will not use hardcoded Warpcast FID 9152'
+    }, { status: 400 });
+  }
+  
+  const fid = parseInt(requestedFid);
+  
+  if (fid === 9152) {
+    console.log('❌ Refusing to use Warpcast client FID 9152');
+    return NextResponse.json({ 
+      error: 'Invalid FID',
+      message: 'FID 9152 is Warpcast client, not a real user'
+    }, { status: 400 });
+  }
   
   console.log('🎯 API called with FID:', fid, requestedFid ? '(from request)' : '(fallback)');
   

@@ -294,44 +294,11 @@ export default function FarcasterMiniApp() {
         return;
       }
       
-      // TEMPORARY: Try to get user FID from wallet address using Neynar API
-      console.log('🔄 Trying to get FID from wallet address...');
-      const walletAddress = (window as any).ethereum?.selectedAddress || 
-                           localStorage.getItem('walletAddress') ||
-                           sessionStorage.getItem('walletAddress');
+      // NO MORE FALLBACKS - Only use real user data
+      console.log('❌ No real user FID found - will not show fake profile');
+      console.log('🎯 User must click "Get Profile" button to extract real FID from MiniKit');
       
-      if (walletAddress) {
-        console.log('💳 Found wallet address:', walletAddress);
-        try {
-          const response = await fetch(`/api/farcaster-profile?address=${walletAddress}`);
-          if (response.ok) {
-            const userData = await response.json();
-            console.log('✅ USER DATA FROM WALLET ADDRESS:', userData);
-            setFarcasterUser(userData);
-            return;
-          }
-        } catch (error) {
-          console.error('❌ Error fetching with wallet address:', error);
-        }
-      }
-      
-      // Final fallback to default API call
-      console.log('🔄 Using final fallback API call...');
-      try {
-        const response = await fetch('/api/farcaster-user');
-        console.log('📡 Frontend API response status:', response.status);
-        
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('✅ FALLBACK USER DATA:', userData);
-          setFarcasterUser(userData);
-        } else {
-          const errorText = await response.text();
-          console.error('❌ Failed to fetch user:', response.status, errorText);
-        }
-      } catch (error) {
-        console.error('❌ Error:', error);
-      }
+      // Don't set any fake user data - let the UI show the "Get Profile" button
     };
     
     // Start fetching immediately, then retry if needed
@@ -5265,42 +5232,57 @@ export default function FarcasterMiniApp() {
                   ) : (
                     <button
                       onClick={async () => {
-                        console.log('🎯 TRIGGERING FRAME ACTION TO GET REAL USER...');
-                        // Try to get user data from MiniKit and send frame action
-                        if (typeof window !== 'undefined' && (window as any).MiniKit) {
-                          try {
-                            // Send frame action with user data
-                            const frameData = {
-                              untrustedData: {
-                                fid: (window as any).MiniKit.context?.user?.fid || 
-                                     (window as any).MiniKit.user?.fid,
-                                messageHash: '0x' + Math.random().toString(16).substr(2, 8),
-                                network: 1,
-                                timestamp: Math.floor(Date.now() / 1000)
-                              }
-                            };
-                            
-                            console.log('📤 Sending frame action:', frameData);
-                            
-                            const response = await fetch('/api/frame-action', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify(frameData)
+                        console.log('🎯 EXTRACTING REAL USER FID FROM MINIKIT...');
+                        
+                        // Comprehensive MiniKit user extraction
+                        let realUserFid = null;
+                        
+                        if (typeof window !== 'undefined') {
+                          const miniKit = (window as any).MiniKit;
+                          console.log('🔍 Full MiniKit object:', miniKit);
+                          
+                          // Try multiple ways to get the real user FID
+                          if (miniKit?.context?.user?.fid && miniKit.context.user.fid !== 9152) {
+                            realUserFid = miniKit.context.user.fid;
+                            console.log('✅ Found real user FID from context.user:', realUserFid);
+                          } else if (miniKit?.user?.fid && miniKit.user.fid !== 9152) {
+                            realUserFid = miniKit.user.fid;
+                            console.log('✅ Found real user FID from user:', realUserFid);
+                          } else {
+                            console.log('❌ No real user FID found in MiniKit');
+                            console.log('🔍 Available MiniKit data:', {
+                              contextUser: miniKit?.context?.user,
+                              directUser: miniKit?.user,
+                              allContext: miniKit?.context
                             });
+                          }
+                          
+                          if (realUserFid) {
+                            console.log('🎯 Using real user FID:', realUserFid);
                             
-                            if (response.ok) {
-                              console.log('✅ Frame action sent, refreshing...');
-                              // Refresh to get the stored user data
-                              window.location.reload();
+                            try {
+                              // Directly fetch user data with real FID
+                              const response = await fetch(`/api/farcaster-user?fid=${realUserFid}`);
+                              
+                              if (response.ok) {
+                                const userData = await response.json();
+                                console.log('✅ REAL USER DATA FETCHED:', userData);
+                                setFarcasterUser(userData);
+                              } else {
+                                const errorText = await response.text();
+                                console.error('❌ Failed to fetch real user data:', response.status, errorText);
+                              }
+                            } catch (error) {
+                              console.error('❌ Error fetching real user:', error);
                             }
-                          } catch (error) {
-                            console.error('❌ Frame action failed:', error);
+                          } else {
+                            alert('Could not find your Farcaster user ID. Make sure you are accessing this from within Farcaster.');
                           }
                         }
                       }}
-                      className="text-purple-300 text-xs hover:text-purple-200"
+                      className="text-purple-300 text-xs hover:text-purple-200 px-2 py-1 border border-purple-300 rounded"
                     >
-                      Get Profile
+                      Get My Profile
                     </button>
                   )}
                   {!farcasterUser && walletAddress ? (
