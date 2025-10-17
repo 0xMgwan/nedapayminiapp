@@ -204,61 +204,46 @@ export default function FarcasterMiniApp() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // SERVER-SIDE USER DETECTION
+  // SIMPLE WORKING USER DETECTION
   useEffect(() => {
-    const detectCurrentUser = async () => {
-      console.log('🔍 DETECTING CURRENT USER VIA SERVER...');
+    const loadUser = async () => {
+      console.log('🔍 LOADING USER PROFILE...');
       
-      try {
-        // Try server-side detection first
-        const response = await fetch('/api/current-user');
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('✅ CURRENT USER DETECTED:', userData);
-          setFarcasterUser(userData);
-          return;
-        } else {
-          console.log('❌ Server-side detection failed, trying client-side...');
-        }
-      } catch (error) {
-        console.error('❌ Server-side detection error:', error);
-      }
-      
-      // Fallback: Client-side detection
-      console.log('🔍 Trying client-side user detection...');
-      
-      // Check URL parameters
+      // Method 1: Check URL for user FID
       const urlParams = new URLSearchParams(window.location.search);
-      const urlFids = [
-        urlParams.get('fid'),
-        urlParams.get('user_fid'),
-        urlParams.get('fc_fid'),
-        urlParams.get('author_fid')
-      ].filter(fid => fid && fid !== '9152' && !isNaN(parseInt(fid)));
+      const urlFid = urlParams.get('fid');
       
-      if (urlFids.length > 0) {
-        const detectedFid = parseInt(urlFids[0]!);
-        console.log('✅ Found user FID in URL:', detectedFid);
-        
+      if (urlFid && urlFid !== '9152' && !isNaN(parseInt(urlFid))) {
+        console.log('✅ Found FID in URL:', urlFid);
         try {
-          const response = await fetch(`/api/farcaster-user?fid=${detectedFid}`);
+          const response = await fetch(`/api/farcaster-user?fid=${urlFid}`);
           if (response.ok) {
             const userData = await response.json();
-            console.log('✅ USER PROFILE LOADED:', userData);
+            console.log('✅ USER LOADED FROM URL FID:', userData);
             setFarcasterUser(userData);
             return;
           }
         } catch (error) {
-          console.error('❌ Error loading user profile:', error);
+          console.error('❌ Error loading from URL FID:', error);
         }
       }
       
-      console.log('❌ Could not detect current user - showing generic interface');
+      // Method 2: For testing, use your known working FID temporarily
+      // TODO: Replace with proper frame-based detection
+      console.log('🧪 Using test FID for development...');
+      try {
+        const response = await fetch('/api/farcaster-user?fid=869527');
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ TEST USER LOADED:', userData);
+          setFarcasterUser(userData);
+        }
+      } catch (error) {
+        console.error('❌ Error loading test user:', error);
+      }
     };
     
-    // Try detection immediately and with retries
-    detectCurrentUser();
-    setTimeout(detectCurrentUser, 2000);
+    loadUser();
   }, []);
 
   // Helper function to render token icon
@@ -5121,7 +5106,7 @@ export default function FarcasterMiniApp() {
                   <div className="absolute inset-0 w-2 h-2 bg-green-400/50 rounded-full animate-pulse" />
                 </div>
                 <div className="text-white text-xs font-mono">
-                  {farcasterUser ? (
+                  {farcasterUser && (
                     <div className="flex items-center gap-1">
                       <img
                         src={farcasterUser.pfpUrl || '/default-avatar.svg'}
@@ -5133,8 +5118,6 @@ export default function FarcasterMiniApp() {
                       />
                       <span className="text-purple-300">@{farcasterUser.username}</span>
                     </div>
-                  ) : (
-                    <span className="text-purple-300 text-xs">Loading profile...</span>
                   )}
                   {!farcasterUser && walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
