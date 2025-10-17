@@ -143,13 +143,20 @@ export default function FarcasterMiniApp() {
   console.log('🔍 Stablecoins array length:', stablecoins.length);
   console.log('🔍 Last 3 tokens:', stablecoins.slice(-3).map(s => ({ baseToken: s.baseToken, name: s.name, chainId: s.chainId })));
   
-  // IMMEDIATE MINIKIT CHECK
+  // IMMEDIATE MINIKIT CHECK - FIND REAL USER FID
   if (typeof window !== 'undefined') {
-    console.log('🔍 IMMEDIATE MINIKIT CHECK:', {
+    console.log('🔍 IMMEDIATE MINIKIT CHECK - SEARCHING FOR REAL USER FID:', {
       hasMiniKit: !!(window as any).MiniKit,
       miniKitKeys: (window as any).MiniKit ? Object.keys((window as any).MiniKit) : [],
       contextUser: (window as any).MiniKit?.context?.user,
-      directUser: (window as any).MiniKit?.user
+      directUser: (window as any).MiniKit?.user,
+      // Check frame message data
+      frameMessage: (window as any).frameMessage,
+      frameData: (window as any).frameData,
+      // Check postMessage data
+      lastPostMessage: (window as any).lastPostMessage,
+      // Check if parent has user data
+      parentMiniKit: window.parent !== window ? (window.parent as any).MiniKit : null
     });
   }
   
@@ -158,6 +165,39 @@ export default function FarcasterMiniApp() {
   // DIRECT FARCASTER USER STATE
   const [farcasterUser, setFarcasterUser] = useState<any>(null);
   
+  // LISTEN FOR FRAME MESSAGES THAT MIGHT CONTAIN USER DATA
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      console.log('📨 FRAME MESSAGE RECEIVED:', {
+        origin: event.origin,
+        data: event.data,
+        source: event.source === window.parent ? 'parent' : 'other'
+      });
+      
+      // Check if message contains user data
+      if (event.data && typeof event.data === 'object') {
+        if (event.data.user?.fid || event.data.fid) {
+          const userFid = event.data.user?.fid || event.data.fid;
+          console.log('🎯 FOUND USER FID FROM FRAME MESSAGE:', userFid);
+          
+          // Fetch user data with this FID
+          if (userFid !== 9152) { // Not the Warpcast client FID
+            fetch(`/api/farcaster-user?fid=${userFid}`)
+              .then(response => response.json())
+              .then(userData => {
+                console.log('✅ USER DATA FROM FRAME MESSAGE FID:', userData);
+                setFarcasterUser(userData);
+              })
+              .catch(error => console.error('❌ Error fetching with frame message FID:', error));
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // FETCH REAL USER DATA WITH DELAYS FOR MINIKIT
   useEffect(() => {
     const fetchUser = async (attempt = 1) => {
@@ -165,16 +205,25 @@ export default function FarcasterMiniApp() {
       
       // Check MiniKit with multiple attempts
       if (typeof window !== 'undefined') {
+        const miniKit = (window as any).MiniKit;
         console.log(`🔍 MINIKIT DEBUG - Attempt ${attempt}:`, {
-          hasMiniKit: !!(window as any).MiniKit,
-          miniKitKeys: (window as any).MiniKit ? Object.keys((window as any).MiniKit) : [],
-          context: (window as any).MiniKit?.context,
-          contextUser: (window as any).MiniKit?.context?.user,
-          directUser: (window as any).MiniKit?.user
+          hasMiniKit: !!miniKit,
+          miniKitKeys: miniKit ? Object.keys(miniKit) : [],
+          context: miniKit?.context,
+          contextUser: miniKit?.context?.user,
+          directUser: miniKit?.user,
+          // Check all possible user data locations
+          contextClient: miniKit?.context?.client,
+          contextFrame: miniKit?.context?.frame,
+          allContextKeys: miniKit?.context ? Object.keys(miniKit.context) : [],
+          // Check window for other Farcaster data
+          windowFarcaster: (window as any).farcaster,
+          windowParent: window.parent !== window,
+          // Check URL for frame parameters
+          urlParams: new URLSearchParams(window.location.search).toString()
         });
         
         // Try to get user FID from MiniKit context
-        const miniKit = (window as any).MiniKit;
         if (miniKit?.context?.user?.fid) {
           const userFid = miniKit.context.user.fid;
           console.log('🎯 FOUND USER FID FROM CONTEXT:', userFid);
@@ -219,8 +268,29 @@ export default function FarcasterMiniApp() {
         return;
       }
       
-      // Fallback to default API call
-      console.log('🔄 Using fallback API call...');
+      // TEMPORARY: Try to get user FID from wallet address using Neynar API
+      console.log('🔄 Trying to get FID from wallet address...');
+      const walletAddress = (window as any).ethereum?.selectedAddress || 
+                           localStorage.getItem('walletAddress') ||
+                           sessionStorage.getItem('walletAddress');
+      
+      if (walletAddress) {
+        console.log('💳 Found wallet address:', walletAddress);
+        try {
+          const response = await fetch(`/api/farcaster-profile?address=${walletAddress}`);
+          if (response.ok) {
+            const userData = await response.json();
+            console.log('✅ USER DATA FROM WALLET ADDRESS:', userData);
+            setFarcasterUser(userData);
+            return;
+          }
+        } catch (error) {
+          console.error('❌ Error fetching with wallet address:', error);
+        }
+      }
+      
+      // Final fallback to default API call
+      console.log('🔄 Using final fallback API call...');
       try {
         const response = await fetch('/api/farcaster-user');
         console.log('📡 Frontend API response status:', response.status);
