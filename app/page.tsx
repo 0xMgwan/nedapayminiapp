@@ -162,7 +162,7 @@ export default function FarcasterMiniApp() {
         hasSessionStorage: !!sessionStorage
       });
     } catch (error) {
-      console.log('🚫 CORS Error avoided:', error.message);
+      console.log('🚫 CORS Error avoided:', error instanceof Error ? error.message : 'Unknown error');
     }
   }
   
@@ -209,23 +209,23 @@ export default function FarcasterMiniApp() {
     const fetchUser = async (attempt = 1) => {
       console.log(`🎯 FETCHING REAL FARCASTER USER DATA - Attempt ${attempt}...`);
       
-      // FIRST: Try server-side user detection to bypass CORS issues
+      // FIRST: Check if we have real user data from frame interactions
       if (attempt === 1) {
-        console.log('🔍 Trying server-side user detection...');
+        console.log('🔍 Checking for stored real user data...');
         try {
-          const response = await fetch('/api/detect-user');
+          const response = await fetch('/api/frame-action');
           if (response.ok) {
-            const detectionResult = await response.json();
-            console.log('📊 User detection result:', detectionResult);
+            const realUserData = await response.json();
+            console.log('📊 Stored user data result:', realUserData);
             
-            if (detectionResult.fid && detectionResult.username) {
-              console.log('✅ REAL USER DETECTED FROM SERVER:', detectionResult);
-              setFarcasterUser(detectionResult);
+            if (realUserData.fid && realUserData.username) {
+              console.log('✅ REAL USER DATA FOUND:', realUserData);
+              setFarcasterUser(realUserData);
               return; // Success! Exit early
             }
           }
         } catch (error) {
-          console.error('❌ Server-side detection failed:', error);
+          console.error('❌ Frame action check failed:', error);
         }
       }
       
@@ -5262,7 +5262,48 @@ export default function FarcasterMiniApp() {
                       />
                       <span className="text-purple-300">@{farcasterUser.username}</span>
                     </div>
-                  ) : walletAddress ? (
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        console.log('🎯 TRIGGERING FRAME ACTION TO GET REAL USER...');
+                        // Try to get user data from MiniKit and send frame action
+                        if (typeof window !== 'undefined' && (window as any).MiniKit) {
+                          try {
+                            // Send frame action with user data
+                            const frameData = {
+                              untrustedData: {
+                                fid: (window as any).MiniKit.context?.user?.fid || 
+                                     (window as any).MiniKit.user?.fid,
+                                messageHash: '0x' + Math.random().toString(16).substr(2, 8),
+                                network: 1,
+                                timestamp: Math.floor(Date.now() / 1000)
+                              }
+                            };
+                            
+                            console.log('📤 Sending frame action:', frameData);
+                            
+                            const response = await fetch('/api/frame-action', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(frameData)
+                            });
+                            
+                            if (response.ok) {
+                              console.log('✅ Frame action sent, refreshing...');
+                              // Refresh to get the stored user data
+                              window.location.reload();
+                            }
+                          } catch (error) {
+                            console.error('❌ Frame action failed:', error);
+                          }
+                        }
+                      }}
+                      className="text-purple-300 text-xs hover:text-purple-200"
+                    >
+                      Get Profile
+                    </button>
+                  )}
+                  {!farcasterUser && walletAddress ? (
                     <Identity address={walletAddress as `0x${string}`} chain={base}>
                       <Name className="text-white text-xs font-mono">
                         {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}

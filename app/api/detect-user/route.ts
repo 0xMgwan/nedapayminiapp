@@ -1,9 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  console.log('🔍 DETECTING REAL USER FROM REQUEST...');
+export async function POST(request: NextRequest) {
+  console.log('🔍 DETECTING REAL USER FROM FARCASTER FRAME REQUEST...');
   
-  // Get all headers to analyze
+  try {
+    // Parse the request body for Farcaster frame data
+    const body = await request.json();
+    console.log('📋 Frame request body:', body);
+    
+    // Farcaster frames send user data in the request body
+    if (body.untrustedData?.fid) {
+      const userFid = body.untrustedData.fid;
+      console.log('🎯 FOUND REAL USER FID FROM FRAME:', userFid);
+      
+      // Fetch user data from Neynar
+      const neynarApiKey = process.env.NEYNAR_API_KEY;
+      if (neynarApiKey && userFid !== 9152) {
+        try {
+          const response = await fetch(
+            `https://api.neynar.com/v2/farcaster/user/bulk?fids=${userFid}`,
+            {
+              headers: {
+                'api_key': neynarApiKey,
+                'accept': 'application/json'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.users && data.users.length > 0) {
+              const user = data.users[0];
+              const userData = {
+                fid: user.fid,
+                username: user.username,
+                displayName: user.display_name,
+                pfpUrl: user.pfp_url,
+                bio: user.profile?.bio?.text || '',
+                source: 'farcaster_frame_data'
+              };
+              
+              console.log('🎉 REAL USER DATA FROM FRAME:', userData);
+              return NextResponse.json(userData);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error fetching user from Neynar:', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.log('📋 Not a JSON request, checking headers...');
+  }
+  
+  // Fallback: Check headers
   const headers = Object.fromEntries(request.headers.entries());
   console.log('📋 Request headers:', headers);
   
