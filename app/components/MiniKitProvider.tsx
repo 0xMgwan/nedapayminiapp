@@ -27,12 +27,35 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
     const initializeMiniKit = async () => {
       console.log('🔍 Initializing Farcaster Frame SDK...');
       
-      // Wait for the SDK script to load
+      // Wait for the SDK script to load - check multiple possible names
       const waitForSDK = async (maxAttempts = 20): Promise<any> => {
         for (let i = 0; i < maxAttempts; i++) {
-          if (typeof window !== 'undefined' && (window as any).sdk) {
-            console.log('✅ Farcaster Frame SDK loaded!');
-            return (window as any).sdk;
+          if (typeof window !== 'undefined') {
+            // Check different possible SDK locations
+            const possibleSDKs = [
+              (window as any).sdk,
+              (window as any).FrameSDK,
+              (window as any).farcaster,
+              (window as any).Farcaster
+            ];
+            
+            const foundSDK = possibleSDKs.find(sdk => sdk !== undefined);
+            
+            if (foundSDK) {
+              console.log('✅ Farcaster Frame SDK loaded!');
+              console.log('📊 SDK object:', foundSDK);
+              console.log('📊 SDK keys:', Object.keys(foundSDK));
+              return foundSDK;
+            }
+            
+            // Log what's available on window for debugging
+            if (i === 0) {
+              console.log('🔍 Checking window for Frame SDK...');
+              console.log('  window.sdk:', !!(window as any).sdk);
+              console.log('  window.FrameSDK:', !!(window as any).FrameSDK);
+              console.log('  window.farcaster:', !!(window as any).farcaster);
+              console.log('  window.Farcaster:', !!(window as any).Farcaster);
+            }
           }
           console.log(`⏳ Waiting for Frame SDK... (attempt ${i + 1}/${maxAttempts})`);
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -43,7 +66,9 @@ export function MiniKitProvider({ children }: { children: React.ReactNode }) {
       const sdk = await waitForSDK();
 
       if (!sdk) {
-        console.log('❌ Farcaster Frame SDK not found');
+        console.log('❌ Farcaster Frame SDK not found after', 20, 'attempts');
+        console.log('💡 SDK might not be loaded or exposed under different name');
+        console.log('🔍 Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('frame') || k.toLowerCase().includes('farcaster') || k.toLowerCase().includes('sdk')));
         return;
       }
 
