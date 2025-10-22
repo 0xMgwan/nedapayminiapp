@@ -100,6 +100,8 @@ export async function executeTokenTransaction(
     // Determine token contract address and network
     const isUSDT = tokenData?.baseToken === 'USDT';
     const isCUSD = tokenData?.baseToken === 'cUSD';
+    const isCeloToken = isUSDT || isCUSD;
+    
     let contractAddress;
     if (isUSDT) {
       contractAddress = USDT_CONTRACT_ADDRESS;
@@ -109,6 +111,16 @@ export async function executeTokenTransaction(
       contractAddress = USDC_CONTRACT_ADDRESS;
     }
     const decimals = tokenData?.decimals || 6;
+    const targetChainId = isCeloToken ? 42220 : 8453; // Celo : Base
+    const networkName = isCeloToken ? 'Celo' : 'Base';
+    
+    console.log('🔍 Token Transaction Config:', {
+      token: tokenData?.baseToken,
+      isCeloToken,
+      targetChainId,
+      networkName,
+      contractAddress
+    });
     
     // Get the provider from Privy wallet or fallback to window.ethereum
     let provider;
@@ -120,6 +132,36 @@ export async function executeTokenTransaction(
       provider = new ethers.providers.Web3Provider(window.ethereum);
     } else {
       throw new Error('No wallet provider found');
+    }
+
+    // Switch to the correct network before transaction
+    try {
+      console.log(`🔄 Switching to ${networkName} (${targetChainId}) for ${tokenData?.baseToken} transaction`);
+      
+      // Request network switch using wallet provider
+      if (walletProvider && walletProvider.request) {
+        await walletProvider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${targetChainId.toString(16)}` }],
+        });
+      } else if (window.ethereum) {
+        await (window.ethereum as any).request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${targetChainId.toString(16)}` }],
+        });
+      }
+      
+      console.log(`✅ Successfully switched to ${networkName} for ${tokenData?.baseToken}`);
+      
+      // Wait for network switch to complete
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (switchError: any) {
+      console.error(`❌ Network switch to ${networkName} failed:`, switchError);
+      
+      // If it's a Celo token and switch failed, this is critical
+      if (isCeloToken) {
+        throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken}. Please manually switch to Celo network in your wallet and try again.`);
+      }
     }
 
     const signer = provider.getSigner();

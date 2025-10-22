@@ -1111,27 +1111,36 @@ export default function FarcasterMiniApp() {
         console.log(`✅ Successfully switched to chain ${chainId} (${isCeloToken ? 'Celo' : 'Base'})`);
         
         // Wait longer for chain switch to complete in MiniKit
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Verify the chain switch was successful
+        // Verify the chain switch was successful with multiple attempts
         const { getAccount } = await import('wagmi/actions');
-        const account = getAccount(config);
-        console.log(`🔍 Current chain after switch: ${account.chainId} (expected: ${chainId})`);
+        let attempts = 0;
+        let currentAccount = getAccount(config);
         
-        if (account.chainId !== chainId) {
-          console.warn(`⚠️ Chain mismatch: current=${account.chainId}, expected=${chainId}`);
-          // Try one more time for critical Celo transactions
+        while (currentAccount.chainId !== chainId && attempts < 3) {
+          console.log(`🔄 Chain verification attempt ${attempts + 1}: current=${currentAccount.chainId}, expected=${chainId}`);
+          
           if (isCeloToken) {
             console.log('🔄 Retrying chain switch for Celo token...');
             await switchChain(config, { chainId: chainId });
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
+          
+          currentAccount = getAccount(config);
+          attempts++;
+        }
+        
+        console.log(`🔍 Final chain verification: ${currentAccount.chainId} (expected: ${chainId})`);
+        
+        if (currentAccount.chainId !== chainId && isCeloToken) {
+          throw new Error(`Unable to switch to Celo network after multiple attempts. Please manually switch to Celo network in your wallet.`);
         }
       } catch (switchError) {
         console.error('❌ Chain switch failed:', switchError);
         // For Celo tokens, this is critical - throw error if we can't switch to Celo
         if (isCeloToken) {
-          throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken} transaction. Please ensure your wallet supports Celo network.`);
+          throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken} transaction. Please ensure your wallet supports Celo network and try again.`);
         }
         console.log('⚠️ Continuing with current chain for Base token');
       }
