@@ -1112,11 +1112,26 @@ export default function FarcasterMiniApp() {
         
         // Wait longer for chain switch to complete in MiniKit
         await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Verify the chain switch was successful
+        const { getAccount } = await import('wagmi/actions');
+        const account = getAccount(config);
+        console.log(`🔍 Current chain after switch: ${account.chainId} (expected: ${chainId})`);
+        
+        if (account.chainId !== chainId) {
+          console.warn(`⚠️ Chain mismatch: current=${account.chainId}, expected=${chainId}`);
+          // Try one more time for critical Celo transactions
+          if (isCeloToken) {
+            console.log('🔄 Retrying chain switch for Celo token...');
+            await switchChain(config, { chainId: chainId });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
       } catch (switchError) {
         console.error('❌ Chain switch failed:', switchError);
         // For Celo tokens, this is critical - throw error if we can't switch to Celo
         if (isCeloToken) {
-          throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken} transaction: ${switchError}`);
+          throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken} transaction. Please ensure your wallet supports Celo network.`);
         }
         console.log('⚠️ Continuing with current chain for Base token');
       }
@@ -2602,15 +2617,24 @@ export default function FarcasterMiniApp() {
     try {
       // Ensure we're on the correct network before transaction
       if (isConnected && switchChain) {
-        const targetChainId = (selectedSendToken === 'USDT' || selectedSendToken === 'cUSD') ? 42220 : 8453; // Celo : Base
+        const isCeloToken = (selectedSendToken === 'USDT' || selectedSendToken === 'cUSD');
+        const targetChainId = isCeloToken ? 42220 : 8453; // Celo : Base
+        const networkName = isCeloToken ? 'Celo' : 'Base';
+        
         try {
+          console.log(`🔄 Switching to ${networkName} (${targetChainId}) for ${selectedSendToken} transaction`);
           await switchChain({ chainId: targetChainId });
-          console.log(` Switched to ${(selectedSendToken === 'USDT' || selectedSendToken === 'cUSD') ? 'Celo' : 'Base'} for transaction`);
+          console.log(`✅ Successfully switched to ${networkName} for ${selectedSendToken} transaction`);
           
           // Wait a moment for chain switch to complete
           await new Promise(resolve => setTimeout(resolve, 1500));
         } catch (error) {
-          console.log('⚠️ Chain switch failed before transaction:', error);
+          console.error(`❌ Chain switch to ${networkName} failed:`, error);
+          // For Celo tokens, show a more specific error
+          if (isCeloToken) {
+            alert(`Failed to switch to Celo network for ${selectedSendToken}. Please manually switch to Celo network in your wallet.`);
+            return;
+          }
         }
       }
 
@@ -2717,15 +2741,24 @@ export default function FarcasterMiniApp() {
     try {
       // Ensure we're on the correct network before transaction
       if (isConnected && switchChain) {
-        const targetChainId = (selectedPayToken === 'USDT' || selectedPayToken === 'cUSD') ? 42220 : 8453; // Celo : Base
+        const isCeloToken = (selectedPayToken === 'USDT' || selectedPayToken === 'cUSD');
+        const targetChainId = isCeloToken ? 42220 : 8453; // Celo : Base
+        const networkName = isCeloToken ? 'Celo' : 'Base';
+        
         try {
+          console.log(`🔄 Switching to ${networkName} (${targetChainId}) for ${selectedPayToken} transaction`);
           await switchChain({ chainId: targetChainId });
-          console.log(`✅ Switched to ${(selectedPayToken === 'USDT' || selectedPayToken === 'cUSD') ? 'Celo' : 'Base'} for transaction`);
+          console.log(`✅ Successfully switched to ${networkName} for ${selectedPayToken} transaction`);
           
           // Wait a moment for chain switch to complete
           await new Promise(resolve => setTimeout(resolve, 1500));
         } catch (error) {
-          console.log('⚠️ Chain switch failed before transaction:', error);
+          console.error(`❌ Chain switch to ${networkName} failed:`, error);
+          // For Celo tokens, show a more specific error
+          if (isCeloToken) {
+            alert(`Failed to switch to Celo network for ${selectedPayToken}. Please manually switch to Celo network in your wallet.`);
+            return;
+          }
         }
       }
 
@@ -2974,16 +3007,25 @@ export default function FarcasterMiniApp() {
                           // Switch chain immediately when token is selected using hook
                           if (isConnected && switchChain) {
                             try {
-                              const targetChainId = (token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 42220 : 8453; // Celo : Base
+                              const isCeloToken = (token.baseToken === 'USDT' || token.baseToken === 'cUSD');
+                              const targetChainId = isCeloToken ? 42220 : 8453; // Celo : Base
+                              const networkName = isCeloToken ? 'Celo' : 'Base';
+                              
+                              console.log(`🔄 Pre-switching to ${networkName} (${targetChainId}) for ${token.baseToken}`);
                               await switchChain({ chainId: targetChainId });
-                              console.log(`✅ Pre-switched to ${(token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                              console.log(`✅ Pre-switched to ${networkName} for ${token.baseToken}`);
                               
                               // Fetch balance for the newly selected token
                               setTimeout(() => {
                                 fetchWalletBalance(token.baseToken);
                               }, 1000); // Wait for chain switch to complete
                             } catch (error) {
-                              console.log('⚠️ Pre-chain switch failed:', error);
+                              console.error('❌ Pre-chain switch failed:', error);
+                              // Show user-friendly error for Celo tokens
+                              const isCeloToken = (token.baseToken === 'USDT' || token.baseToken === 'cUSD');
+                              if (isCeloToken) {
+                                console.warn(`Failed to switch to Celo for ${token.baseToken}. Transaction may fail if not on correct network.`);
+                              }
                             }
                           }
                         }}
@@ -3651,16 +3693,25 @@ export default function FarcasterMiniApp() {
                           // Switch chain immediately when token is selected using hook
                           if (isConnected && switchChain) {
                             try {
-                              const targetChainId = (token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 42220 : 8453; // Celo : Base
+                              const isCeloToken = (token.baseToken === 'USDT' || token.baseToken === 'cUSD');
+                              const targetChainId = isCeloToken ? 42220 : 8453; // Celo : Base
+                              const networkName = isCeloToken ? 'Celo' : 'Base';
+                              
+                              console.log(`🔄 Pre-switching to ${networkName} (${targetChainId}) for ${token.baseToken}`);
                               await switchChain({ chainId: targetChainId });
-                              console.log(`✅ Pre-switched to ${(token.baseToken === 'USDT' || token.baseToken === 'cUSD') ? 'Celo' : 'Base'} for ${token.baseToken}`);
+                              console.log(`✅ Pre-switched to ${networkName} for ${token.baseToken}`);
                               
                               // Fetch balance for the newly selected token
                               setTimeout(() => {
                                 fetchWalletBalance(token.baseToken);
                               }, 1000); // Wait for chain switch to complete
                             } catch (error) {
-                              console.log('⚠️ Pre-chain switch failed:', error);
+                              console.error('❌ Pre-chain switch failed:', error);
+                              // Show user-friendly error for Celo tokens
+                              const isCeloToken = (token.baseToken === 'USDT' || token.baseToken === 'cUSD');
+                              if (isCeloToken) {
+                                console.warn(`Failed to switch to Celo for ${token.baseToken}. Transaction may fail if not on correct network.`);
+                              }
                             }
                           }
                         }}
