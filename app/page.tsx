@@ -2102,7 +2102,7 @@ export default function FarcasterMiniApp() {
       console.error('Paycrest transaction failed:', error);
       throw error;
     }
-  }, [walletAddress, isConnected, currentRate]);
+  }, [walletAddress, isConnected, currentRate, selectedSendToken, selectedPayToken, stablecoins]);
 
   // Farcaster sharing functionality
   const handleShareOnFarcaster = useCallback((paymentLink: string) => {
@@ -2728,7 +2728,7 @@ export default function FarcasterMiniApp() {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
     }
-  }, [amount, phoneNumber, walletAddress, isConnected, sendCurrency, selectedSendToken, selectedCountry.currency, selectedCountry.code, selectedInstitution, executePaycrestTransaction, fetchWalletBalance]);
+  }, [amount, phoneNumber, walletAddress, isConnected, sendCurrency, selectedSendToken, selectedCountry.currency, selectedCountry.code, selectedInstitution, executePaycrestTransaction, fetchWalletBalance, switchChain, t, addNotification, recipientName]);
 
   const handlePayTransaction = useCallback(async () => {
     if (!amount || !tillNumber) {
@@ -2850,7 +2850,7 @@ export default function FarcasterMiniApp() {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
     }
-  }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedPayToken, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance]);
+  }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedPayToken, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance, switchChain, t, addNotification, recipientName, selectedInstitution]);
 
   const renderSendTab = () => (
     <div className="space-y-4">
