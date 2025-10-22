@@ -451,6 +451,7 @@ export default function FarcasterMiniApp() {
   const [showSendTokenDropdown, setShowSendTokenDropdown] = useState(false);
   const [showPayTokenDropdown, setShowPayTokenDropdown] = useState(false);
   const [showDepositTokenDropdown, setShowDepositTokenDropdown] = useState(false);
+  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [isSwipeComplete, setIsSwipeComplete] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [walletBalance, setWalletBalance] = useState('0.00');
@@ -2930,23 +2931,100 @@ export default function FarcasterMiniApp() {
       </div>
 
 
-      {/* Mobile Money Provider */}
+      {/* Mobile Money Provider - Custom Dropdown */}
       <div>
         <label className="block text-xs text-gray-300 font-medium mb-1">{t('send.selectProvider')}</label>
         <div className="relative">
-          <select 
-            value={selectedInstitution}
-            onChange={(e) => setSelectedInstitution(e.target.value)}
-            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
+          <button
+            onClick={() => setShowProviderDropdown(!showProviderDropdown)}
+            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors flex items-center justify-between"
           >
-            <option value="">{t('send.chooseProvider')}</option>
-            {institutions.map((institution) => (
-              <option key={institution.code} value={institution.code}>
-                {institution.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2">
+              {selectedInstitution ? (
+                <>
+                  {institutions.find(i => i.code === selectedInstitution)?.type === 'mobile_money' ? (
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  )}
+                  <span className="text-white">{institutions.find(i => i.code === selectedInstitution)?.name}</span>
+                </>
+              ) : (
+                <span className="text-gray-400">{t('send.chooseProvider')}</span>
+              )}
+            </div>
+            <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showProviderDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showProviderDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto">
+              {/* Mobile Money Section */}
+              {institutions.filter(i => i.type === 'mobile_money').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 bg-slate-900/50 sticky top-0 z-10">
+                    📱 Mobile Money
+                  </div>
+                  {institutions.filter(i => i.type === 'mobile_money').map((institution) => (
+                    <button
+                      key={institution.code}
+                      onClick={() => {
+                        setSelectedInstitution(institution.code);
+                        setShowProviderDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2.5 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors ${
+                        selectedInstitution === institution.code ? 'bg-blue-600/20 border-l-2 border-blue-500' : ''
+                      }`}
+                    >
+                      <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-white flex-1">{institution.name}</span>
+                      {selectedInstitution === institution.code && (
+                        <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Banks Section */}
+              {institutions.filter(i => i.type === 'bank').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 bg-slate-900/50 sticky top-0 z-10">
+                    🏦 Banks
+                  </div>
+                  {institutions.filter(i => i.type === 'bank').map((institution) => (
+                    <button
+                      key={institution.code}
+                      onClick={() => {
+                        setSelectedInstitution(institution.code);
+                        setShowProviderDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2.5 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors ${
+                        selectedInstitution === institution.code ? 'bg-blue-600/20 border-l-2 border-blue-500' : ''
+                      }`}
+                    >
+                      <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span className="text-white flex-1">{institution.name}</span>
+                      {selectedInstitution === institution.code && (
+                        <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -3518,22 +3596,100 @@ export default function FarcasterMiniApp() {
       </div>
 
       {/* Institution Selection */}
-      <div className="space-y-2">
+      {/* Payment Provider - Custom Dropdown */}
+      <div>
         <label className="block text-xs text-gray-300 font-medium mb-1">{t('pay.selectProvider')}</label>
         <div className="relative">
-          <select 
-            value={selectedInstitution}
-            onChange={(e) => setSelectedInstitution(e.target.value)}
-            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
+          <button
+            onClick={() => setShowProviderDropdown(!showProviderDropdown)}
+            className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors flex items-center justify-between"
           >
-            <option value="">{t('send.chooseProvider')}</option>
-            {institutions.map((institution) => (
-              <option key={institution.code} value={institution.code}>
-                {institution.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div className="flex items-center gap-2">
+              {selectedInstitution ? (
+                <>
+                  {institutions.find(i => i.code === selectedInstitution)?.type === 'mobile_money' ? (
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  )}
+                  <span className="text-white">{institutions.find(i => i.code === selectedInstitution)?.name}</span>
+                </>
+              ) : (
+                <span className="text-gray-400">{t('send.chooseProvider')}</span>
+              )}
+            </div>
+            <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showProviderDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showProviderDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-lg border border-slate-600 shadow-xl z-50 max-h-64 overflow-y-auto">
+              {/* Mobile Money Section */}
+              {institutions.filter(i => i.type === 'mobile_money').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 bg-slate-900/50 sticky top-0 z-10">
+                    📱 Mobile Money
+                  </div>
+                  {institutions.filter(i => i.type === 'mobile_money').map((institution) => (
+                    <button
+                      key={institution.code}
+                      onClick={() => {
+                        setSelectedInstitution(institution.code);
+                        setShowProviderDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2.5 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors ${
+                        selectedInstitution === institution.code ? 'bg-blue-600/20 border-l-2 border-blue-500' : ''
+                      }`}
+                    >
+                      <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-white flex-1">{institution.name}</span>
+                      {selectedInstitution === institution.code && (
+                        <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Banks Section */}
+              {institutions.filter(i => i.type === 'bank').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 bg-slate-900/50 sticky top-0 z-10">
+                    🏦 Banks
+                  </div>
+                  {institutions.filter(i => i.type === 'bank').map((institution) => (
+                    <button
+                      key={institution.code}
+                      onClick={() => {
+                        setSelectedInstitution(institution.code);
+                        setShowProviderDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2.5 text-left hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors ${
+                        selectedInstitution === institution.code ? 'bg-blue-600/20 border-l-2 border-blue-500' : ''
+                      }`}
+                    >
+                      <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span className="text-white flex-1">{institution.name}</span>
+                      {selectedInstitution === institution.code && (
+                        <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
