@@ -488,6 +488,7 @@ export default function FarcasterMiniApp() {
 
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [successData, setSuccessData] = useState<{
     orderId: string;
@@ -496,6 +497,12 @@ export default function FarcasterMiniApp() {
     recipient: string;
     type: 'send' | 'pay';
     token: 'USDC' | 'USDT';
+  } | null>(null);
+  
+  const [errorData, setErrorData] = useState<{
+    title: string;
+    message: string;
+    suggestion?: string;
   } | null>(null);
   
   // Track user's preferred wallet selection
@@ -2000,9 +2007,42 @@ export default function FarcasterMiniApp() {
         console.error('❌ API Error Response:', errorText);
         try {
           const errorData = JSON.parse(errorText);
-          throw new Error(`Paycrest API error: ${errorData.message || 'Unknown error'}`);
+          
+          // Parse and provide user-friendly error messages
+          let userFriendlyMessage = errorData.message || 'Unknown error';
+          
+          // Check for specific error types
+          if (userFriendlyMessage.toLowerCase().includes('missing required fields')) {
+            userFriendlyMessage = `Please fill in all required fields (recipient name, phone number, and amount)`;
+          } else if (userFriendlyMessage.toLowerCase().includes('provider not supported') || 
+                     userFriendlyMessage.toLowerCase().includes('institution not supported')) {
+            userFriendlyMessage = `This provider is not currently supported for ${token} transactions. Please try a different provider or token.`;
+          } else if (userFriendlyMessage.toLowerCase().includes('invalid phone number') || 
+                     userFriendlyMessage.toLowerCase().includes('invalid account')) {
+            userFriendlyMessage = `Invalid phone number format. Please check and try again.`;
+          } else if (userFriendlyMessage.toLowerCase().includes('insufficient liquidity') || 
+                     userFriendlyMessage.toLowerCase().includes('amount too high')) {
+            userFriendlyMessage = `Transaction amount is too high. Please try a smaller amount.`;
+          } else if (userFriendlyMessage.toLowerCase().includes('rate')) {
+            userFriendlyMessage = `Unable to get exchange rate. Please try again in a moment.`;
+          } else if (userFriendlyMessage.toLowerCase().includes('network')) {
+            userFriendlyMessage = `Network error. Please check your connection and try again.`;
+          } else if (userFriendlyMessage.toLowerCase().includes('token not supported')) {
+            userFriendlyMessage = `${token} is not supported for this transaction. Please select a different token.`;
+          }
+          
+          throw new Error(`Paycrest API error: ${userFriendlyMessage}`);
         } catch (parseError) {
-          throw new Error(`Paycrest API error: ${response.status} - ${errorText}`);
+          // If JSON parsing fails, provide a generic but helpful message
+          if (response.status === 400) {
+            throw new Error(`Paycrest API error: Invalid request. Please check all fields and try again.`);
+          } else if (response.status === 404) {
+            throw new Error(`Paycrest API error: Service not available. Please contact support.`);
+          } else if (response.status === 500) {
+            throw new Error(`Paycrest API error: Server error. Please try again later.`);
+          } else {
+            throw new Error(`Paycrest API error: ${response.status} - Unable to process request`);
+          }
         }
       }
 
@@ -2716,15 +2756,46 @@ export default function FarcasterMiniApp() {
       setIsConfirming(false); // Hide confirming state on error
       setIsSwipeComplete(false);
       setSwipeProgress(0);
-      let errorMessage = 'Send failed: ';
       
-      if (error.message.includes('Paycrest API error')) {
-        errorMessage += error.message.replace('Paycrest API error: ', '');
-      } else {
-        errorMessage += error.message || 'Unknown error occurred';
+      // Parse error message and provide user-friendly feedback
+      let errorTitle = 'Transaction Failed';
+      let errorMessage = error.message || 'Unknown error occurred';
+      let suggestion = '';
+      
+      if (errorMessage.includes('Paycrest API error')) {
+        errorMessage = errorMessage.replace('Paycrest API error: ', '');
+        
+        // Provide specific suggestions based on error type
+        if (errorMessage.includes('provider is not currently supported')) {
+          errorTitle = 'Provider Not Supported';
+          suggestion = 'Try selecting a different mobile money provider or use a different cryptocurrency token.';
+        } else if (errorMessage.includes('fill in all required fields')) {
+          errorTitle = 'Missing Information';
+          suggestion = 'Please ensure you have entered the recipient name, phone number, and amount.';
+        } else if (errorMessage.includes('Invalid phone number')) {
+          errorTitle = 'Invalid Phone Number';
+          suggestion = 'Please check the phone number format and ensure it includes the correct country code.';
+        } else if (errorMessage.includes('amount is too high')) {
+          errorTitle = 'Amount Too High';
+          suggestion = 'Try sending a smaller amount or split the transaction into multiple payments.';
+        } else if (errorMessage.includes('Network error')) {
+          errorTitle = 'Connection Issue';
+          suggestion = 'Check your internet connection and try again.';
+        }
+      } else if (errorMessage.includes('switch to Celo network')) {
+        errorTitle = 'Network Switch Required';
+        suggestion = 'Please switch your wallet to the Celo network to complete this transaction.';
+      } else if (errorMessage.includes('Wallet not connected')) {
+        errorTitle = 'Wallet Not Connected';
+        suggestion = 'Please connect your wallet to continue.';
       }
       
-      alert(`❌ ${errorMessage}`);
+      setErrorData({
+        title: errorTitle,
+        message: errorMessage,
+        suggestion: suggestion
+      });
+      setShowErrorModal(true);
     } finally {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
@@ -2838,15 +2909,46 @@ export default function FarcasterMiniApp() {
     } catch (error: any) {
       console.error('Pay transaction failed:', error);
       setIsConfirming(false); // Hide confirming state on error
-      let errorMessage = 'Payment failed: ';
       
-      if (error.message.includes('Paycrest API error')) {
-        errorMessage += error.message.replace('Paycrest API error: ', '');
-      } else {
-        errorMessage += error.message || 'Unknown error occurred';
+      // Parse error message and provide user-friendly feedback
+      let errorTitle = 'Payment Failed';
+      let errorMessage = error.message || 'Unknown error occurred';
+      let suggestion = '';
+      
+      if (errorMessage.includes('Paycrest API error')) {
+        errorMessage = errorMessage.replace('Paycrest API error: ', '');
+        
+        // Provide specific suggestions based on error type
+        if (errorMessage.includes('provider is not currently supported')) {
+          errorTitle = 'Provider Not Supported';
+          suggestion = 'Try selecting a different payment provider or use a different cryptocurrency token.';
+        } else if (errorMessage.includes('fill in all required fields')) {
+          errorTitle = 'Missing Information';
+          suggestion = 'Please ensure you have entered the till number, business number (if paybill), and amount.';
+        } else if (errorMessage.includes('Invalid phone number') || errorMessage.includes('Invalid till')) {
+          errorTitle = 'Invalid Till/Paybill Number';
+          suggestion = 'Please check the till or paybill number format and try again.';
+        } else if (errorMessage.includes('amount is too high')) {
+          errorTitle = 'Amount Too High';
+          suggestion = 'Try paying a smaller amount or split the payment into multiple transactions.';
+        } else if (errorMessage.includes('Network error')) {
+          errorTitle = 'Connection Issue';
+          suggestion = 'Check your internet connection and try again.';
+        }
+      } else if (errorMessage.includes('switch to Celo network')) {
+        errorTitle = 'Network Switch Required';
+        suggestion = 'Please switch your wallet to the Celo network to complete this payment.';
+      } else if (errorMessage.includes('Wallet not connected')) {
+        errorTitle = 'Wallet Not Connected';
+        suggestion = 'Please connect your wallet to continue.';
       }
       
-      alert(`❌ ${errorMessage}`);
+      setErrorData({
+        title: errorTitle,
+        message: errorMessage,
+        suggestion: suggestion
+      });
+      setShowErrorModal(true);
     } finally {
       setIsSwipeComplete(false);
       setSwipeProgress(0);
@@ -3513,6 +3615,68 @@ export default function FarcasterMiniApp() {
           <div className="absolute -top-1 -left-2 text-xl animate-bounce delay-500">
             ✨
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Error Modal Component
+  const ErrorModal = () => {
+    if (!showErrorModal || !errorData) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-md w-full border border-red-700/50 shadow-2xl animate-in zoom-in-95 duration-300">
+          {/* Error Icon with Animation */}
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Error Title */}
+          <h2 className="text-2xl font-bold text-center text-white mb-2">{errorData.title}</h2>
+
+          {/* Error Details */}
+          <div className="space-y-4 mb-6">
+            {/* Error Message */}
+            <div className="bg-red-900/20 rounded-lg p-4 border border-red-500/30">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-gray-200 text-sm flex-1">{errorData.message}</p>
+              </div>
+            </div>
+
+            {/* Suggestion */}
+            {errorData.suggestion && (
+              <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/30">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-blue-400 text-xs font-semibold mb-1">💡 Suggestion</p>
+                    <p className="text-gray-300 text-sm">{errorData.suggestion}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Button */}
+          <button
+            onClick={() => {
+              setShowErrorModal(false);
+              setErrorData(null);
+            }}
+            className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 border-2 border-red-400/50 hover:border-red-300/70"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -5558,6 +5722,9 @@ export default function FarcasterMiniApp() {
       
       {/* Success Modal */}
       <SuccessModal />
+      
+      {/* Error Modal */}
+      <ErrorModal />
       
       {/* Notification Panel */}
       {showNotifications && (
