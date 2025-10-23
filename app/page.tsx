@@ -2005,60 +2005,62 @@ export default function FarcasterMiniApp() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ API Error Response:', errorText);
+        
+        let userFriendlyMessage = 'Unknown error';
+        
         try {
           const errorData = JSON.parse(errorText);
-          
-          // Parse and provide user-friendly error messages
-          let userFriendlyMessage = errorData.message || 'Unknown error';
-          const lowerMessage = userFriendlyMessage.toLowerCase();
-          
-          // Check for specific error types
-          // Check for route/provider availability issues first (before generic "missing fields")
-          if (lowerMessage.includes('route not found') || 
-              lowerMessage.includes('no route') ||
-              lowerMessage.includes('route unavailable') ||
-              lowerMessage.includes('provider does not support') ||
-              lowerMessage.includes('institution code') ||
-              lowerMessage.includes('institution not found') ||
-              (lowerMessage.includes('missing') && lowerMessage.includes('institution'))) {
-            userFriendlyMessage = `This provider does not support ${token} payments to the selected destination. Please try a different provider or token.`;
-          } else if (lowerMessage.includes('provider not supported') || 
-                     lowerMessage.includes('institution not supported') ||
-                     lowerMessage.includes('not available for')) {
-            userFriendlyMessage = `This provider is not currently supported for ${token} transactions. Please try a different provider or token.`;
-          } else if (lowerMessage.includes('missing required fields') || 
-                     lowerMessage.includes('required field')) {
-            userFriendlyMessage = `Please fill in all required fields (recipient name, phone number, and amount)`;
-          } else if (lowerMessage.includes('invalid phone number') || 
-                     lowerMessage.includes('invalid account') ||
-                     lowerMessage.includes('invalid mobile')) {
-            userFriendlyMessage = `Invalid phone number format. Please check and try again.`;
-          } else if (lowerMessage.includes('insufficient liquidity') || 
-                     lowerMessage.includes('amount too high') ||
-                     lowerMessage.includes('exceeds maximum')) {
-            userFriendlyMessage = `Transaction amount is too high. Please try a smaller amount.`;
-          } else if (lowerMessage.includes('rate') && !lowerMessage.includes('separate')) {
-            userFriendlyMessage = `Unable to get exchange rate. Please try again in a moment.`;
-          } else if (lowerMessage.includes('network') && !lowerMessage.includes('switch')) {
-            userFriendlyMessage = `Network error. Please check your connection and try again.`;
-          } else if (lowerMessage.includes('token not supported') ||
-                     lowerMessage.includes('currency not supported')) {
-            userFriendlyMessage = `${token} is not supported for this transaction. Please select a different token.`;
-          }
-          
-          throw new Error(`Paycrest API error: ${userFriendlyMessage}`);
+          userFriendlyMessage = errorData.message || 'Unknown error';
         } catch (parseError) {
-          // If JSON parsing fails, provide a generic but helpful message
-          if (response.status === 400) {
-            throw new Error(`Paycrest API error: Invalid request. Please check all fields and try again.`);
-          } else if (response.status === 404) {
-            throw new Error(`Paycrest API error: Service not available. Please contact support.`);
-          } else if (response.status === 500) {
-            throw new Error(`Paycrest API error: Server error. Please try again later.`);
-          } else {
-            throw new Error(`Paycrest API error: ${response.status} - Unable to process request`);
-          }
+          // If JSON parsing fails, use the raw error text
+          console.error('Failed to parse error JSON:', parseError);
+          userFriendlyMessage = errorText || 'Unknown error';
         }
+        
+        // Parse and provide user-friendly error messages
+        const lowerMessage = userFriendlyMessage.toLowerCase();
+        
+        // Check for specific error types
+        // Check for route/provider availability issues first (before generic "missing fields")
+        if (lowerMessage.includes('route not found') || 
+            lowerMessage.includes('no route') ||
+            lowerMessage.includes('route unavailable') ||
+            lowerMessage.includes('provider does not support') ||
+            lowerMessage.includes('institution code') ||
+            lowerMessage.includes('institution not found') ||
+            lowerMessage.includes('invalid request') ||
+            (lowerMessage.includes('missing') && lowerMessage.includes('institution')) ||
+            (response.status === 400 && !lowerMessage.includes('phone') && !lowerMessage.includes('amount'))) {
+          userFriendlyMessage = `This provider does not support ${token} payments to the selected destination. Please try a different provider or token.`;
+        } else if (lowerMessage.includes('provider not supported') || 
+                   lowerMessage.includes('institution not supported') ||
+                   lowerMessage.includes('not available for')) {
+          userFriendlyMessage = `This provider is not currently supported for ${token} transactions. Please try a different provider or token.`;
+        } else if (lowerMessage.includes('missing required fields') || 
+                   lowerMessage.includes('required field')) {
+          userFriendlyMessage = `Please fill in all required fields (recipient name, phone number, and amount)`;
+        } else if (lowerMessage.includes('invalid phone number') || 
+                   lowerMessage.includes('invalid account') ||
+                   lowerMessage.includes('invalid mobile')) {
+          userFriendlyMessage = `Invalid phone number format. Please check and try again.`;
+        } else if (lowerMessage.includes('insufficient liquidity') || 
+                   lowerMessage.includes('amount too high') ||
+                   lowerMessage.includes('exceeds maximum')) {
+          userFriendlyMessage = `Transaction amount is too high. Please try a smaller amount.`;
+        } else if (lowerMessage.includes('rate') && !lowerMessage.includes('separate')) {
+          userFriendlyMessage = `Unable to get exchange rate. Please try again in a moment.`;
+        } else if (lowerMessage.includes('network') && !lowerMessage.includes('switch')) {
+          userFriendlyMessage = `Network error. Please check your connection and try again.`;
+        } else if (lowerMessage.includes('token not supported') ||
+                   lowerMessage.includes('currency not supported')) {
+          userFriendlyMessage = `${token} is not supported for this transaction. Please select a different token.`;
+        } else if (response.status === 404) {
+          userFriendlyMessage = `Service not available. Please contact support.`;
+        } else if (response.status === 500) {
+          userFriendlyMessage = `Server error. Please try again later.`;
+        }
+        
+        throw new Error(`Paycrest API error: ${userFriendlyMessage}`);
       }
 
       const responseText = await response.text();
@@ -2783,7 +2785,7 @@ export default function FarcasterMiniApp() {
         // Provide specific suggestions based on error type
         if (errorMessage.includes('does not support') && errorMessage.includes('payments to')) {
           errorTitle = 'Route Not Available';
-          suggestion = 'This provider does not offer this payment route. Try selecting a different provider (like a mobile money service) or use a different token like USDC.';
+          suggestion = 'This provider does not offer this payment route. Try selecting a different provider (like a mobile money service) or use a different token like USDC/USDT.';
         } else if (errorMessage.includes('provider is not currently supported')) {
           errorTitle = 'Provider Not Supported';
           suggestion = 'Try selecting a different mobile money provider or use a different cryptocurrency token.';
@@ -2939,7 +2941,7 @@ export default function FarcasterMiniApp() {
         // Provide specific suggestions based on error type
         if (errorMessage.includes('does not support') && errorMessage.includes('payments to')) {
           errorTitle = 'Route Not Available';
-          suggestion = 'This provider does not offer this payment route. Try selecting a different provider (like a mobile money service) or use a different token like USDC.';
+          suggestion = 'This provider does not offer this payment route. Try selecting a different provider (like a mobile money service) or use a different token like USDC/USDT.';
         } else if (errorMessage.includes('provider is not currently supported')) {
           errorTitle = 'Provider Not Supported';
           suggestion = 'Try selecting a different payment provider or use a different cryptocurrency token.';
