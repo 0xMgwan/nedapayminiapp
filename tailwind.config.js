@@ -27,6 +27,21 @@ module.exports = {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
+        // Celo Brand Colors
+        celo: {
+          prosperity: '#FCFF52', // Prosperity Yellow - Celo's primary brand color
+          forest: '#476520',     // Forest Green - Celo's secondary brand color
+          yellow: {
+            DEFAULT: '#FCFF52',
+            light: '#FDFF8B',    // Lighter variant
+            dark: '#E8ED3F',     // Darker variant
+          },
+          green: {
+            DEFAULT: '#476520',
+            light: '#5A8129',    // Lighter variant
+            dark: '#354B18',     // Darker variant
+          },
+        },
         // Modern Web3 color palette
         primary: {
           50: '#eff6ff',

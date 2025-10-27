@@ -258,19 +258,19 @@ export default function FarcasterMiniApp() {
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
   const [amount, setAmount] = useState('');
 
-  // Dynamic theme based on selected token
+  // Dynamic theme based on selected token - using official Celo brand colors
   const isCeloToken = selectedToken.chainId === 42220; // Celo mainnet
   const themeColors = isCeloToken ? {
-    primary: 'yellow-400',
-    primaryHover: 'yellow-500',
-    secondary: 'amber-500',
-    gradient: 'from-yellow-400 via-amber-500 to-yellow-600',
-    gradientHover: 'from-yellow-300 via-amber-400 to-yellow-500',
-    border: 'yellow-400/50',
-    borderHover: 'yellow-300/70',
-    shadow: 'yellow-500/30',
-    bg: 'yellow-600/20',
-    indicator: 'yellow-400'
+    primary: 'celo-prosperity',
+    primaryHover: 'celo-yellow-dark',
+    secondary: 'celo-forest',
+    gradient: 'from-[#FCFF52] via-[#FDFF8B] to-[#FCFF52]', // Celo Prosperity Yellow
+    gradientHover: 'from-[#FDFF8B] via-[#FCFF52] to-[#E8ED3F]',
+    border: 'celo-prosperity/50',
+    borderHover: 'celo-prosperity/70',
+    shadow: 'celo-prosperity/30',
+    bg: 'celo-prosperity/20',
+    indicator: 'celo-prosperity'
   } : {
     primary: 'blue-500',
     primaryHover: 'blue-600',
@@ -3224,13 +3224,13 @@ export default function FarcasterMiniApp() {
                     setSendCurrency('usdc');
                     setShowSendTokenDropdown(!showSendTokenDropdown);
                   }}
-                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br ${themeColors.gradient} text-white shadow-xl shadow-${themeColors.shadow} border-2 border-${themeColors.border}`}
+                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br ${themeColors.gradient} ${isCeloToken ? 'text-slate-900' : 'text-white'} shadow-xl shadow-${themeColors.shadow} border-2 border-${themeColors.border}`}
                 >
                   <div className="flex items-center gap-2">
                     {renderTokenIcon(stablecoins.find(token => token.baseToken === selectedSendToken) || stablecoins[0], "w-3 h-3")}
                     <span>{selectedSendToken}</span>
                   </div>
-                  <ChevronDownIcon className="w-3 h-3 text-white" />
+                  <ChevronDownIcon className={`w-3 h-3 ${isCeloToken ? 'text-slate-900' : 'text-white'}`} />
                 </button>
                 
                 {showSendTokenDropdown && (
@@ -4041,7 +4041,7 @@ export default function FarcasterMiniApp() {
                     setPayCurrency('usdc');
                     setShowPayTokenDropdown(!showPayTokenDropdown);
                   }}
-                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br ${themeColors.gradient} text-white shadow-xl shadow-${themeColors.shadow} border-2 border-${themeColors.border}`}
+                  className={`relative px-3 py-1 text-xs rounded-lg font-bold transition-all duration-300 ease-out overflow-hidden group w-full text-left flex items-center justify-between bg-gradient-to-br ${themeColors.gradient} ${isCeloToken ? 'text-slate-900' : 'text-white'} shadow-xl shadow-${themeColors.shadow} border-2 border-${themeColors.border}`}
                 >
                   <div className="flex items-center gap-2">
                     {selectedPayToken === 'USDC' ? (
@@ -4057,7 +4057,7 @@ export default function FarcasterMiniApp() {
                     )}
                     <span>{selectedPayToken}</span>
                   </div>
-                  <ChevronDownIcon className="w-3 h-3 text-white" />
+                  <ChevronDownIcon className={`w-3 h-3 ${isCeloToken ? 'text-slate-900' : 'text-white'}`} />
                 </button>
                 
                 {showPayTokenDropdown && (
@@ -5432,10 +5432,10 @@ export default function FarcasterMiniApp() {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br p-3 relative overflow-hidden transition-colors duration-500 ${isCeloToken ? 'from-slate-900 via-amber-900 to-yellow-900' : 'from-slate-900 via-purple-900 to-blue-900'}`}>
+    <div className={`min-h-screen bg-gradient-to-br p-3 relative overflow-hidden transition-colors duration-500 ${isCeloToken ? 'from-slate-900 via-[#354B18] to-slate-950' : 'from-slate-900 via-purple-900 to-blue-900'}`}>
       {/* Background Effects */}
-      <div className={`absolute inset-0 bg-gradient-to-br transition-colors duration-500 ${isCeloToken ? 'from-yellow-600/10 via-amber-600/10 to-yellow-600/10' : 'from-blue-600/10 via-purple-600/10 to-indigo-600/10'}`}></div>
-      <div className={`absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] via-transparent to-transparent transition-colors duration-500 ${isCeloToken ? 'from-yellow-600/20' : 'from-blue-600/20'}`}></div>
+      <div className={`absolute inset-0 bg-gradient-to-br transition-colors duration-500 ${isCeloToken ? 'from-[#FCFF52]/10 via-[#FDFF8B]/10 to-[#FCFF52]/10' : 'from-blue-600/10 via-purple-600/10 to-indigo-600/10'}`}></div>
+      <div className={`absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] via-transparent to-transparent transition-colors duration-500 ${isCeloToken ? 'from-[#FCFF52]/20' : 'from-blue-600/20'}`}></div>
       
       <div className="max-w-sm mx-auto relative z-10">
         {/* Top Header with Wallet */}
@@ -5449,7 +5449,7 @@ export default function FarcasterMiniApp() {
                 height={28} 
                 className="rounded-lg shadow-lg"
               />
-              <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${isCeloToken ? 'from-yellow-400/20 to-amber-400/20' : 'from-blue-400/20 to-purple-400/20'}`}></div>
+              <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${isCeloToken ? 'from-[#FCFF52]/30 to-[#FDFF8B]/30' : 'from-blue-400/20 to-purple-400/20'}`}></div>
             </div>
             <div>
               <h1 className="text-white font-bold text-sm tracking-tight">Neda Pay</h1>
@@ -5731,19 +5731,19 @@ export default function FarcasterMiniApp() {
                 onClick={() => setActiveTab(key)}
                 className={`relative py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 ease-out flex items-center justify-center gap-1 overflow-hidden group ${
                   activeTab === key
-                    ? `bg-gradient-to-br ${themeColors.gradient} text-white shadow-2xl shadow-${themeColors.shadow} transform scale-105 border-2 border-${themeColors.border}`
+                    ? `bg-gradient-to-br ${themeColors.gradient} ${isCeloToken ? 'text-slate-900' : 'text-white'} shadow-2xl shadow-${themeColors.shadow} transform scale-105 border-2 border-${themeColors.border}`
                     : 'text-white bg-slate-800/60 hover:bg-slate-700/80 hover:scale-102 hover:shadow-lg border-2 border-transparent hover:border-slate-600/30 active:scale-95 active:shadow-inner'
                 }`}
               >
                 {/* Animated background for active state */}
                 {activeTab === key && (
-                  <div className={`absolute inset-0 bg-gradient-to-r animate-pulse ${isCeloToken ? 'from-yellow-400/20 to-amber-400/20' : 'from-blue-400/20 to-purple-400/20'}`} />
+                  <div className={`absolute inset-0 bg-gradient-to-r animate-pulse ${isCeloToken ? 'from-[#FCFF52]/20 to-[#FDFF8B]/20' : 'from-blue-400/20 to-purple-400/20'}`} />
                 )}
                 
                 {/* Hover glow effect */}
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${
                   activeTab === key 
-                    ? `opacity-100 bg-gradient-to-r ${isCeloToken ? 'from-yellow-400/10 to-amber-400/10' : 'from-blue-400/10 to-purple-400/10'}` 
+                    ? `opacity-100 bg-gradient-to-r ${isCeloToken ? 'from-[#FCFF52]/10 to-[#FDFF8B]/10' : 'from-blue-400/10 to-purple-400/10'}` 
                     : 'opacity-0 group-hover:opacity-100 bg-white/5'
                 }`} />
                 
@@ -5789,10 +5789,10 @@ export default function FarcasterMiniApp() {
           {/* Notification Panel */}
           <div className="fixed top-20 right-4 w-80 max-w-[calc(100vw-16px)] glass-card shadow-2xl z-50 max-h-[65vh] flex flex-col overflow-hidden animate-slide-in">
             {/* Header */}
-            <div className={`p-3 border-b border-slate-600/20 flex justify-between items-center bg-gradient-to-r ${isCeloToken ? 'from-yellow-500/10 to-amber-500/10' : 'from-blue-500/10 to-purple-500/10'}`}>
+            <div className={`p-3 border-b border-slate-600/20 flex justify-between items-center bg-gradient-to-r ${isCeloToken ? 'from-[#FCFF52]/10 to-[#FDFF8B]/10' : 'from-blue-500/10 to-purple-500/10'}`}>
               <div className="flex items-center gap-2">
-                <div className={`p-1.5 ${isCeloToken ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-blue-500/20 border-blue-500/30'} rounded-lg border`}>
-                  <BellIcon className={`w-4 h-4 ${isCeloToken ? 'text-yellow-400' : 'text-blue-400'}`} />
+                <div className={`p-1.5 ${isCeloToken ? 'bg-[#FCFF52]/20 border-[#FCFF52]/30' : 'bg-blue-500/20 border-blue-500/30'} rounded-lg border`}>
+                  <BellIcon className={`w-4 h-4 ${isCeloToken ? 'text-[#FCFF52]' : 'text-blue-400'}`} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-white text-sm">{t('notifications.title')}</h3>
@@ -5840,7 +5840,7 @@ export default function FarcasterMiniApp() {
                       key={notification.id} 
                       className={`mb-2 rounded-xl border transition-all duration-300 cursor-pointer group ${
                         !notification.read 
-                          ? (isCeloToken ? 'bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-yellow-500/30 hover:from-yellow-500/15 hover:to-amber-500/15' : 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 hover:from-blue-500/15 hover:to-purple-500/15')
+                          ? (isCeloToken ? 'bg-gradient-to-r from-[#FCFF52]/10 to-[#FDFF8B]/10 border-[#FCFF52]/30 hover:from-[#FCFF52]/15 hover:to-[#FDFF8B]/15' : 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 hover:from-blue-500/15 hover:to-purple-500/15')
                           : 'bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-slate-600/20 hover:from-slate-700/60 hover:to-slate-600/60'
                       }`}
                       onClick={() => markNotificationAsRead(notification.id)}
