@@ -30,7 +30,13 @@ import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { FaGear } from "react-icons/fa6";
 import { usePrivy } from "@privy-io/react-auth";
 
-export default function Header() {
+interface HeaderProps {
+  themeColors?: {
+    gradient: string;
+  };
+}
+
+export default function Header({ themeColors }: HeaderProps = {}) {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
@@ -41,6 +47,9 @@ export default function Header() {
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
 
   const { authenticated } = usePrivy();
+  
+  // Default theme colors if not provided
+  const gradientClass = themeColors?.gradient || 'from-blue-500 to-purple-500';
 
   // Handle scroll effect for header
   useEffect(() => {
@@ -83,8 +92,8 @@ export default function Header() {
         }
       `}
     >
-      {/* Simple top border */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+      {/* Simple top border - Dynamic theme */}
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientClass}`}></div>
 
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 overflow-visible">
         <div className="flex justify-between items-center h-16 overflow-visible">
