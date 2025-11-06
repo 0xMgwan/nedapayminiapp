@@ -633,15 +633,43 @@ export default function FarcasterMiniApp() {
     }
   }, [walletAddress]);
 
-  // Function to mark notification as read (with database update)
+  // Function to handle notification click - mark as read and show details
+  const handleNotificationClick = useCallback(async (notification: any) => {
+    console.log('Notification clicked:', notification);
+    
+    // Mark as read
+    setNotifications(prev => 
+      prev.map(notif => notif.id === notification.id ? { ...notif, read: true } : notif)
+    );
+    
+    try {
+      // Update in database
+      await fetch(`/api/notifications?id=${notification.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'seen' })
+      });
+    } catch (error) {
+      console.warn('⚠️ Failed to update notification status in database:', error);
+    }
+    
+    // Show transaction details if available
+    if (notification.relatedTransaction) {
+      console.log('Opening transaction details:', notification.relatedTransaction);
+      // You can add a modal here or expand inline
+      alert(`Transaction Details:\n\nAmount: ${notification.relatedTransaction.amount} ${notification.relatedTransaction.currency}\nStatus: ${notification.relatedTransaction.status}\nTx Hash: ${notification.relatedTransaction.txHash || 'N/A'}\nOrder ID: ${notification.relatedTransaction.orderId || 'N/A'}`);
+    } else {
+      console.log('No transaction details available for this notification');
+    }
+  }, []);
+  
+  // Keep old function for compatibility
   const markNotificationAsRead = useCallback(async (id: string) => {
-    // Update local state immediately
     setNotifications(prev => 
       prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
     );
     
     try {
-      // Update in database
       await fetch(`/api/notifications?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -5843,7 +5871,7 @@ export default function FarcasterMiniApp() {
                           ? (isCeloToken ? 'bg-gradient-to-r from-[#FCFF52]/10 to-[#FDFF8B]/10 border-[#FCFF52]/30 hover:from-[#FCFF52]/15 hover:to-[#FDFF8B]/15' : 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 hover:from-blue-500/15 hover:to-purple-500/15')
                           : 'bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-slate-600/20 hover:from-slate-700/60 hover:to-slate-600/60'
                       }`}
-                      onClick={() => markNotificationAsRead(notification.id)}
+                      onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="p-3">
                         <div className="flex items-start gap-2">
