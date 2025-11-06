@@ -65,7 +65,7 @@ interface PaymentOrderPayload {
   amount: number;
   rate: number;
   network: 'base' | 'celo';
-  token: 'USDC' | 'USDT';
+  token: 'USDC' | 'USDT' | 'cUSD';
   recipient: Recipient;
   returnAddress?: string;
   reference?: string;
@@ -187,9 +187,9 @@ function isRetryableError(error: any): boolean {
 }
 
 
-export async function fetchTokenRate(token: 'USDC' | 'USDT', amount: number, fiat: string, providerId?: string): Promise<string> {
+export async function fetchTokenRate(token: 'USDC' | 'USDT' | 'cUSD', amount: number, fiat: string, providerId?: string): Promise<string> {
   const query = providerId ? `?provider_id=${providerId}` : '';
-  const network = token === 'USDT' ? 'celo' : 'base';
+  const network = (token === 'USDT' || token === 'cUSD') ? 'celo' : 'base';
   const response = await axios.get(`${PAYCREST_API_URL}/v1/rates/${token}/${amount}/${fiat}?network=${network}`, { headers });
   return response.data.data;
 }

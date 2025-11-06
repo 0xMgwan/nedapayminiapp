@@ -5,7 +5,7 @@ interface PaymentOrderRequest {
   amount: number;
   rate: number;
   network: 'base' | 'celo';
-  token: 'USDC' | 'USDT';
+  token: 'USDC' | 'USDT' | 'cUSD';
   recipient: Recipient;
   returnAddress?: string;
   reference?: string;
