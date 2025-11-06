@@ -12,6 +12,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { base } from "wagmi/chains";
+import { useAccount } from "wagmi";
 import { Name } from "@coinbase/onchainkit/identity";
 import { getBasename } from "../utils/getBaseName";
 import { useUserSync } from "../hooks/useUserSync";
@@ -262,11 +263,23 @@ const WalletSelector = forwardRef<
     },
   });
 
-  // Get the primary wallet address safely (Privy only - was working before)
-  const walletAddress = user?.wallet?.address;
+  // Get wallet address from both Privy and wagmi (matching commit 45eb51ab)
+  const { address: wagmiAddress, isConnected: isWagmiConnected } = useAccount();
+  
+  // Use Privy wallet address first, fallback to wagmi address
+  const privyWalletAddress = user?.wallet?.address;
+  const walletAddress = privyWalletAddress || wagmiAddress;
+  
+  console.log('Wallet status:', { 
+    privyAddress: privyWalletAddress, 
+    wagmiAddress, 
+    finalAddress: walletAddress,
+    isWagmiConnected,
+    authenticated 
+  });
   
   const emailAddress = user?.email?.address;
-  const isConnected = authenticated && (walletAddress || emailAddress);
+  const isConnected = (authenticated && (walletAddress || emailAddress)) || isWagmiConnected;
 
   // Show authentication modal only on / and once per session
   useEffect(() => {
