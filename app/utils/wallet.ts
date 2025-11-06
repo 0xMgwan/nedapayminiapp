@@ -134,39 +134,87 @@ export async function executeTokenTransaction(
       throw new Error('No wallet provider found');
     }
 
-    // Switch to the correct network before transaction
-    try {
-      console.log(`🔄 Switching to ${networkName} (${targetChainId}) for ${tokenData?.baseToken} transaction`);
+    // Check if we're already on the correct network
+    const currentNetwork = await provider.getNetwork();
+    const currentChainId = currentNetwork.chainId;
+    
+    console.log(`Current network: ${currentChainId}, Target network: ${targetChainId}`);
+    
+    if (currentChainId !== targetChainId) {
+      // Only attempt to switch if we're on wrong network
+      console.log(`🔄 Need to switch from chain ${currentChainId} to ${networkName} (${targetChainId})`);
       
-      // Request network switch using wallet provider
-      if (walletProvider && walletProvider.request) {
-        await walletProvider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: `0x${targetChainId.toString(16)}` }],
-        });
-      } else if (window.ethereum) {
-        await (window.ethereum as any).request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: `0x${targetChainId.toString(16)}` }],
-        });
+      try {
+        // Request network switch using wallet provider
+        if (walletProvider && walletProvider.request) {
+          await walletProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: `0x${targetChainId.toString(16)}` }],
+          });
+        } else if (window.ethereum) {
+          await (window.ethereum as any).request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: `0x${targetChainId.toString(16)}` }],
+          });
+        }
+        
+        console.log(`✅ Successfully switched to ${networkName}`);
+        
+        // Wait for network switch to complete
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      } catch (switchError: any) {
+        console.error(`❌ Network switch to ${networkName} failed:`, switchError);
+        
+        // Check if it's an unsupported operation
+        const isUnsupported = switchError.message?.includes('not supported') || 
+                             switchError.message?.includes('UNSUPPORTED_OPERATION') ||
+                             switchError.code === 4200 ||
+                             switchError.code === -32601;
+        
+        if (isUnsupported) {
+          console.warn(`⚠️ Wallet doesn't support automatic chain switching`);
+          throw new Error(`Please manually switch your wallet to ${networkName} network and try again.`);
+        }
+        
+        // User rejected the request
+        if (switchError.code === 4001) {
+          throw new Error('Network switch was cancelled. Please switch to the correct network and try again.');
+        }
+        
+        // If it's a Celo token and switch failed, this is critical
+        if (isCeloToken) {
+          throw new Error(`Failed to switch to Celo network. Please manually switch to Celo network in your wallet and try again.`);
+        }
+        
+        // For other errors, throw
+        throw switchError;
       }
-      
-      console.log(`✅ Successfully switched to ${networkName} for ${tokenData?.baseToken}`);
-      
-      // Wait for network switch to complete
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    } catch (switchError: any) {
-      console.error(`❌ Network switch to ${networkName} failed:`, switchError);
-      
-      // If it's a Celo token and switch failed, this is critical
-      if (isCeloToken) {
-        throw new Error(`Failed to switch to Celo network for ${tokenData?.baseToken}. Please manually switch to Celo network in your wallet and try again.`);
-      }
+    } else {
+      console.log(`✅ Already on ${networkName} (${targetChainId}), no switch needed`);
     }
 
     const signer = provider.getSigner();
-    const signerAddress = await signer.getAddress();
-    console.log('Connected wallet address:', signerAddress);
+    let signerAddress: string;
+    
+    try {
+      signerAddress = await signer.getAddress();
+      console.log('Connected wallet address:', signerAddress);
+    } catch (getAddressError: any) {
+      console.warn('getAddress() failed, trying alternative method:', getAddressError);
+      // Try alternative methods to get address
+      try {
+        const accounts = await provider.listAccounts();
+        if (accounts && accounts.length > 0) {
+          signerAddress = accounts[0];
+          console.log('Got address from listAccounts:', signerAddress);
+        } else {
+          throw new Error('No accounts found');
+        }
+      } catch (listAccountsError) {
+        console.error('Failed to get wallet address:', listAccountsError);
+        throw new Error('Unable to get wallet address. Please ensure your wallet is properly connected.');
+      }
+    }
     
     // Create contract instance
     const tokenContract = new ethers.Contract(contractAddress, TOKEN_ABI, signer);
