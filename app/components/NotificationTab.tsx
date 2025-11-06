@@ -412,7 +412,8 @@ export default function NotificationTab() {
               {allNotifications.length === 0 ? (
                 <div className="p-6 text-center text-slate-500">
                   <FaBell size={24} className="mx-auto mb-2 opacity-50" />
-                  <p>No notifications yet.</p>
+                  <p className="font-semibold text-slate-700 mb-2">No notifications</p>
+                  <p className="text-sm text-slate-500">Send your stablecoins to mobile money/ bank instantly. Pay bills with your stables instantly</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
