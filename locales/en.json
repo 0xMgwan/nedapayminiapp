@@ -36,7 +36,7 @@
   },
   "send": {
     "title": "Send Money",
-    "subtitle": "Send USDC to mobile money instantly",
+    "subtitle": "Send stablecoins to mobile money/bank instantly.",
     "amount": "Amount",
     "recipient": "Recipient",
     "chooseProvider": "Choose provider...",
@@ -59,7 +59,7 @@
   },
   "pay": {
     "title": "Pay Bill",
-    "subtitle": "Pay bills with USDC instantly",
+    "subtitle": "Pay bills, Buy goods with your Stables today!",
     "amount": "Amount",
     "tillNumber": "Till Number",
     "swipeToPay": "Swipe to Pay",
