@@ -41,6 +41,18 @@ export async function POST(request: NextRequest) {
             institution: data.recipient?.institution
           }
         });
+
+        // Create notification for pending transaction
+        await prisma.notification.create({
+          data: {
+            message: `Off-ramp order pending: ${data.amount} ${data.recipient?.currency} to ${data.recipient?.accountName}`,
+            recipient: data.fromAddress,
+            type: 'offramp',
+            status: 'unseen',
+            // Store offramp transaction ID in a way we can retrieve it
+            relatedTransactionId: data.id,
+          }
+        });
         break;
 
       case 'payment_order.settled':
@@ -66,6 +78,17 @@ export async function POST(request: NextRequest) {
             accountName: data.recipient?.accountName,
             accountNumber: data.recipient?.accountIdentifier,
             institution: data.recipient?.institution
+          }
+        });
+
+        // Create notification for settled transaction
+        await prisma.notification.create({
+          data: {
+            message: `Off-ramp order settled: ${data.amount} ${data.recipient?.currency} to ${data.recipient?.accountName}`,
+            recipient: data.fromAddress,
+            type: 'offramp',
+            status: 'unseen',
+            relatedTransactionId: data.id,
           }
         });
         break;
@@ -95,6 +118,17 @@ export async function POST(request: NextRequest) {
             institution: data.recipient?.institution
           }
         });
+
+        // Create notification for expired transaction
+        await prisma.notification.create({
+          data: {
+            message: `Off-ramp order expired: ${data.amount} ${data.recipient?.currency}`,
+            recipient: data.fromAddress,
+            type: 'offramp',
+            status: 'unseen',
+            relatedTransactionId: data.id,
+          }
+        });
         break;
 
       case 'payment_order.refunded':
@@ -120,6 +154,17 @@ export async function POST(request: NextRequest) {
             accountName: data.recipient?.accountName,
             accountNumber: data.recipient?.accountIdentifier,
             institution: data.recipient?.institution
+          }
+        });
+
+        // Create notification for refunded transaction
+        await prisma.notification.create({
+          data: {
+            message: `Off-ramp order refunded: ${data.amount} ${data.recipient?.currency}`,
+            recipient: data.fromAddress,
+            type: 'offramp',
+            status: 'unseen',
+            relatedTransactionId: data.id,
           }
         });
         break;

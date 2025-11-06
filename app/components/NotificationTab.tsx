@@ -52,13 +52,27 @@ interface DatabaseNotification {
   };
 }
 
+interface OffRampTransactionDetails {
+  id: string;
+  createdAt: string;
+  merchantId: string;
+  status: string;
+  amount: string;
+  currency: string;
+  accountName: string;
+  accountNumber: string;
+  institution: string;
+}
+
 export default function NotificationTab() {
   const [open, setOpen] = useState(false);
   const [localNotifications, setLocalNotifications] = useState<NotificationItem[]>([]);
   const [dbNotifications, setDbNotifications] = useState<DatabaseNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<DatabaseNotification['relatedTransaction'] | null>(null);
+  const [selectedOffRampTransaction, setSelectedOffRampTransaction] = useState<OffRampTransactionDetails | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [showOffRampModal, setShowOffRampModal] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { wallets } = useWallets();
   
@@ -89,6 +103,7 @@ export default function NotificationTab() {
       case 'completed':
       case 'success':
       case 'confirmed':
+      case 'settled':
         return { icon: FaCheckCircle, color: 'text-green-600', bg: 'bg-green-100' };
       case 'failed':
       case 'error':
@@ -97,6 +112,10 @@ export default function NotificationTab() {
       case 'pending':
       case 'processing':
         return { icon: FaExclamationTriangle, color: 'text-yellow-600', bg: 'bg-yellow-100' };
+      case 'refunded':
+        return { icon: FaCheckCircle, color: 'text-blue-600', bg: 'bg-blue-100' };
+      case 'expired':
+        return { icon: FaTimesCircle, color: 'text-orange-600', bg: 'bg-orange-100' };
       default:
         return { icon: FaExclamationTriangle, color: 'text-gray-600', bg: 'bg-gray-100' };
     }
@@ -243,8 +262,32 @@ export default function NotificationTab() {
       );
     }
 
-    // Show transaction details if available
-    if ('relatedTransaction' in notification && notification.relatedTransaction) {
+    // Check if this is an offramp notification
+    if ('type' in notification && notification.type === 'offramp' && 'relatedTransactionId' in notification && notification.relatedTransactionId) {
+      console.log('Fetching offramp transaction details for ID:', notification.relatedTransactionId);
+      try {
+        const response = await fetch(`/api/offrampTransactions?transactionId=${notification.relatedTransactionId}`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data.transactions && result.data.transactions.length > 0) {
+            const offrampTx = result.data.transactions[0];
+            console.log('Offramp transaction details:', offrampTx);
+            setSelectedOffRampTransaction(offrampTx);
+            setShowOffRampModal(true);
+          } else {
+            alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nTransaction details not available.`);
+          }
+        } else {
+          console.error('Failed to fetch offramp transaction details');
+          alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nFailed to load transaction details.`);
+        }
+      } catch (error) {
+        console.error('Error fetching offramp transaction:', error);
+        alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nError loading transaction details.`);
+      }
+    }
+    // Show regular transaction details if available
+    else if ('relatedTransaction' in notification && notification.relatedTransaction) {
       console.log('Opening transaction modal with data:', notification.relatedTransaction);
       setSelectedTransaction(notification.relatedTransaction);
       setShowTransactionModal(true);
@@ -379,7 +422,8 @@ export default function NotificationTab() {
                       className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer group ${
                         !notification.read ? 'bg-blue-50 border-l-2 border-blue-500' : ''
                       } ${
-                        'relatedTransaction' in notification && notification.relatedTransaction 
+                        (('relatedTransaction' in notification && notification.relatedTransaction) || 
+                         ('type' in notification && notification.type === 'offramp' && 'relatedTransactionId' in notification && notification.relatedTransactionId))
                           ? 'hover:bg-blue-50 border-r-2 border-r-blue-300' 
                           : ''
                       }`}
@@ -394,7 +438,9 @@ export default function NotificationTab() {
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
                               notification.type === 'payment' 
                                 ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
+                                : notification.type === 'offramp'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-gray-100 text-gray-800'
                             }`}>
                               {notification.type || 'general'}
                             </span>
@@ -403,7 +449,10 @@ export default function NotificationTab() {
                                 local
                               </span>
                             )}
-                            {!notification.isLocal && 'relatedTransaction' in notification && notification.relatedTransaction && (
+                            {!notification.isLocal && (
+                              (('relatedTransaction' in notification && notification.relatedTransaction) || 
+                               ('type' in notification && notification.type === 'offramp' && 'relatedTransactionId' in notification && notification.relatedTransactionId))
+                            ) && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
                                 <FaExternalLinkAlt className="w-2 h-2" />
                                 details
@@ -438,6 +487,173 @@ export default function NotificationTab() {
             </div>
           </div>
         </>
+      )}
+
+      {/* OffRamp Transaction Details Modal */}
+      {showOffRampModal && selectedOffRampTransaction && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99999] flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${getStatusDisplay(selectedOffRampTransaction.status).bg}`}>
+                    {(() => {
+                      const StatusIcon = getStatusDisplay(selectedOffRampTransaction.status).icon;
+                      return <StatusIcon className={`w-5 h-5 ${getStatusDisplay(selectedOffRampTransaction.status).color}`} />;
+                    })()}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Off-Ramp Transaction Details</h2>
+                    <p className="text-sm text-gray-500">
+                      {new Date(selectedOffRampTransaction.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowOffRampModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  <FaTimes className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Transaction Summary */}
+              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Amount</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatNumber(selectedOffRampTransaction.amount)} {selectedOffRampTransaction.currency}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {(() => {
+                        const StatusIcon = getStatusDisplay(selectedOffRampTransaction.status).icon;
+                        return <StatusIcon className={`w-4 h-4 ${getStatusDisplay(selectedOffRampTransaction.status).color}`} />;
+                      })()}
+                      <span className={`text-sm font-semibold capitalize ${getStatusDisplay(selectedOffRampTransaction.status).color}`}>
+                        {selectedOffRampTransaction.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transaction Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Provider/Institution */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Provider / Institution</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {selectedOffRampTransaction.institution}
+                  </p>
+                </div>
+
+                {/* Transaction ID */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-600">Transaction ID</p>
+                    <button
+                      onClick={() => copyToClipboard(selectedOffRampTransaction.id, 'offrampId')}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      {copiedField === 'offrampId' ? (
+                        <FaCheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <FaCopy className="w-4 h-4 text-gray-500" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-sm font-mono text-gray-900 break-all">
+                    {selectedOffRampTransaction.id}
+                  </p>
+                </div>
+
+                {/* Account Name */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Account Name</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {selectedOffRampTransaction.accountName}
+                  </p>
+                </div>
+
+                {/* Account Number */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-600">Account Number</p>
+                    <button
+                      onClick={() => copyToClipboard(selectedOffRampTransaction.accountNumber, 'accountNumber')}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      {copiedField === 'accountNumber' ? (
+                        <FaCheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <FaCopy className="w-4 h-4 text-gray-500" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-sm font-mono text-gray-900">
+                    {selectedOffRampTransaction.accountNumber}
+                  </p>
+                </div>
+              </div>
+
+              {/* Merchant Wallet */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-600">Merchant Wallet</p>
+                  <button
+                    onClick={() => copyToClipboard(selectedOffRampTransaction.merchantId, 'merchantWallet')}
+                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    {copiedField === 'merchantWallet' ? (
+                      <FaCheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <FaCopy className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm font-mono text-gray-900 break-all">
+                  {selectedOffRampTransaction.merchantId}
+                </p>
+              </div>
+
+              {/* Date Information */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-medium text-gray-600 mb-2">Transaction Date</p>
+                <p className="text-sm text-gray-900">
+                  {new Date(selectedOffRampTransaction.createdAt).toLocaleString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 rounded-b-2xl">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowOffRampModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Transaction Details Modal */}
