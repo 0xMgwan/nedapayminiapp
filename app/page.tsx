@@ -656,10 +656,18 @@ export default function FarcasterMiniApp() {
     // Show transaction details if available
     if (notification.relatedTransaction) {
       console.log('Opening transaction details:', notification.relatedTransaction);
-      // You can add a modal here or expand inline
-      alert(`Transaction Details:\n\nAmount: ${notification.relatedTransaction.amount} ${notification.relatedTransaction.currency}\nStatus: ${notification.relatedTransaction.status}\nTx Hash: ${notification.relatedTransaction.txHash || 'N/A'}\nOrder ID: ${notification.relatedTransaction.orderId || 'N/A'}`);
+      const tx = notification.relatedTransaction;
+      alert(`Transaction Details:\n\nAmount: ${tx.amount} ${tx.currency}\nStatus: ${tx.status}\nWallet: ${tx.wallet}\nTx Hash: ${tx.txHash || 'N/A'}\nOrder ID: ${tx.orderId || 'N/A'}\nBlock Number: ${tx.blockNumber || 'N/A'}\nGas Used: ${tx.gasUsed || 'N/A'}\n\nCreated: ${new Date(tx.createdAt).toLocaleString()}`);
     } else {
       console.log('No transaction details available for this notification');
+      console.log('Full notification object:', notification);
+      
+      // Check if it's an old notification or if relatedTransaction failed to load
+      if (notification.relatedTransactionId) {
+        alert(`This notification has a transaction ID (${notification.relatedTransactionId}) but the transaction details couldn't be loaded. This might be a database connection issue.`);
+      } else {
+        alert(`This notification doesn't have any linked transaction data. It might be an older notification created before transaction tracking was added.`);
+      }
     }
   }, []);
   
