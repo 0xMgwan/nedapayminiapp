@@ -423,9 +423,33 @@ export default function FarcasterMiniApp() {
               id: farcasterConnector.id
             });
             
-            await connect({ connector: farcasterConnector });
+            try {
+              const result = await connect({ connector: farcasterConnector });
+              console.log('✅ Connect result:', result);
+              
+              // Verify connection after a delay
+              setTimeout(() => {
+                console.log('🔍 Post-connect verification:', {
+                  isConnected,
+                  address,
+                  connector: farcasterConnector.name
+                });
+              }, 1000);
+            } catch (connectError) {
+              console.error('❌ Farcaster connector failed:', connectError);
+              // Try fallback to first available connector
+              if (connectors.length > 0) {
+                console.log('🔄 Trying fallback connector:', connectors[0].name);
+                await connect({ connector: connectors[0] });
+              }
+            }
           } else {
             console.log('⚠️ No Farcaster connector found for auto-connect');
+            // Try first available connector as fallback
+            if (connectors.length > 0) {
+              console.log('🔄 Using first available connector:', connectors[0].name);
+              await connect({ connector: connectors[0] });
+            }
           }
           
         } catch (error) {
