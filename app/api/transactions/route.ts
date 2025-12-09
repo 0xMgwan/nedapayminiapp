@@ -43,12 +43,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(transaction);
     }
 
-    // Fetch all transactions for a merchant
+    // Fetch all transactions for a merchant (case-insensitive for wallet addresses)
     if (merchantId) {
       const transactions = await prisma.transaction.findMany({
-        where: { merchantId },
+        where: { 
+          merchantId: {
+            equals: merchantId,
+            mode: 'insensitive'
+          }
+        },
         orderBy: { createdAt: 'desc' },
       });
+      console.log(`📊 Found ${transactions.length} transactions for merchantId: ${merchantId}`);
       return NextResponse.json(transactions);
     }
 

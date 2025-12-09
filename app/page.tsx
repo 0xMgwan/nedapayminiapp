@@ -615,12 +615,15 @@ export default function FarcasterMiniApp() {
         let transactionId = null;
         if (transactionData?.hash) {
           try {
+            // Normalize wallet address to lowercase for consistent storage
+            const normalizedWallet = walletAddress.toLowerCase();
+            console.log('💾 Saving transaction with merchantId:', normalizedWallet);
             const transactionResponse = await fetch('/api/transactions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                merchantId: walletAddress,
-                wallet: walletAddress,
+                merchantId: normalizedWallet,
+                wallet: normalizedWallet,
                 amount: transactionData.amount || '0',
                 currency: transactionData.currency || 'USDC',
                 status: 'Completed',
@@ -745,15 +748,25 @@ export default function FarcasterMiniApp() {
 
   // Function to load user transactions
   const loadUserTransactions = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!walletAddress) {
+      console.log('⚠️ No wallet address, skipping transaction load');
+      return;
+    }
     
+    // Normalize wallet address to lowercase for consistent querying
+    const normalizedWallet = walletAddress.toLowerCase();
+    console.log(`🔄 Loading transactions for wallet: ${normalizedWallet}`);
     setTransactionsLoading(true);
     try {
-      const response = await fetch(`/api/transactions?merchantId=${walletAddress}`);
+      const response = await fetch(`/api/transactions?merchantId=${normalizedWallet}`);
+      console.log(`📡 Transaction API response status: ${response.status}`);
       if (response.ok) {
         const transactions = await response.json();
         setUserTransactions(transactions);
-        console.log(`✅ Loaded ${transactions.length} transactions`);
+        console.log(`✅ Loaded ${transactions.length} transactions:`, transactions);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Failed to load transactions:', errorText);
       }
     } catch (error) {
       console.warn('⚠️ Failed to load transactions:', error);
