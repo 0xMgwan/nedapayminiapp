@@ -566,6 +566,17 @@ export default function FarcasterMiniApp() {
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [userTransactions, setUserTransactions] = useState<Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    txHash: string;
+    recipient?: string;
+    type?: string;
+    createdAt: string;
+  }>>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [notifications, setNotifications] = useState<Array<{
     id: string;
     message: string;
@@ -731,6 +742,25 @@ export default function FarcasterMiniApp() {
       console.warn('⚠️ Failed to update notification status in database:', error);
     }
   }, []);
+
+  // Function to load user transactions
+  const loadUserTransactions = useCallback(async () => {
+    if (!walletAddress) return;
+    
+    setTransactionsLoading(true);
+    try {
+      const response = await fetch(`/api/transactions?merchantId=${walletAddress}`);
+      if (response.ok) {
+        const transactions = await response.json();
+        setUserTransactions(transactions);
+        console.log(`✅ Loaded ${transactions.length} transactions`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load transactions:', error);
+    } finally {
+      setTransactionsLoading(false);
+    }
+  }, [walletAddress]);
 
   // Function to load notifications from database
   const loadNotifications = useCallback(async () => {
@@ -5987,8 +6017,8 @@ export default function FarcasterMiniApp() {
         onClose={() => setIsSideMenuOpen(false)} 
         authenticated={authenticated || isWalletConnected}
         onOpenFAQ={() => setShowFAQModal(true)}
-        onOpenProfile={() => setShowProfileModal(true)}
-        onOpenTransactions={() => setShowTransactionsModal(true)}
+        onOpenProfile={() => { loadUserTransactions(); setShowProfileModal(true); }}
+        onOpenTransactions={() => { loadUserTransactions(); setShowTransactionsModal(true); }}
       />
 
       {/* FAQ Modal */}
@@ -6034,11 +6064,22 @@ export default function FarcasterMiniApp() {
           <div className="relative w-full max-w-lg bg-slate-900 rounded-t-3xl max-h-[85vh] overflow-hidden animate-slide-up">
             <div className="sticky top-0 bg-slate-900 border-b border-slate-700/50 p-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-white">My Profile</h2>
-              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-slate-800 rounded-full">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={loadUserTransactions} 
+                  className={`p-2 hover:bg-slate-800 rounded-full ${transactionsLoading ? 'animate-spin' : ''}`}
+                  disabled={transactionsLoading}
+                >
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-slate-800 rounded-full">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(85vh-60px)]">
               <div className="flex items-center gap-4 mb-6">
@@ -6059,14 +6100,51 @@ export default function FarcasterMiniApp() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
                   <p className="text-xs text-gray-400 mb-1">Total Volume</p>
-                  <p className="text-lg font-bold text-white">$0.00</p>
+                  <p className="text-lg font-bold text-white">
+                    ${userTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0).toFixed(2)}
+                  </p>
                 </div>
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
                   <p className="text-xs text-gray-400 mb-1">Transactions</p>
-                  <p className="text-lg font-bold text-white">0</p>
+                  <p className="text-lg font-bold text-white">{userTransactions.length}</p>
                 </div>
               </div>
-              <p className="text-center text-gray-500 text-sm py-4">Transaction stats will appear here</p>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-green-500/10 rounded-lg p-2 border border-green-500/20 text-center">
+                  <p className="text-xs text-green-400">{userTransactions.filter(tx => tx.status === 'Completed' || tx.status === 'Success').length}</p>
+                  <p className="text-[10px] text-green-300">Completed</p>
+                </div>
+                <div className="bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20 text-center">
+                  <p className="text-xs text-yellow-400">{userTransactions.filter(tx => tx.status === 'Pending').length}</p>
+                  <p className="text-[10px] text-yellow-300">Pending</p>
+                </div>
+                <div className="bg-red-500/10 rounded-lg p-2 border border-red-500/20 text-center">
+                  <p className="text-xs text-red-400">{userTransactions.filter(tx => tx.status === 'Failed').length}</p>
+                  <p className="text-[10px] text-red-300">Failed</p>
+                </div>
+              </div>
+              {transactionsLoading ? (
+                <p className="text-center text-gray-500 text-sm py-4">Loading transactions...</p>
+              ) : userTransactions.length === 0 ? (
+                <p className="text-center text-gray-500 text-sm py-4">No transactions yet</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-400 font-medium">Recent Transactions</p>
+                  {userTransactions.slice(0, 5).map((tx) => (
+                    <div key={tx.id} className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/30 flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-white font-medium">{tx.amount} {tx.currency}</p>
+                        <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        tx.status === 'Completed' || tx.status === 'Success' ? 'bg-green-500/20 text-green-400' :
+                        tx.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>{tx.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -6086,13 +6164,54 @@ export default function FarcasterMiniApp() {
               </button>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(85vh-60px)]">
-              <div className="text-center py-8">
-                <svg className="w-12 h-12 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <p className="text-gray-400 text-sm">No transactions yet</p>
-                <p className="text-gray-500 text-xs mt-1">Your transaction history will appear here</p>
-              </div>
+              {transactionsLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  <p className="text-gray-400 text-sm">Loading transactions...</p>
+                </div>
+              ) : userTransactions.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <p className="text-gray-400 text-sm">No transactions yet</p>
+                  <p className="text-gray-500 text-xs mt-1">Your transaction history will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {userTransactions.map((tx) => (
+                    <div key={tx.id} className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="text-white font-bold">{tx.amount} {tx.currency}</p>
+                          <p className="text-xs text-gray-500">{tx.type || 'Transaction'}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          tx.status === 'Completed' || tx.status === 'Success' ? 'bg-green-500/20 text-green-400' :
+                          tx.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>{tx.status}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500">{new Date(tx.createdAt).toLocaleString()}</span>
+                        {tx.txHash && (
+                          <a 
+                            href={`https://basescan.org/tx/${tx.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                          >
+                            View
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -6,7 +6,6 @@ import {
   HelpCircle,
   X,
   Globe,
-  History,
   User,
 } from "lucide-react";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
@@ -98,19 +97,6 @@ export default function Sidebar({ isOpen, onClose, authenticated, onOpenFAQ, onO
                 </div>
               </button>
               
-              <button
-                onClick={() => { onClose(); onOpenTransactions?.(); }}
-                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group w-full text-left"
-              >
-                <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
-                  <History className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <span className="block">Transaction History</span>
-                  <span className="text-xs text-slate-400">All transactions</span>
-                </div>
-              </button>
-              
               <div className="border-t border-slate-200 my-4"></div>
             </>
           )}
@@ -151,7 +137,7 @@ export default function Sidebar({ isOpen, onClose, authenticated, onOpenFAQ, onO
           <div className="absolute bottom-6 left-0 right-0 p-4 text-center">
             <div className="border-t border-slate-200 pt-4">
               <p className="text-xs text-slate-400 font-medium">NEDApay v1.0.0</p>
-              <p className="text-xs text-slate-300">© 2024 NEDApay</p>
+              <p className="text-xs text-slate-300">© 2025 NEDApay</p>
             </div>
           </div>
         </nav>
