@@ -680,18 +680,31 @@ export default function FarcasterMiniApp() {
     // Show transaction details if available
     if (notification.relatedTransaction) {
       console.log('Opening transaction details:', notification.relatedTransaction);
-      const tx = notification.relatedTransaction;
-      alert(`Transaction Details:\n\nAmount: ${tx.amount} ${tx.currency}\nStatus: ${tx.status}\nWallet: ${tx.wallet}\nTx Hash: ${tx.txHash || 'N/A'}\nOrder ID: ${tx.orderId || 'N/A'}\nBlock Number: ${tx.blockNumber || 'N/A'}\nGas Used: ${tx.gasUsed || 'N/A'}\n\nCreated: ${new Date(tx.createdAt).toLocaleString()}`);
-    } else {
-      console.log('No transaction details available for this notification');
-      console.log('Full notification object:', notification);
-      
-      // Check if it's an old notification or if relatedTransaction failed to load
-      if (notification.relatedTransactionId) {
-        alert(`This notification has a transaction ID (${notification.relatedTransactionId}) but the transaction details couldn't be loaded. This might be a database connection issue.`);
-      } else {
-        alert(`This notification doesn't have any linked transaction data. It might be an older notification created before transaction tracking was added.`);
+      // Dispatch event to show transaction modal in NotificationTab
+      const event = new CustomEvent('show-transaction-details', {
+        detail: { transaction: notification.relatedTransaction }
+      });
+      window.dispatchEvent(event);
+    } else if (notification.relatedTransactionId) {
+      // Try to fetch the transaction details if not already included
+      try {
+        const response = await fetch(`/api/transactions?id=${notification.relatedTransactionId}`);
+        if (response.ok) {
+          const transaction = await response.json();
+          console.log('Fetched transaction details:', transaction);
+          // Dispatch event to show transaction modal
+          const event = new CustomEvent('show-transaction-details', {
+            detail: { transaction }
+          });
+          window.dispatchEvent(event);
+          return;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch transaction details:', error);
       }
+      alert(`This notification has a transaction ID but the transaction details couldn't be loaded.`);
+    } else {
+      alert(`This notification doesn't have any linked transaction data. It might be an older notification created before transaction tracking was added.`);
     }
   }, []);
   

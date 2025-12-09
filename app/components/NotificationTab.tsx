@@ -47,6 +47,9 @@ interface DatabaseNotification {
     blockNumber?: number;
     gasUsed?: string;
     gasPrice?: string;
+    network?: string;
+    type?: string;
+    recipient?: string;
     createdAt: string;
     updatedAt: string;
   };
@@ -236,6 +239,19 @@ export default function NotificationTab() {
     return () => window.removeEventListener('neda-notification', handleNewNotification as EventListener);
   }, []);
 
+  // Listen for show-transaction-details events from page.tsx
+  useEffect(() => {
+    function handleShowTransactionDetails(e: CustomEvent) {
+      console.log('Received show-transaction-details event:', e.detail);
+      if (e.detail && e.detail.transaction) {
+        setSelectedTransaction(e.detail.transaction);
+        setShowTransactionModal(true);
+      }
+    }
+    window.addEventListener('show-transaction-details', handleShowTransactionDetails as EventListener);
+    return () => window.removeEventListener('show-transaction-details', handleShowTransactionDetails as EventListener);
+  }, []);
+
   // Fetch database notifications on component mount and when user address changes
   useEffect(() => {
     if (userAddress) {
@@ -291,10 +307,29 @@ export default function NotificationTab() {
       console.log('Opening transaction modal with data:', notification.relatedTransaction);
       setSelectedTransaction(notification.relatedTransaction);
       setShowTransactionModal(true);
+    } 
+    // Try to fetch transaction details by relatedTransactionId if not already included
+    else if ('relatedTransactionId' in notification && notification.relatedTransactionId) {
+      console.log('Fetching transaction details for ID:', notification.relatedTransactionId);
+      try {
+        const response = await fetch(`/api/transactions?id=${notification.relatedTransactionId}`);
+        if (response.ok) {
+          const transaction = await response.json();
+          console.log('Fetched transaction details:', transaction);
+          setSelectedTransaction(transaction);
+          setShowTransactionModal(true);
+        } else {
+          console.error('Failed to fetch transaction details');
+          alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nTransaction details couldn't be loaded.`);
+        }
+      } catch (error) {
+        console.error('Error fetching transaction:', error);
+        alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nError loading transaction details.`);
+      }
     } else {
       console.log('No related transaction data found for notification:', notification);
-      // If no transaction data, show a simple alert for now
-      alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}`);
+      // If no transaction data, show a simple alert
+      alert(`This notification doesn't have any linked transaction data. It might be an older notification created before transaction tracking was added.`);
     }
   };
 
@@ -715,6 +750,27 @@ export default function NotificationTab() {
 
               {/* Transaction Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Network */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Network</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${selectedTransaction.network === 'celo' ? 'bg-yellow-400' : 'bg-blue-500'}`}></span>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">
+                      {selectedTransaction.network || 'base'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Transaction Type */}
+                {selectedTransaction.type && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-sm font-medium text-gray-600 mb-2">Type</p>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">
+                      {selectedTransaction.type}
+                    </p>
+                  </div>
+                )}
+
                 {/* Order ID */}
                 {selectedTransaction.orderId && (
                   <div className="bg-gray-50 rounded-xl p-4">
@@ -754,7 +810,9 @@ export default function NotificationTab() {
                           )}
                         </button>
                         <a
-                          href={`https://basescan.org/tx/${selectedTransaction.txHash}`}
+                          href={selectedTransaction.network === 'celo' 
+                            ? `https://celoscan.io/tx/${selectedTransaction.txHash}`
+                            : `https://basescan.org/tx/${selectedTransaction.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1 hover:bg-gray-200 rounded transition-colors"
@@ -864,13 +922,19 @@ export default function NotificationTab() {
               <div className="flex justify-end gap-3">
                 {selectedTransaction.txHash && (
                   <a
-                    href={`https://basescan.org/tx/${selectedTransaction.txHash}`}
+                    href={selectedTransaction.network === 'celo' 
+                      ? `https://celoscan.io/tx/${selectedTransaction.txHash}`
+                      : `https://basescan.org/tx/${selectedTransaction.txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                    className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl transition-colors font-medium ${
+                      selectedTransaction.network === 'celo' 
+                        ? 'bg-yellow-500 hover:bg-yellow-600' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
                     <FaExternalLinkAlt className="w-4 h-4" />
-                    View on BaseScan
+                    View on {selectedTransaction.network === 'celo' ? 'CeloScan' : 'BaseScan'}
                   </a>
                 )}
                 <button

@@ -3,23 +3,67 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET: Fetch all transactions for a merchant (by merchantId query param)
+// GET: Fetch transactions - by id, merchantId, or txHash
 export async function GET(req: NextRequest) {
-  // Prevent build/static analysis from triggering this API route
-  if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
-    return new NextResponse('Not Found', { status: 404 });
+  try {
+    const { searchParams } = new URL(req.url);
+    const transactionId = searchParams.get('id');
+    const merchantId = searchParams.get('merchantId');
+    const txHash = searchParams.get('txHash');
+
+    // Fetch single transaction by ID
+    if (transactionId) {
+      const transaction = await prisma.transaction.findUnique({
+        where: { id: transactionId }
+      });
+      
+      if (!transaction) {
+        return NextResponse.json(
+          { error: 'Transaction not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json(transaction);
+    }
+
+    // Fetch single transaction by txHash
+    if (txHash) {
+      const transaction = await prisma.transaction.findFirst({
+        where: { txHash }
+      });
+      
+      if (!transaction) {
+        return NextResponse.json(
+          { error: 'Transaction not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json(transaction);
+    }
+
+    // Fetch all transactions for a merchant
+    if (merchantId) {
+      const transactions = await prisma.transaction.findMany({
+        where: { merchantId },
+        orderBy: { createdAt: 'desc' },
+      });
+      return NextResponse.json(transactions);
+    }
+
+    // No valid query params provided
+    return NextResponse.json(
+      { error: 'Please provide id, txHash, or merchantId parameter' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Error fetching transaction(s):', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch transaction(s)' },
+      { status: 500 }
+    );
   }
-  const { searchParams } = new URL(req.url);
-  const merchantId = searchParams.get('merchantId');
-  if (!merchantId) {
-    // Return 404 to prevent build/static analysis failures
-    return new NextResponse('Not Found', { status: 404 });
-  }
-  const transactions = await prisma.transaction.findMany({
-    where: { merchantId },
-    orderBy: { createdAt: 'desc' },
-  });
-  return NextResponse.json(transactions);
 }
 
 // POST: Add a new transaction
