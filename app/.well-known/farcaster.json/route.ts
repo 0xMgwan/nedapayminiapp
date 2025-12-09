@@ -9,8 +9,8 @@ export async function GET() {
     },
     "miniapp": {
       "version": "1",
-      "name": "NedaPay",
-      "subtitle": "Global Stablecoin payments for you ",
+      "name": "NEDApay",
+      "subtitle": "Global Stablecoin payments",
       "description": "NedaPay is a stablecoin payment solution for Africa. Send money to mobile money, create payment links, generate invoices, and accept crypto payments seamlessly.",
       "screenshotUrls": [
         "https://nedapayminiapp.vercel.app/screenshot-send.png",
@@ -26,18 +26,18 @@ export async function GET() {
       "tags": ["payments", "stablecoins", "mobile-money", "africa", "crypto"],
       "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
       "tagline": "Pay anywhere, Settle instantly",
-      "ogTitle": "NedaPay - Stablecoin Payments",
+      "ogTitle": "NEDApay - Stablecoin Payments",
       "ogDescription": "Send stablecoins to mobile money and bank accounts globally instantly.",
       "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
       "castShareUrl": "https://nedapayminiapp.vercel.app"
     },
     "frame": {
       "version": "1",
-      "name": "NedaPay",
+      "name": "NEDApay",
       "iconUrl": "https://nedapayminiapp.vercel.app/icon-192.png",
       "homeUrl": "https://nedapayminiapp.vercel.app",
       "imageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
-      "buttonTitle": "💰 Open NedaPay",
+      "buttonTitle": "☄️ Launch NEDApay",
       "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
       "splashBackgroundColor": "#1e293b",
       "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook"
@@ -53,7 +53,7 @@ export async function GET() {
         "features": ["wallet_connect"]
       },
       "metadata": {
-        "short_name": "NedaPay",
+        "short_name": "NEDApay",
         "orientation": "portrait",
         "display": "standalone",
         "theme_color": "#1e293b",
