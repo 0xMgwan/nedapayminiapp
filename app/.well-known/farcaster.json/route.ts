@@ -10,7 +10,7 @@ export async function GET() {
     "miniapp": {
       "version": "1",
       "name": "NedaPay",
-      "subtitle": "Accept Stablecoins, Swap instantly, Cash Out Easily",
+      "subtitle": "Global Stablecoin payments for you ",
       "description": "NedaPay is a stablecoin payment solution for Africa. Send money to mobile money, create payment links, generate invoices, and accept crypto payments seamlessly.",
       "screenshotUrls": [
         "https://nedapayminiapp.vercel.app/screenshot-send.png",
@@ -25,9 +25,9 @@ export async function GET() {
       "primaryCategory": "finance",
       "tags": ["payments", "stablecoins", "mobile-money", "africa", "crypto"],
       "heroImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
-      "tagline": "Accept Stablecoins, Swap instantly, Cash Out Easily",
-      "ogTitle": "NedaPay - Stablecoin Payments for Africa",
-      "ogDescription": "NedaPay is a stablecoin payment solution for Africa. Send money to mobile money, create payment links, generate invoices, and accept crypto payments seamlessly.",
+      "tagline": "Pay anywhere, Settle instantly",
+      "ogTitle": "NedaPay - Stablecoin Payments",
+      "ogDescription": "Send stablecoins to mobile money and bank accounts globally instantly.",
       "ogImageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
       "castShareUrl": "https://nedapayminiapp.vercel.app"
     },
