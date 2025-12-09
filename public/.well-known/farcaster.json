@@ -13,6 +13,15 @@
     "buttonTitle": "Open NedaPay",
     "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
     "splashBackgroundColor": "#1e40af",
-    "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook"
+    "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook",
+    "subtitle": "Accept Stablecoins, Swap instantly, Cash Out Easily",
+    "description": "NedaPay is a stablecoin payment solution for Africa. Send money to mobile money, create payment links, generate invoices, and accept crypto payments seamlessly.",
+    "primaryCategory": "finance",
+    "tags": ["payments", "stablecoins", "mobile-money", "africa", "crypto"],
+    "screenshotUrls": [
+      "https://nedapayminiapp.vercel.app/screenshot-send.png",
+      "https://nedapayminiapp.vercel.app/screenshot-invoice.png",
+      "https://nedapayminiapp.vercel.app/screenshot-link.png"
+    ]
   }
 }

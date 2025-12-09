@@ -18,7 +18,16 @@ export async function GET(req: NextRequest) {
       buttonTitle: 'Open NedaPay',
       splashImageUrl: `${baseUrl}/splash.png`,
       splashBackgroundColor: '#1e40af',
-      webhookUrl: `${baseUrl}/api/webhook`
+      webhookUrl: `${baseUrl}/api/webhook`,
+      subtitle: 'Accept Stablecoins, Swap instantly, Cash Out Easily',
+      description: 'NedaPay is a stablecoin payment solution for Africa. Send money to mobile money, create payment links, generate invoices, and accept crypto payments seamlessly.',
+      primaryCategory: 'finance',
+      tags: ['payments', 'stablecoins', 'mobile-money', 'africa', 'crypto'],
+      screenshotUrls: [
+        `${baseUrl}/screenshot-send.png`,
+        `${baseUrl}/screenshot-invoice.png`,
+        `${baseUrl}/screenshot-link.png`
+      ]
     }
   };
 
