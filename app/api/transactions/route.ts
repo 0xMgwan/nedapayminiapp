@@ -68,55 +68,32 @@ export async function GET(req: NextRequest) {
 
 // POST: Add a new transaction
 export async function POST(req: NextRequest) {
-  try {
-    const data = await req.json();
-    const { merchantId, wallet, amount, currency, status, txHash, recipient, orderId, type, network } = data;
-    
-    console.log('📝 Creating transaction:', { merchantId, wallet, amount, currency, status, txHash, recipient, orderId, type, network });
-    
-    if (!merchantId || !wallet || !amount || !currency || !status || !txHash) {
-      console.error('❌ Missing required fields:', { merchantId: !!merchantId, wallet: !!wallet, amount: !!amount, currency: !!currency, status: !!status, txHash: !!txHash });
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount)) {
-      console.error('❌ Invalid amount format:', amount);
-      return NextResponse.json({ error: 'Invalid amount format' }, { status: 400 });
-    }
-
-    // Check if transaction with this txHash already exists
-    const existingTransaction = await prisma.transaction.findFirst({
-      where: { txHash }
-    });
-
-    if (existingTransaction) {
-      console.log('⚠️ Transaction already exists with txHash:', txHash);
-      // Return existing transaction instead of creating duplicate
-      return NextResponse.json(existingTransaction, { status: 200 });
-    }
-
-    const transaction = await prisma.transaction.create({
-      data: {
-        merchantId,
-        wallet,
-        amount: parsedAmount,
-        currency,
-        status,
-        txHash,
-        recipient: recipient || null,
-        orderId: orderId || null,
-        type: type || null,
-        network: network || null,
-      },
-    });
-    
-    console.log('✅ Transaction created:', transaction.id);
-    return NextResponse.json(transaction, { status: 201 });
-  } catch (error: any) {
-    console.error('❌ Error creating transaction:', error);
-    return NextResponse.json({ error: 'Failed to create transaction', details: error.message }, { status: 500 });
+  const data = await req.json();
+  const { merchantId, wallet, amount, currency, status, txHash, recipient, orderId, type, network } = data;
+  if (!merchantId || !wallet || !amount || !currency || !status || !txHash) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
+
+  const parsedAmount = parseFloat(amount);
+  if (isNaN(parsedAmount)) {
+    return NextResponse.json({ error: 'Invalid amount format' }, { status: 400 });
+  }
+
+  const transaction = await prisma.transaction.create({
+    data: {
+      merchantId,
+      wallet,
+      amount: parsedAmount,
+      currency,
+      status,
+      txHash,
+      recipient: recipient || null,
+      orderId: orderId || null,
+      type: type || null,
+      network: network || null,
+    },
+  });
+  return NextResponse.json(transaction, { status: 201 });
 }
 
 // PUT: Update a transaction by txHash

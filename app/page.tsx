@@ -579,8 +579,6 @@ export default function FarcasterMiniApp() {
       orderId?: string;
     }
   ) => {
-    console.log('📢 addNotification called:', { message, type, transactionData });
-    
     const newNotification = {
       id: Date.now().toString(),
       message,
@@ -595,72 +593,53 @@ export default function FarcasterMiniApp() {
     try {
       // Save to database if wallet is connected
       if (walletAddress) {
-        console.log('💾 Saving to database for wallet:', walletAddress);
-        
         // First, save transaction if transaction data is provided
         let transactionId = null;
         if (transactionData?.hash) {
-          console.log('📝 Saving transaction with hash:', transactionData.hash);
           try {
-            const transactionPayload = {
-              merchantId: walletAddress,
-              wallet: walletAddress,
-              amount: transactionData.amount || '0',
-              currency: transactionData.currency || 'USDC',
-              status: 'Completed',
-              txHash: transactionData.hash,
-              recipient: transactionData.recipient,
-              orderId: transactionData.orderId,
-              type: type, // 'send', 'pay', etc.
-              network: transactionData.currency === 'USDT' || transactionData.currency === 'cUSD' ? 'celo' : 'base'
-            };
-            console.log('📤 Transaction payload:', transactionPayload);
-            
             const transactionResponse = await fetch('/api/transactions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(transactionPayload)
+              body: JSON.stringify({
+                merchantId: walletAddress,
+                wallet: walletAddress,
+                amount: transactionData.amount || '0',
+                currency: transactionData.currency || 'USDC',
+                status: 'Completed',
+                txHash: transactionData.hash,
+                recipient: transactionData.recipient,
+                orderId: transactionData.orderId,
+                type: type, // 'send', 'pay', etc.
+                network: transactionData.currency === 'USDT' || transactionData.currency === 'cUSD' ? 'celo' : 'base'
+              })
             });
-            
-            console.log('📥 Transaction response status:', transactionResponse.status);
             
             if (transactionResponse.ok) {
               const transaction = await transactionResponse.json();
               transactionId = transaction.id;
               console.log('✅ Transaction saved to database:', transaction.id);
-            } else {
-              const errorText = await transactionResponse.text();
-              console.error('❌ Transaction save failed:', transactionResponse.status, errorText);
             }
           } catch (error) {
-            console.error('❌ Failed to save transaction to database:', error);
+            console.warn('⚠️ Failed to save transaction to database:', error);
           }
-        } else {
-          console.log('⚠️ No transaction hash provided, skipping transaction save');
         }
         
         // Save notification to database
-        console.log('📝 Saving notification with transactionId:', transactionId);
-        const notificationPayload = {
-          message,
-          recipient: walletAddress,
-          type,
-          status: 'unseen',
-          relatedTransactionId: transactionId
-        };
-        console.log('📤 Notification payload:', notificationPayload);
-        
         const notificationResponse = await fetch('/api/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(notificationPayload)
+          body: JSON.stringify({
+            message,
+            recipient: walletAddress,
+            type,
+            status: 'unseen',
+            relatedTransactionId: transactionId
+          })
         });
-        
-        console.log('📥 Notification response status:', notificationResponse.status);
         
         if (notificationResponse.ok) {
           const savedNotification = await notificationResponse.json();
-          console.log('✅ Notification saved to database:', savedNotification.id, 'with transactionId:', transactionId);
+          console.log('✅ Notification saved to database:', savedNotification.id);
           
           // Update local state with database ID
           setNotifications(prev => 
@@ -670,15 +649,10 @@ export default function FarcasterMiniApp() {
                 : notif
             )
           );
-        } else {
-          const errorText = await notificationResponse.text();
-          console.error('❌ Notification save failed:', notificationResponse.status, errorText);
         }
-      } else {
-        console.log('⚠️ No wallet address, notification only saved locally');
       }
     } catch (error) {
-      console.error('❌ Failed to save notification to database:', error);
+      console.warn('⚠️ Failed to save notification to database:', error);
       // Continue with local-only notification
     }
   }, [walletAddress]);

@@ -9,11 +9,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { message, recipient, type, status, relatedTransactionId } = body;
 
-    console.log('📝 Creating notification:', { message: message?.substring(0, 50), recipient, type, status, relatedTransactionId });
-
     // Validate required fields
     if (!message || !recipient || !type || !status) {
-      console.error('❌ Missing required fields:', { message: !!message, recipient: !!recipient, type: !!type, status: !!status });
       return NextResponse.json(
         { error: "Missing required fields: message, recipient, type, status" },
         { status: 400 }
@@ -23,24 +20,10 @@ export async function POST(request: NextRequest) {
     // Validate status enum
     const validStatuses = ["seen", "unseen"];
     if (!validStatuses.includes(status)) {
-      console.error('❌ Invalid status:', status);
       return NextResponse.json(
         { error: "Invalid status. Must be 'seen' or 'unseen'" },
         { status: 400 }
       );
-    }
-
-    // If relatedTransactionId is provided, check if a notification already exists for this transaction
-    if (relatedTransactionId) {
-      const existingNotification = await prisma.notification.findFirst({
-        where: { relatedTransactionId }
-      });
-      
-      if (existingNotification) {
-        console.log('⚠️ Notification already exists for transaction:', relatedTransactionId);
-        // Return existing notification instead of creating duplicate
-        return NextResponse.json(existingNotification, { status: 200 });
-      }
     }
 
     // Create notification
@@ -54,12 +37,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('✅ Notification created:', notification.id, 'with transactionId:', relatedTransactionId);
     return NextResponse.json(notification, { status: 201 });
-  } catch (error: any) {
-    console.error("❌ Error creating notification:", error);
+  } catch (error) {
+    console.error("Error creating notification:", error);
     return NextResponse.json(
-      { error: "Failed to create notification", details: error.message },
+      { error: "Failed to create notification" },
       { status: 500 }
     );
   }
