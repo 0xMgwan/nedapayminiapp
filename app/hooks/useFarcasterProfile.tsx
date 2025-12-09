@@ -96,9 +96,9 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
     setIsFarcasterEnvironment(detectFarcasterEnvironment());
   }, []);
 
-  // Fetch Farcaster profile data
+  // Fetch Farcaster profile data - ALWAYS try to fetch by address
   useEffect(() => {
-    if (!isFarcasterEnvironment || !address) {
+    if (!address) {
       setProfile(null);
       return;
     }
@@ -141,33 +141,53 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
           }
         }
         
-        // If no MiniKit user but we're in Farcaster environment, create a default profile
-        console.log('⚠️ No MiniKit user found, creating default Farcaster profile');
+        // If no MiniKit user, try to fetch from our internal API
+        console.log('⚠️ No MiniKit user found, trying internal API');
 
-        // Fallback: Try to fetch from Neynar API using FID if available
-        const neynarApiKey = process.env.NEXT_PUBLIC_NEYNAR_API_KEY;
+        // Try to get FID from context if available
         let contextFid = null;
         if (typeof window !== 'undefined' && (window as any).MiniKit?.context?.user?.fid) {
           contextFid = (window as any).MiniKit.context.user.fid;
         }
         
-        if (neynarApiKey && (contextFid || address)) {
-          let response;
-          
-          if (contextFid) {
-            console.log('🔄 Fetching profile from Neynar using FID:', contextFid);
-            response = await fetch(
-              `https://api.neynar.com/v2/farcaster/user/bulk?fids=${contextFid}`,
-              {
-                headers: {
-                  'api_key': neynarApiKey,
-                  'accept': 'application/json'
-                }
+        // Use our internal API endpoint to fetch profile by address
+        if (address) {
+          console.log('🔄 Fetching profile from internal API using address:', address);
+          try {
+            const response = await fetch(`/api/farcaster-user?address=${address}`);
+            
+            if (response.ok) {
+              const userData = await response.json();
+              console.log('📊 Internal API response:', userData);
+              
+              if (userData && userData.fid) {
+                const profileData = {
+                  fid: userData.fid,
+                  username: userData.username,
+                  displayName: userData.displayName || userData.display_name || userData.username,
+                  pfpUrl: userData.pfpUrl || userData.pfp_url || '/default-avatar.svg',
+                  bio: userData.bio || userData.profile?.bio?.text || '',
+                  followerCount: userData.followerCount || userData.follower_count || 0,
+                  followingCount: userData.followingCount || userData.following_count || 0,
+                  verifications: userData.verifications || []
+                };
+                console.log('✅ Setting Farcaster profile from internal API:', profileData);
+                setProfile(profileData);
+                setIsLoading(false);
+                return;
               }
-            );
-          } else {
-            console.log('🔄 Fetching profile from Neynar using address:', address);
-            response = await fetch(
+            } else {
+              console.warn('Internal API returned:', response.status);
+            }
+          } catch (apiError) {
+            console.warn('Internal API error:', apiError);
+          }
+          
+          // Fallback: Try Neynar API directly if we have the key
+          const neynarApiKey = process.env.NEXT_PUBLIC_NEYNAR_API_KEY;
+          if (neynarApiKey) {
+            console.log('🔄 Fallback: Fetching profile from Neynar using address:', address);
+            const response = await fetch(
               `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`,
               {
                 headers: {
@@ -176,43 +196,39 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
                 }
               }
             );
-          }
 
-          if (response.ok) {
-            const data = await response.json();
-            console.log('📊 Neynar API response:', data);
-            
-            let userData = null;
-            if (contextFid && data.users && data.users.length > 0) {
-              // FID-based response format
-              userData = data.users[0];
-            } else if (address && data[address.toLowerCase()]) {
-              // Address-based response format
-              userData = data[address.toLowerCase()][0];
+            if (response.ok) {
+              const data = await response.json();
+              console.log('📊 Neynar API response:', data);
+              
+              let userData = null;
+              if (data[address.toLowerCase()]) {
+                userData = data[address.toLowerCase()][0];
+              }
+              
+              if (userData) {
+                const profileData = {
+                  fid: userData.fid,
+                  username: userData.username,
+                  displayName: userData.display_name || userData.username,
+                  pfpUrl: userData.pfp_url || '/default-avatar.svg',
+                  bio: userData.profile?.bio?.text || '',
+                  followerCount: userData.follower_count || 0,
+                  followingCount: userData.following_count || 0,
+                  verifications: userData.verifications || []
+                };
+                console.log('✅ Setting Farcaster profile from Neynar:', profileData);
+                setProfile(profileData);
+                setIsLoading(false);
+                return;
+              }
             }
-            
-            if (userData) {
-              const profileData = {
-                fid: userData.fid,
-                username: userData.username,
-                displayName: userData.display_name || userData.username,
-                pfpUrl: userData.pfp_url || '/default-avatar.svg',
-                bio: userData.profile?.bio?.text || '',
-                followerCount: userData.follower_count || 0,
-                followingCount: userData.following_count || 0,
-                verifications: userData.verifications || []
-              };
-              console.log('✅ Setting Farcaster profile from Neynar:', profileData);
-              setProfile(profileData);
-            } else {
-              // No Farcaster profile found for this address
-              setProfile(null);
-            }
-          } else {
-            console.warn('Failed to fetch from Neynar API:', response.status);
-            setProfile(null);
           }
-        } else {
+          
+          // No profile found
+          console.log('⚠️ No Farcaster profile found for address:', address);
+          setProfile(null);
+        } else if (contextFid) {
           // Try to get FID from context if available
           let contextFid = null;
           if (typeof window !== 'undefined' && (window as any).MiniKit?.context?.user?.fid) {
@@ -244,7 +260,7 @@ export function useFarcasterProfile(): UseFarcasterProfileReturn {
     };
 
     fetchFarcasterProfile();
-  }, [isFarcasterEnvironment, address]);
+  }, [address]); // Always fetch when address changes
 
   return {
     profile,

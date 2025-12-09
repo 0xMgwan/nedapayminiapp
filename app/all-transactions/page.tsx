@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useAccount } from "wagmi";
 import {
   Search,
   Filter,
@@ -84,7 +85,13 @@ const currencySymbols: { [key: string]: string } = stablecoins.reduce(
 );
 
 export default function TransactionsPage() {
-  const { authenticated, user } = usePrivy();
+  const { authenticated: privyAuthenticated, user } = usePrivy();
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+  
+  // Support both Privy and wagmi authentication
+  const isAuthenticated = privyAuthenticated || wagmiConnected;
+  const walletAddress = user?.wallet?.address || wagmiAddress;
+  
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -107,12 +114,12 @@ export default function TransactionsPage() {
 
   // Fetch transactions
   const fetchTransactions = useCallback(async () => {
-    if (!authenticated || !user) return;
+    if (!isAuthenticated || !walletAddress) return;
 
     try {
       setRefreshing(true);
       const response = await fetch(
-        `/api/transactions?merchantId=${user.wallet?.address}`
+        `/api/transactions?merchantId=${walletAddress}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -126,7 +133,7 @@ export default function TransactionsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [authenticated, user]);
+  }, [isAuthenticated, walletAddress]);
 
   useEffect(() => {
     fetchTransactions();
@@ -321,7 +328,7 @@ export default function TransactionsPage() {
     }
   };
 
-  if (!authenticated) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
         <div className="text-center">
@@ -330,7 +337,7 @@ export default function TransactionsPage() {
             Authentication Required
           </h2>
           <p className="text-gray-600">
-            Please sign in to view your transactions.
+            Please connect your wallet to view your transactions.
           </p>
         </div>
       </div>

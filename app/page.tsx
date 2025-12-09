@@ -20,6 +20,8 @@ import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useFarcasterProfile } from './hooks/useFarcasterProfile';
+import Sidebar from './components/Sidebar';
+import { usePrivy } from '@privy-io/react-auth';
 import '../lib/i18n';
 
 type Tab = 'send' | 'pay' | 'deposit' | 'link' | 'swap' | 'invoice';
@@ -167,6 +169,7 @@ export default function FarcasterMiniApp() {
   }
   
   const { t, i18n } = useTranslation();
+  const { authenticated } = usePrivy();
 
   // DIRECT FARCASTER USER STATE
   const [farcasterUser, setFarcasterUser] = useState<any>(null);
@@ -559,6 +562,7 @@ export default function FarcasterMiniApp() {
   const [preferredWalletType, setPreferredWalletType] = useState<string | null>(null);
   const [addressCopied, setAddressCopied] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{
     id: string;
     message: string;
@@ -3078,11 +3082,11 @@ export default function FarcasterMiniApp() {
   }, [amount, tillNumber, businessNumber, paymentType, walletAddress, isConnected, payCurrency, selectedPayToken, selectedCountry.currency, selectedCountry.code, executePaycrestTransaction, fetchWalletBalance, switchChain, t, addNotification, recipientName, selectedInstitution]);
 
   const renderSendTab = () => (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-white text-lg font-medium">{t('send.title')}</h2>
-        <div className="flex items-center gap-2">
+    <div className="space-y-3">
+      {/* Compact Header with Network Badge */}
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-white text-base font-semibold">{t('send.title')}</h2>
+        <div className="flex items-center gap-1.5 bg-slate-800/60 rounded-lg px-2 py-1">
           {(() => {
             const selectedTokenData = stablecoins.find(token => 
               token.baseToken === (sendCurrency === 'local' ? selectedSendToken : selectedSendToken)
@@ -3093,20 +3097,20 @@ export default function FarcasterMiniApp() {
                 <img 
                   src={isCeloToken ? "/celo.png" : "/assets/logos/base-logo.jpg"} 
                   alt={isCeloToken ? "Celo" : "Base"} 
-                  className="w-4 h-4 rounded-full" 
+                  className="w-3.5 h-3.5 rounded-full" 
                 />
-                <span className="text-white text-sm">{isCeloToken ? "Celo" : "Base"}</span>
+                <span className="text-white text-xs font-medium">{isCeloToken ? "Celo" : "Base"}</span>
               </>
             );
           })()}
         </div>
       </div>
 
-      {/* Country Selector */}
+      {/* Country Selector - Compact */}
       <div className="relative">
         <button
           onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-3 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-slate-800/50 border border-slate-700/50 text-white rounded-lg px-3 py-2.5 text-left flex items-center justify-between hover:bg-slate-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <div className="flex items-center gap-2">
             <span className="text-lg">{selectedCountry.flag}</span>
@@ -3252,35 +3256,26 @@ export default function FarcasterMiniApp() {
         </div>
       </div>
 
-      {/* Recipient Name */}
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">{t('send.recipientName')}</label>
-        <div className="relative">
+      {/* Recipient Details - Compact 2-column layout */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-[10px] text-gray-400 mb-0.5 uppercase tracking-wide">Name</label>
           <input
             type="text"
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
-            placeholder={t('send.recipientPlaceholder')}
-            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="John Doe"
+            className="w-full bg-slate-700/80 text-white rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-          {recipientName && recipientName.includes('.') && (
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Resolving name..."></div>
-            </div>
-          )}
         </div>
-      </div>
-
-      {/* Account / Mobile Number */}
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">{t('send.accountNumber')}</label>
-        <div className="relative">
+        <div>
+          <label className="block text-[10px] text-gray-400 mb-0.5 uppercase tracking-wide">Phone/Account</label>
           <input
             type="text"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder={t('send.accountPlaceholder')}
-            className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="+255..."
+            className="w-full bg-slate-700/80 text-white rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -5511,27 +5506,22 @@ export default function FarcasterMiniApp() {
       <div className={`absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] via-transparent to-transparent transition-colors duration-500 ${isCeloToken ? 'from-[#FCFF52]/20' : 'from-blue-600/20'}`}></div>
       
       <div className="max-w-sm mx-auto relative z-10">
-        {/* Top Header with Wallet */}
-        <div className="glass-card flex items-center justify-between mb-4 w-full p-2">
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="relative">
-              <Image 
-                src="/NEDApayLogo.png" 
-                alt="NedaPay" 
-                width={28} 
-                height={28} 
-                className="rounded-lg shadow-lg"
-              />
-              <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${isCeloToken ? 'from-[#FCFF52]/30 to-[#FDFF8B]/30' : 'from-blue-400/20 to-purple-400/20'}`}></div>
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-sm tracking-tight">Neda Pay</h1>
-            </div>
+        {/* Clean Header - Compact */}
+        <div className="glass-card flex items-center justify-between mb-2 w-full px-2 py-1.5">
+          {/* Left - Logo */}
+          <div className="flex items-center gap-1.5">
+            <Image 
+              src="/NEDApayLogo.png" 
+              alt="NedaPay" 
+              width={24} 
+              height={24} 
+              className="rounded-md"
+            />
+            <span className="text-white font-bold text-sm">NEDApay</span>
           </div>
           
-          {/* Right Section - Language, Wallet, Notification */}
-          <div className="flex items-center gap-1.5 flex-shrink min-w-0">
-            <LanguageSwitcher />
+          {/* Right Section - Profile + Menu */}
+          <div className="flex items-center gap-1">
             
             {/* Wallet Connection */}
             {!isWalletConnected ? (
@@ -5581,40 +5571,40 @@ export default function FarcasterMiniApp() {
                   alert('Failed to connect wallet. Please try again.');
                 }
               }}
-              className="btn-premium relative w-14 h-14 flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 group overflow-hidden"
+              className={`relative px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 flex items-center gap-1.5 ${
+                isCeloToken 
+                  ? 'bg-gradient-to-r from-[#FCFF52] to-[#FDFF8B] text-slate-900' 
+                  : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+              }`}
             >
-              {/* Animated background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              {/* Pulse effect */}
-              <div className="absolute inset-0 bg-blue-400/20 rounded-xl animate-ping opacity-75" />
-              
-              <WalletIcon className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+              <WalletIcon className="w-3.5 h-3.5" />
+              <span>Connect</span>
             </button>
           ) : (
             <>
-              {/* Wallet Status - Properly sized */}
-              <div className="flex items-center gap-1 bg-slate-800/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-green-500/30">
-                <div className="relative">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75" />
-                  <div className="absolute inset-0 w-2 h-2 bg-green-400/50 rounded-full animate-pulse" />
-                </div>
-                <div className="text-white text-xs font-mono">
-                  {farcasterUser && (
-                    <div className="flex items-center gap-1">
-                      <img
-                        src={farcasterUser.pfpUrl || '/default-avatar.svg'}
-                        alt={`${farcasterUser.username} avatar`}
-                        className="w-3 h-3 rounded-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/default-avatar.svg';
-                        }}
-                      />
-                      <span className="text-purple-300">@{farcasterUser.username}</span>
-                    </div>
-                  )}
-                </div>
+              {/* Profile Display - Expanded */}
+              <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm rounded-lg px-2 py-1.5 border border-slate-600/30">
+                {/* Green dot */}
+                <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0" />
+                
+                {/* Profile Image & Username */}
+                {(farcasterProfile || farcasterUser) ? (
+                  <div className="flex items-center gap-1.5">
+                    <img
+                      src={(farcasterProfile?.pfpUrl || farcasterUser?.pfpUrl) || '/default-avatar.svg'}
+                      alt="avatar"
+                      className="w-6 h-6 rounded-full object-cover border border-purple-400/30 flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/default-avatar.svg'; }}
+                    />
+                    <span className="text-white text-xs font-medium">@{farcasterProfile?.username || farcasterUser?.username}</span>
+                  </div>
+                ) : (
+                  <span className="text-white text-xs font-mono">
+                    {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                  </span>
+                )}
+                
+                {/* Copy button */}
                 <button
                   onClick={async () => {
                     if (walletAddress) {
@@ -5623,50 +5613,48 @@ export default function FarcasterMiniApp() {
                         setAddressCopied(true);
                         setTimeout(() => setAddressCopied(false), 2000);
                       } catch (err) {
-                        console.error('Failed to copy address:', err);
+                        console.error('Failed to copy:', err);
                       }
                     }
                   }}
-                  className="text-white hover:text-blue-400 transition-colors"
-                  title={addressCopied ? "Copied!" : "Copy address"}
+                  className="p-0.5 text-gray-400 hover:text-blue-400"
+                  title={addressCopied ? "Copied!" : "Copy"}
                 >
                   {addressCopied ? (
-                    <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                   )}
-                </button>
-                {/* Disconnect button */}
-                <button
-                  onClick={() => {
-                    disconnect();
-                  }}
-                  className="text-white hover:text-red-400 transition-colors"
-                  title="Disconnect wallet"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
                 </button>
               </div>
             </>
           )}
           
-          {/* Notification Icon - Always at the end */}
+          {/* Notification Bell - Compact */}
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-1.5 bg-slate-700/90 backdrop-blur-sm rounded-lg hover:bg-slate-600/90 transition-all duration-300 border border-slate-500/30"
+            className="relative p-1.5 bg-slate-700/80 rounded-lg border border-slate-600/30"
           >
-            <BellIcon className="w-5 h-5 text-white hover:text-blue-400 transition-colors" />
+            <BellIcon className="w-4 h-4 text-white" />
             {notifications.filter(n => !n.read).length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-lg">
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[8px] rounded-full w-3 h-3 flex items-center justify-center font-bold">
                 {notifications.filter(n => !n.read).length}
               </span>
             )}
+          </button>
+          
+          {/* Menu Button - Compact */}
+          <button
+            onClick={() => setIsSideMenuOpen(true)}
+            className="p-1.5 bg-slate-700/80 rounded-lg border border-slate-600/30"
+          >
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
           </div>
         </div>
@@ -5788,59 +5776,65 @@ export default function FarcasterMiniApp() {
           }
         `}</style>
 
-        {/* Tab Navigation */}
-        <div className="glass-card p-2 mb-4">
-          <div className="grid grid-cols-5 gap-1">
+        {/* Main Content - with bottom padding for fixed nav */}
+        <div className="glass-card p-4 pb-20 mb-20">
+          {renderTabContent()}
+        </div>
+      </div>
+      
+      {/* Bottom Navigation - Fixed & Bold */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-900 via-slate-900/98 to-slate-900/95 backdrop-blur-xl border-t border-slate-600/30 safe-area-bottom">
+        <div className="max-w-sm mx-auto px-3 py-3">
+          <div className="grid grid-cols-5 gap-2">
             {[
-              { key: 'send' as Tab, label: t('navigation.send'), icon: ArrowUpIcon },
-              { key: 'pay' as Tab, label: t('navigation.pay'), icon: CurrencyDollarIcon },
-              { key: 'deposit' as Tab, label: t('navigation.deposit'), icon: ArrowDownIcon },
-              { key: 'link' as Tab, label: t('navigation.link'), icon: LinkIcon },
-              // { key: 'swap' as Tab, label: t('navigation.swap'), icon: ArrowsRightLeftIcon }, // Temporarily hidden
-              { key: 'invoice' as Tab, label: t('navigation.invoice'), icon: DocumentTextIcon }
-            ].map(({ key, label, icon: Icon }) => (
+              { key: 'send' as Tab, label: t('navigation.send'), icon: ArrowUpIcon, isArrow: true },
+              { key: 'pay' as Tab, label: t('navigation.pay'), icon: CurrencyDollarIcon, isArrow: false },
+              { key: 'deposit' as Tab, label: t('navigation.deposit'), icon: ArrowDownIcon, isArrow: true },
+              { key: 'link' as Tab, label: t('navigation.link'), icon: LinkIcon, isArrow: false },
+              { key: 'invoice' as Tab, label: t('navigation.invoice'), icon: DocumentTextIcon, isArrow: false }
+            ].map(({ key, label, icon: Icon, isArrow }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`relative py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 ease-out flex items-center justify-center gap-1 overflow-hidden group ${
+                className={`relative flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl transition-all duration-300 ${
                   activeTab === key
-                    ? `bg-gradient-to-br ${themeColors.gradient} ${isCeloToken ? 'text-slate-900' : 'text-white'} shadow-2xl shadow-${themeColors.shadow} transform scale-105 border-2 border-${themeColors.border}`
-                    : 'text-white bg-slate-800/60 hover:bg-slate-700/80 hover:scale-102 hover:shadow-lg border-2 border-transparent hover:border-slate-600/30 active:scale-95 active:shadow-inner'
+                    ? `${isCeloToken 
+                        ? 'bg-gradient-to-br from-[#FCFF52]/25 to-[#FDFF8B]/15 text-[#FCFF52] shadow-lg shadow-yellow-500/20 border border-[#FCFF52]/30' 
+                        : 'bg-gradient-to-br from-blue-500/25 to-purple-500/15 text-blue-400 shadow-lg shadow-blue-500/20 border border-blue-400/30'
+                      }`
+                    : 'text-white/70 hover:text-white hover:bg-slate-800/50'
                 }`}
               >
-                {/* Animated background for active state */}
+                {/* Active indicator bar */}
                 {activeTab === key && (
-                  <div className={`absolute inset-0 bg-gradient-to-r animate-pulse ${isCeloToken ? 'from-[#FCFF52]/20 to-[#FDFF8B]/20' : 'from-blue-400/20 to-purple-400/20'}`} />
+                  <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-full ${isCeloToken ? 'bg-[#FCFF52]' : 'bg-gradient-to-r from-blue-400 to-purple-400'}`} />
                 )}
                 
-                {/* Hover glow effect */}
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${
-                  activeTab === key 
-                    ? `opacity-100 bg-gradient-to-r ${isCeloToken ? 'from-[#FCFF52]/10 to-[#FDFF8B]/10' : 'from-blue-400/10 to-purple-400/10'}` 
-                    : 'opacity-0 group-hover:opacity-100 bg-white/5'
-                }`} />
+                {/* Enhanced arrow icons for Send/Deposit */}
+                {isArrow ? (
+                  <div className={`relative mb-1 ${activeTab === key ? 'scale-110' : ''} transition-all duration-300`}>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                      activeTab === key 
+                        ? (isCeloToken ? 'bg-[#FCFF52]/20' : 'bg-blue-400/20')
+                        : 'bg-slate-700/50'
+                    }`}>
+                      <Icon className="w-5 h-5" strokeWidth={activeTab === key ? 2.5 : 2} />
+                    </div>
+                  </div>
+                ) : (
+                  <Icon className={`w-6 h-6 mb-1 transition-all duration-300 ${
+                    activeTab === key ? 'scale-110 drop-shadow-lg' : ''
+                  }`} strokeWidth={activeTab === key ? 2.5 : 1.5} />
+                )}
                 
-                <Icon className={`w-5 h-5 relative z-10 transition-all duration-300 ${
-                  activeTab === key ? 'drop-shadow-lg' : 'group-hover:scale-110'
-                }`} />
-                <span className={`relative z-10 transition-all duration-300 ${
-                  activeTab === key ? 'drop-shadow-lg' : 'group-hover:tracking-wide'
+                <span className={`text-[11px] tracking-wide ${
+                  activeTab === key ? 'font-bold' : 'font-semibold'
                 }`}>
                   {label}
                 </span>
-                
-                {/* Active indicator */}
-                {activeTab === key && (
-                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-white/60 rounded-full" />
-                )}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="glass-card p-4">
-          {renderTabContent()}
         </div>
       </div>
       
@@ -5968,6 +5962,13 @@ export default function FarcasterMiniApp() {
           </div>
         </>
       )}
+
+      {/* Sidebar Menu */}
+      <Sidebar 
+        isOpen={isSideMenuOpen} 
+        onClose={() => setIsSideMenuOpen(false)} 
+        authenticated={authenticated || isWalletConnected} 
+      />
 
     </div>
   );

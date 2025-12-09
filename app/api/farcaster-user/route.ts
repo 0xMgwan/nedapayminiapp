@@ -7,17 +7,71 @@ let lastApiCall: number = 0;
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - longer cache to avoid rate limits
 const MIN_API_INTERVAL = 30 * 1000; // Minimum 30 seconds between API calls
 
-// Dynamic endpoint to get user data for any FID
+// Dynamic endpoint to get user data for any FID or address
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const requestedFid = searchParams.get('fid');
+  const requestedAddress = searchParams.get('address');
+  
+  const neynarApiKey = process.env.NEYNAR_API_KEY;
+  
+  if (!neynarApiKey) {
+    console.error('❌ No Neynar API key found');
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+  }
+  
+  // If address is provided, fetch by address
+  if (requestedAddress) {
+    console.log('🎯 API called with address:', requestedAddress);
+    
+    try {
+      const response = await fetch(
+        `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${requestedAddress}`,
+        {
+          headers: {
+            'api_key': neynarApiKey,
+            'accept': 'application/json'
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 Neynar address lookup response:', data);
+        
+        // The response is keyed by lowercase address
+        const userData = data[requestedAddress.toLowerCase()]?.[0];
+        
+        if (userData) {
+          const result = {
+            fid: userData.fid,
+            username: userData.username,
+            displayName: userData.display_name,
+            pfpUrl: userData.pfp_url,
+            bio: userData.profile?.bio?.text || '',
+            custodyAddress: userData.custody_address,
+            verifiedAddresses: userData.verified_addresses?.eth_addresses || [],
+            primaryAddress: userData.verified_addresses?.eth_addresses?.[0] || userData.custody_address
+          };
+          console.log('✅ Found user by address:', result);
+          return NextResponse.json(result);
+        }
+      }
+      
+      console.log('⚠️ No Farcaster user found for address:', requestedAddress);
+      return NextResponse.json({ error: 'User not found for address' }, { status: 404 });
+    } catch (error) {
+      console.error('❌ Error fetching by address:', error);
+      return NextResponse.json({ error: 'Failed to fetch by address' }, { status: 500 });
+    }
+  }
   
   // ONLY use requested FID - NO FALLBACK TO 9152
   if (!requestedFid) {
-    console.log('❌ No FID provided - refusing to use hardcoded Warpcast FID');
+    console.log('❌ No FID or address provided');
     return NextResponse.json({ 
-      error: 'No FID provided',
-      message: 'Real user FID required - will not use hardcoded Warpcast FID 9152'
+      error: 'No FID or address provided',
+      message: 'Provide either fid or address parameter'
     }, { status: 400 });
   }
   
@@ -41,12 +95,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cachedUserData);
   }
 
-  const neynarApiKey = process.env.NEYNAR_API_KEY;
-  
-  if (!neynarApiKey) {
-    console.error('❌ No Neynar API key found');
-    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-  }
+  // neynarApiKey already declared at top of function
 
   try {
     // Check if we're making API calls too frequently

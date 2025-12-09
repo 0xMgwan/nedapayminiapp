@@ -2,16 +2,16 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
 import {
   Settings,
-  Zap,
-  Repeat,
   HelpCircle,
-  Receipt,
   X,
-  Link as LinkIcon,
+  Globe,
+  History,
+  User,
+  TrendingUp,
 } from "lucide-react";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,9 +20,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-
   // Close sidebar on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -39,36 +36,6 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
       document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);
-
-  // Handle FAQ navigation
-  const handleFAQClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    onClose();
-    
-    if (pathname === "/") {
-      const faqSection = document.getElementById("faq");
-      if (faqSection) {
-        faqSection.scrollIntoView({ behavior: "smooth" });
-      }
-    } else {
-      router.push("/?scrollTo=faq");
-    }
-  };
-
-  // Handle How It Works navigation
-  const handleHowItWorksClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    onClose();
-    
-    if (pathname === "/") {
-      const howItWorksSection = document.getElementById("how-it-works");
-      if (howItWorksSection) {
-        howItWorksSection.scrollIntoView({ behavior: "smooth" });
-      }
-    } else {
-      router.push("/?scrollTo=how-it-works");
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -100,90 +67,96 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
         </div>
         
         {/* Navigation */}
-        <nav className="p-6 space-y-2">
-          {/* Always visible items */}
-          <button
-            onClick={handleHowItWorksClick}
-            className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors w-full text-left font-medium"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            <span>How It Works</span>
-          </button>
+        <nav className="p-4 space-y-2 h-[calc(100vh-80px)] overflow-y-auto pb-24">
+          {/* Language Selector */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Globe className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="text-slate-700 font-semibold">Language</span>
+            </div>
+            <LanguageSwitcher />
+          </div>
           
-          <button
-            onClick={handleFAQClick}
-            className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors w-full text-left font-medium"
-          >
-            <HelpCircle className="w-5 h-5" />
-            <span>FAQ</span>
-          </button>
-          
-          {/* Authenticated user items */}
+          {/* Profile Section - When authenticated */}
           {authenticated && (
             <>
-              <div className="border-t border-blue-100 my-4"></div>
+              <p className="text-xs text-slate-400 uppercase tracking-wider px-3 pt-2 font-semibold">Account</p>
+              
+              <Link
+                href="/profile"
+                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
+                onClick={onClose}
+              >
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 group-hover:from-blue-200 group-hover:to-indigo-200 rounded-lg transition-colors">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <span className="block">My Profile</span>
+                  <span className="text-xs text-slate-400">Volume & Stats</span>
+                </div>
+              </Link>
+              
+              <Link
+                href="/all-transactions"
+                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
+                onClick={onClose}
+              >
+                <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
+                  <History className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <span className="block">Transaction History</span>
+                  <span className="text-xs text-slate-400">All transactions</span>
+                </div>
+              </Link>
+              
+              <div className="border-t border-slate-200 my-4"></div>
+            </>
+          )}
+          
+          <p className="text-xs text-slate-400 uppercase tracking-wider px-3 pt-2 font-semibold">Support</p>
+          
+          {/* FAQ */}
+          <Link
+            href="/faq"
+            className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
+            onClick={onClose}
+          >
+            <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
+              <HelpCircle className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
+            </div>
+            <span>FAQ</span>
+          </Link>
+          
+          {/* Settings - Always visible when authenticated */}
+          {authenticated && (
+            <>
+              <div className="border-t border-slate-200 my-4"></div>
+              
+              <p className="text-xs text-slate-400 uppercase tracking-wider px-3 pt-2 font-semibold">Settings</p>
               
               <Link
                 href="/settings"
-                className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors font-medium"
+                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
                 onClick={onClose}
               >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </Link>
-              
-              <Link
-                href="/payment-link"
-                className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors font-medium"
-                onClick={onClose}
-              >
-                <LinkIcon className="w-5 h-5" />
-                <span>Generate Payment Link</span>
-              </Link>
-              
-              <Link
-                href="/invoice"
-                className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors font-medium"
-                onClick={onClose}
-              >
-                <Receipt className="w-5 h-5" />
-                <span>Send Invoice</span>
-              </Link>
-              
-              <div className="border-t border-blue-100 my-4"></div>
-              
-              <Link
-                href="/offramp"
-                className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors font-medium"
-                onClick={onClose}
-              >
-                <Zap className="w-5 h-5" />
-                <span>Withdraw to Fiat</span>
-              </Link>
-              
-              <Link
-                href="#swap"
-                className="flex items-center space-x-3 p-3 !rounded-lg hover:!bg-blue-50 !text-blue-700 hover:text-indigo-900 transition-colors font-medium"
-                onClick={onClose}
-              >
-                <Repeat className="w-5 h-5" />
-                <span>Swap</span>
+                <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
+                  <Settings className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
+                </div>
+                <span>App Settings</span>
               </Link>
             </>
           )}
+          
+          {/* Version Info */}
+          <div className="absolute bottom-6 left-0 right-0 p-4 text-center">
+            <div className="border-t border-slate-200 pt-4">
+              <p className="text-xs text-slate-400 font-medium">NEDApay v1.0.0</p>
+              <p className="text-xs text-slate-300">© 2024 NEDApay</p>
+            </div>
+          </div>
         </nav>
       </div>
     </>
