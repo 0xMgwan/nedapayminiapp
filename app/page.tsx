@@ -746,7 +746,7 @@ export default function FarcasterMiniApp() {
     }
   }, []);
 
-  // Function to load user transactions
+  // Function to load user transactions (syncs from Paycrest API)
   const loadUserTransactions = useCallback(async () => {
     if (!walletAddress) {
       console.log('⚠️ No wallet address, skipping transaction load');
@@ -755,21 +755,23 @@ export default function FarcasterMiniApp() {
     
     // Normalize wallet address to lowercase for consistent querying
     const normalizedWallet = walletAddress.toLowerCase();
-    console.log(`🔄 Loading transactions for wallet: ${normalizedWallet}`);
+    console.log(`🔄 Syncing transactions for wallet: ${normalizedWallet}`);
     setTransactionsLoading(true);
     try {
-      const response = await fetch(`/api/transactions?merchantId=${normalizedWallet}`);
-      console.log(`📡 Transaction API response status: ${response.status}`);
+      // Use sync endpoint that fetches from Paycrest and stores in DB
+      const response = await fetch(`/api/sync-transactions?walletAddress=${normalizedWallet}`);
+      console.log(`📡 Sync API response status: ${response.status}`);
       if (response.ok) {
-        const transactions = await response.json();
-        setUserTransactions(transactions);
-        console.log(`✅ Loaded ${transactions.length} transactions:`, transactions);
+        const data = await response.json();
+        setUserTransactions(data.transactions || []);
+        console.log(`✅ Synced ${data.syncedCount} new, loaded ${data.transactions?.length || 0} total transactions`);
+        console.log(`📊 Stats:`, data.stats);
       } else {
         const errorText = await response.text();
-        console.error('❌ Failed to load transactions:', errorText);
+        console.error('❌ Failed to sync transactions:', errorText);
       }
     } catch (error) {
-      console.warn('⚠️ Failed to load transactions:', error);
+      console.warn('⚠️ Failed to sync transactions:', error);
     } finally {
       setTransactionsLoading(false);
     }
