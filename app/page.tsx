@@ -563,6 +563,9 @@ export default function FarcasterMiniApp() {
   const [addressCopied, setAddressCopied] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  const [showFAQModal, setShowFAQModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [notifications, setNotifications] = useState<Array<{
     id: string;
     message: string;
@@ -5774,6 +5777,21 @@ export default function FarcasterMiniApp() {
           .animate-shimmer {
             animation: shimmer 2s ease-in-out;
           }
+          
+          @keyframes slide-up {
+            from {
+              transform: translateY(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          
+          .animate-slide-up {
+            animation: slide-up 0.3s ease-out;
+          }
         `}</style>
 
         {/* Main Content - with bottom padding for fixed nav */}
@@ -5967,8 +5985,118 @@ export default function FarcasterMiniApp() {
       <Sidebar 
         isOpen={isSideMenuOpen} 
         onClose={() => setIsSideMenuOpen(false)} 
-        authenticated={authenticated || isWalletConnected} 
+        authenticated={authenticated || isWalletConnected}
+        onOpenFAQ={() => setShowFAQModal(true)}
+        onOpenProfile={() => setShowProfileModal(true)}
+        onOpenTransactions={() => setShowTransactionsModal(true)}
       />
+
+      {/* FAQ Modal */}
+      {showFAQModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowFAQModal(false)} />
+          <div className="relative w-full max-w-lg bg-slate-900 rounded-t-3xl max-h-[85vh] overflow-hidden animate-slide-up">
+            <div className="sticky top-0 bg-slate-900 border-b border-slate-700/50 p-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">FAQ</h2>
+              <button onClick={() => setShowFAQModal(false)} className="p-2 hover:bg-slate-800 rounded-full">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-60px)] space-y-3">
+              {[
+                { q: "What is NEDA Pay?", a: "NEDA Pay is a seamless platform for merchants and creators to get paid in local stablecoins." },
+                { q: "How do I receive payments?", a: "Create a payment link or QR code and share it with your customers. Payments arrive instantly." },
+                { q: "Is NEDA Pay secure?", a: "Yes! Your private keys stay with you. All transactions are processed transparently on-chain." },
+                { q: "Can I use it internationally?", a: "Yes, you can accept payments from anyone, anywhere instantly." },
+                { q: "What fees does NEDA Pay charge?", a: "We keep it simple with low transaction fees. Details are in your dashboard." },
+              ].map((faq, i) => (
+                <details key={i} className="bg-slate-800/60 rounded-xl border border-slate-700/50 group">
+                  <summary className="p-3 cursor-pointer text-white font-medium text-sm flex justify-between items-center">
+                    {faq.q}
+                    <svg className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="px-3 pb-3 text-gray-400 text-sm">{faq.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowProfileModal(false)} />
+          <div className="relative w-full max-w-lg bg-slate-900 rounded-t-3xl max-h-[85vh] overflow-hidden animate-slide-up">
+            <div className="sticky top-0 bg-slate-900 border-b border-slate-700/50 p-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">My Profile</h2>
+              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-slate-800 rounded-full">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-60px)]">
+              <div className="flex items-center gap-4 mb-6">
+                {farcasterProfile?.pfpUrl ? (
+                  <img src={farcasterProfile.pfpUrl} alt="Profile" className="w-14 h-14 rounded-full border-2 border-purple-400" />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-white font-bold">{farcasterProfile?.username ? `@${farcasterProfile.username}` : 'User'}</h3>
+                  <p className="text-gray-400 text-xs font-mono">{walletAddress?.slice(0, 8)}...{walletAddress?.slice(-6)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
+                  <p className="text-xs text-gray-400 mb-1">Total Volume</p>
+                  <p className="text-lg font-bold text-white">$0.00</p>
+                </div>
+                <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
+                  <p className="text-xs text-gray-400 mb-1">Transactions</p>
+                  <p className="text-lg font-bold text-white">0</p>
+                </div>
+              </div>
+              <p className="text-center text-gray-500 text-sm py-4">Transaction stats will appear here</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transactions Modal */}
+      {showTransactionsModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowTransactionsModal(false)} />
+          <div className="relative w-full max-w-lg bg-slate-900 rounded-t-3xl max-h-[85vh] overflow-hidden animate-slide-up">
+            <div className="sticky top-0 bg-slate-900 border-b border-slate-700/50 p-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">Transaction History</h2>
+              <button onClick={() => setShowTransactionsModal(false)} className="p-2 hover:bg-slate-800 rounded-full">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-60px)]">
+              <div className="text-center py-8">
+                <svg className="w-12 h-12 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-gray-400 text-sm">No transactions yet</p>
+                <p className="text-gray-500 text-xs mt-1">Your transaction history will appear here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

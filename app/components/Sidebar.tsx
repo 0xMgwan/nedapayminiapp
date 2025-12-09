@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import {
   Settings,
   HelpCircle,
@@ -9,7 +8,6 @@ import {
   Globe,
   History,
   User,
-  TrendingUp,
 } from "lucide-react";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 
@@ -17,9 +15,12 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   authenticated: boolean;
+  onOpenFAQ?: () => void;
+  onOpenProfile?: () => void;
+  onOpenTransactions?: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, authenticated, onOpenFAQ, onOpenProfile, onOpenTransactions }: SidebarProps) {
   // Close sidebar on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -84,10 +85,9 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
             <>
               <p className="text-xs text-slate-400 uppercase tracking-wider px-3 pt-2 font-semibold">Account</p>
               
-              <Link
-                href="/profile"
-                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
-                onClick={onClose}
+              <button
+                onClick={() => { onClose(); onOpenProfile?.(); }}
+                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group w-full text-left"
               >
                 <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 group-hover:from-blue-200 group-hover:to-indigo-200 rounded-lg transition-colors">
                   <User className="w-5 h-5 text-blue-600" />
@@ -96,12 +96,11 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
                   <span className="block">My Profile</span>
                   <span className="text-xs text-slate-400">Volume & Stats</span>
                 </div>
-              </Link>
+              </button>
               
-              <Link
-                href="/all-transactions"
-                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
-                onClick={onClose}
+              <button
+                onClick={() => { onClose(); onOpenTransactions?.(); }}
+                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group w-full text-left"
               >
                 <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
                   <History className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
@@ -110,7 +109,7 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
                   <span className="block">Transaction History</span>
                   <span className="text-xs text-slate-400">All transactions</span>
                 </div>
-              </Link>
+              </button>
               
               <div className="border-t border-slate-200 my-4"></div>
             </>
@@ -119,16 +118,15 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
           <p className="text-xs text-slate-400 uppercase tracking-wider px-3 pt-2 font-semibold">Support</p>
           
           {/* FAQ */}
-          <Link
-            href="/faq"
-            className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
-            onClick={onClose}
+          <button
+            onClick={() => { onClose(); onOpenFAQ?.(); }}
+            className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group w-full text-left"
           >
             <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
               <HelpCircle className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
             </div>
             <span>FAQ</span>
-          </Link>
+          </button>
           
           {/* Settings - Always visible when authenticated */}
           {authenticated && (
@@ -137,16 +135,15 @@ export default function Sidebar({ isOpen, onClose, authenticated }: SidebarProps
               
               <p className="text-xs text-slate-400 uppercase tracking-wider px-3 pt-2 font-semibold">Settings</p>
               
-              <Link
-                href="/settings"
-                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group"
-                onClick={onClose}
+              <button
+                onClick={() => { onClose(); /* Settings can stay as page or modal */ }}
+                className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-all font-medium group w-full text-left"
               >
                 <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg transition-colors">
                   <Settings className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
                 </div>
                 <span>App Settings</span>
-              </Link>
+              </button>
             </>
           )}
           
