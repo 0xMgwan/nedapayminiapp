@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg2OTUyNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweEQ0NTRFMTQxNzE0OTVFNTY0NjFiMjFDMDc3QzE4NzI1MDU4NjdEOTkifQ",
+    "payload": "eyJkb21haW4iOiJuZWRhcGF5bWluaWFwcC52ZXJjZWwuYXBwIn0",
+    "signature": "MHg2NjI0NjM2ZTY1NjQ2MTcwNjE3OTZkNjk2ZTY5NjE3MDcwMmU3NjY1NzI2MzY1NmMyZTYxNzA3MA"
+  },
+  "frame": {
+    "version": "1",
+    "name": "NedaPay",
+    "iconUrl": "https://nedapayminiapp.vercel.app/icon-512.png",
+    "homeUrl": "https://nedapayminiapp.vercel.app",
+    "imageUrl": "https://nedapayminiapp.vercel.app/og-image.png",
+    "buttonTitle": "Open NedaPay",
+    "splashImageUrl": "https://nedapayminiapp.vercel.app/splash.png",
+    "splashBackgroundColor": "#1e40af",
+    "webhookUrl": "https://nedapayminiapp.vercel.app/api/webhook"
+  }
+}

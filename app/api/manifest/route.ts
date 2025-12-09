@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+  
   const manifest = {
-    name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
-    version: '1.0.0',
-    description: 'Accept Stablecoins, Swap instantly, Cash Out Easily',
-    icon: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/favicon.png`,
-    homeUrl: process.env.NEXT_PUBLIC_URL || 'http://localhost:3001',
-    imageUrl: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/og-image.png`,
-    buttonTitle: 'Open NedaPay',
-    splashImageUrl: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/splash.png`,
-    splashBackgroundColor: '#1e40af',
-    theme: {
-      colorScheme: 'light',
-      primaryColor: '#1e40af',
-      backgroundColor: '#ffffff',
+    accountAssociation: {
+      header: "eyJmaWQiOjg2OTUyNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweEQ0NTRFMTQxNzE0OTVFNTY0NjFiMjFDMDc3QzE4NzI1MDU4NjdEOTkifQ",
+      payload: "eyJkb21haW4iOiJuZWRhcGF5bWluaWFwcC52ZXJjZWwuYXBwIn0",
+      signature: "MHg2NjI0NjM2ZTY1NjQ2MTcwNjE3OTZkNjk2ZTY5NjE3MDcwMmU3NjY1NzI2MzY1NmMyZTYxNzA3MA"
     },
+    frame: {
+      version: '1',
+      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay',
+      iconUrl: `${baseUrl}/icon-512.png`,
+      homeUrl: baseUrl,
+      imageUrl: `${baseUrl}/og-image.png`,
+      buttonTitle: 'Open NedaPay',
+      splashImageUrl: `${baseUrl}/splash.png`,
+      splashBackgroundColor: '#1e40af',
+      webhookUrl: `${baseUrl}/api/webhook`
+    }
   };
 
   return NextResponse.json(manifest, {
