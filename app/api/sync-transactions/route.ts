@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '../../../lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const PAYCREST_API_URL = 'https://api.paycrest.io';
-const CLIENT_ID = process.env.PAYCREST_CLIENT_ID!;
-
-const headers = {
-  'API-Key': CLIENT_ID,
-  'Content-Type': 'application/json',
-};
+const CLIENT_ID = process.env.PAYCREST_CLIENT_ID || '';
 
 // GET: Sync transactions from Paycrest API and return them
 export async function GET(req: NextRequest) {
@@ -24,36 +21,50 @@ export async function GET(req: NextRequest) {
 
     // Fetch orders from Paycrest API
     let paycrestOrders: any[] = [];
+    let paycrestError = null;
+    
     try {
+      console.log(`📡 Fetching from Paycrest with API key: ${CLIENT_ID ? CLIENT_ID.substring(0, 8) + '...' : 'MISSING'}`);
       const response = await fetch(`${PAYCREST_API_URL}/v1/sender/orders/`, { 
-        headers,
+        headers: {
+          'API-Key': CLIENT_ID,
+          'Content-Type': 'application/json',
+        },
         cache: 'no-store'
       });
+      
+      console.log(`📡 Paycrest response status: ${response.status}`);
       
       if (response.ok) {
         const data = await response.json();
         paycrestOrders = data.data?.orders || [];
         console.log(`📦 Fetched ${paycrestOrders.length} orders from Paycrest`);
       } else {
-        console.error('Failed to fetch from Paycrest:', response.status);
+        const errorText = await response.text();
+        paycrestError = `Paycrest API error: ${response.status} - ${errorText}`;
+        console.error(paycrestError);
       }
-    } catch (error) {
-      console.error('Error fetching from Paycrest:', error);
+    } catch (error: any) {
+      paycrestError = `Paycrest fetch error: ${error.message}`;
+      console.error(paycrestError);
     }
 
     // Sync Paycrest orders to database
     let syncedCount = 0;
+    const syncErrors: string[] = [];
+    
     for (const order of paycrestOrders) {
-      // Check if this order already exists in database
-      const existingTx = await prisma.transaction.findFirst({
-        where: { txHash: order.txHash || order.id }
-      });
+      if (!order.fromAddress) continue;
+      
+      try {
+        // Check if this order already exists in database
+        const existingTx = await prisma.transaction.findFirst({
+          where: { txHash: order.txHash || order.id }
+        });
 
-      if (!existingTx && order.fromAddress) {
-        // Only sync if fromAddress matches the wallet (case-insensitive)
-        const orderWallet = order.fromAddress.toLowerCase();
-        
-        try {
+        if (!existingTx) {
+          const orderWallet = order.fromAddress.toLowerCase();
+          
           await prisma.transaction.create({
             data: {
               merchantId: orderWallet,
@@ -72,32 +83,40 @@ export async function GET(req: NextRequest) {
           });
           syncedCount++;
           console.log(`✅ Synced order ${order.id}`);
-        } catch (err) {
-          console.error(`Failed to sync order ${order.id}:`, err);
         }
+      } catch (err: any) {
+        syncErrors.push(`Order ${order.id}: ${err.message}`);
+        console.error(`Failed to sync order ${order.id}:`, err.message);
       }
     }
 
     console.log(`📊 Synced ${syncedCount} new transactions`);
 
-    // Now fetch all transactions for this wallet from database
-    const transactions = await prisma.transaction.findMany({
-      where: { 
-        merchantId: {
-          equals: normalizedWallet,
-          mode: 'insensitive'
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Fetch all transactions for this wallet from database (simple query without mode)
+    let transactions: any[] = [];
+    try {
+      transactions = await prisma.transaction.findMany({
+        where: { 
+          merchantId: normalizedWallet
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      console.log(`📊 Found ${transactions.length} transactions in DB for ${normalizedWallet}`);
+    } catch (dbError: any) {
+      console.error('DB query error:', dbError.message);
+      return NextResponse.json({ 
+        error: 'Database query failed', 
+        details: dbError.message 
+      }, { status: 500 });
+    }
 
-    // Calculate stats with proper types
-    const totalVolume = transactions.reduce((sum: number, tx: { amount: number | null }) => sum + (tx.amount || 0), 0);
-    const completedCount = transactions.filter((tx: { status: string }) => 
+    // Calculate stats
+    const totalVolume = transactions.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+    const completedCount = transactions.filter((tx: any) => 
       tx.status === 'Completed' || tx.status === 'Success' || tx.status === 'settled'
     ).length;
-    const pendingCount = transactions.filter((tx: { status: string }) => tx.status === 'Pending' || tx.status === 'pending').length;
-    const failedCount = transactions.filter((tx: { status: string }) => tx.status === 'Failed' || tx.status === 'failed').length;
+    const pendingCount = transactions.filter((tx: any) => tx.status === 'Pending' || tx.status === 'pending').length;
+    const failedCount = transactions.filter((tx: any) => tx.status === 'Failed' || tx.status === 'failed').length;
 
     return NextResponse.json({
       transactions,
@@ -109,11 +128,17 @@ export async function GET(req: NextRequest) {
         failedCount
       },
       paycrestOrdersCount: paycrestOrders.length,
-      syncedCount
+      syncedCount,
+      paycrestError,
+      syncErrors: syncErrors.length > 0 ? syncErrors : undefined
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error syncing transactions:', error);
-    return NextResponse.json({ error: 'Failed to sync transactions' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to sync transactions',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
