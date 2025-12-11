@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../../../lib/prisma';
 
 const PAYCREST_API_URL = 'https://api.paycrest.io';
 const CLIENT_ID = process.env.PAYCREST_CLIENT_ID!;
@@ -93,13 +91,13 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Calculate stats
-    const totalVolume = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-    const completedCount = transactions.filter(tx => 
+    // Calculate stats with proper types
+    const totalVolume = transactions.reduce((sum: number, tx: { amount: number | null }) => sum + (tx.amount || 0), 0);
+    const completedCount = transactions.filter((tx: { status: string }) => 
       tx.status === 'Completed' || tx.status === 'Success' || tx.status === 'settled'
     ).length;
-    const pendingCount = transactions.filter(tx => tx.status === 'Pending' || tx.status === 'pending').length;
-    const failedCount = transactions.filter(tx => tx.status === 'Failed' || tx.status === 'failed').length;
+    const pendingCount = transactions.filter((tx: { status: string }) => tx.status === 'Pending' || tx.status === 'pending').length;
+    const failedCount = transactions.filter((tx: { status: string }) => tx.status === 'Failed' || tx.status === 'failed').length;
 
     return NextResponse.json({
       transactions,
@@ -117,7 +115,5 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error syncing transactions:', error);
     return NextResponse.json({ error: 'Failed to sync transactions' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
