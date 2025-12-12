@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
 
+// Interfaces for External API Response
+interface ExternalTransaction {
+  id: string;
+  createdAt: string;
+  merchantId: string;
+  status: string;
+  amount: string;
+  rate: string;
+  currency: string;
+  accountName: string;
+  accountNumber: string;
+  institution: string;
+}
+
+interface ExternalApiResponse {
+  success: boolean;
+  data: {
+    transactions: ExternalTransaction[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      totalCount: number;
+      totalPages: number;
+    };
+  };
+}
+
 // GET: Fetch transactions - by id, merchantId, or txHash
 export async function GET(req: NextRequest) {
   try {
@@ -9,23 +36,38 @@ export async function GET(req: NextRequest) {
     const merchantId = searchParams.get('merchantId');
     const txHash = searchParams.get('txHash');
 
-    // Fetch single transaction by ID
+    const API_BASE_URL = 'https://api.nedapay.xyz/api/v1/ramp/paycrest/transactions';
+    const API_KEY = process.env.NEDAPAY_API_KEY || '';
+
+    // Helper for headers
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+    };
+
+    // Fetch single transaction by ID from External API
     if (transactionId) {
-      const transaction = await prisma.transaction.findUnique({
-        where: { id: transactionId }
+      const res = await fetch(`${API_BASE_URL}/${transactionId}`, {
+        headers,
+        cache: 'no-store'
       });
       
-      if (!transaction) {
-        return NextResponse.json(
-          { error: 'Transaction not found' },
-          { status: 404 }
-        );
+      if (!res.ok) {
+        if (res.status === 404) {
+          return NextResponse.json(
+            { error: 'Transaction not found' },
+            { status: 404 }
+          );
+        }
+        throw new Error(`External API error: ${res.status} ${res.statusText}`);
       }
-      
+
+      const transaction = await res.json();
       return NextResponse.json(transaction);
     }
 
     // Fetch single transaction by txHash
+    // Note: External API docs don't explicitly list txHash filter, utilizing local DB for now.
     if (txHash) {
       const transaction = await prisma.transaction.findFirst({
         where: { txHash }
@@ -41,19 +83,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(transaction);
     }
 
-    // Fetch all transactions for a merchant (case-insensitive for wallet addresses)
+    // Fetch all transactions for a merchant from External API
     if (merchantId) {
-      const transactions = await prisma.transaction.findMany({
-        where: { 
-          merchantId: {
-            equals: merchantId,
-            mode: 'insensitive'
-          }
-        },
-        orderBy: { createdAt: 'desc' },
+      const res = await fetch(`${API_BASE_URL}?wallet=${merchantId}`, {
+        headers,
+        cache: 'no-store'
       });
-      console.log(`📊 Found ${transactions.length} transactions for merchantId: ${merchantId}`);
-      return NextResponse.json(transactions);
+
+      if (!res.ok) {
+        throw new Error(`External API error: ${res.status} ${res.statusText}`);
+      }
+
+      const responseData: ExternalApiResponse = await res.json();
+      console.log(`📊 Fetched ${responseData.data.transactions.length} transactions for merchantId: ${merchantId} from API`);
+      return NextResponse.json(responseData.data.transactions);
     }
 
     // No valid query params provided
