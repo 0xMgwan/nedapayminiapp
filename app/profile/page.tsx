@@ -58,12 +58,26 @@ export default function ProfilePage() {
     try {
       const response = await fetch(`/api/transactions?merchantId=${address}`);
       if (response.ok) {
-        const transactions: Transaction[] = await response.json();
+        const data = await response.json();
+        const transactions: Transaction[] = data.transactions || [];
+        const serverStats = data.stats;
         
-        // Calculate stats
-        const completed = transactions.filter(t => t.status === 'Completed');
-        const pending = transactions.filter(t => t.status === 'Pending');
-        const failed = transactions.filter(t => t.status === 'Failed');
+        // Calculate stats locally or use server stats if available
+        // We recalculate here to support the volumeByCurrency breakdown which might not be in server stats
+        const completed = transactions.filter(t => {
+          const status = (t.status || '').toLowerCase();
+          return status === 'completed' || status === 'success' || status === 'settled';
+        });
+        
+        const pending = transactions.filter(t => {
+          const status = (t.status || '').toLowerCase();
+          return status === 'pending';
+        });
+        
+        const failed = transactions.filter(t => {
+          const status = (t.status || '').toLowerCase();
+          return status === 'failed' || status === 'refunded' || status === 'expired';
+        });
         
         const volumeByCurrency = completed.reduce((acc, t) => {
           acc[t.currency] = (acc[t.currency] || 0) + t.amount;
@@ -266,9 +280,12 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      tx.status === 'Completed' ? 'bg-green-500/20 text-green-400' :
-                      tx.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-red-500/20 text-red-400'
+                      (() => {
+                        const s = (tx.status || '').toLowerCase();
+                        if (s === 'completed' || s === 'success' || s === 'settled') return 'bg-green-500/20 text-green-400';
+                        if (s === 'pending') return 'bg-yellow-500/20 text-yellow-400';
+                        return 'bg-red-500/20 text-red-400';
+                      })()
                     }`}>
                       {tx.status}
                     </span>

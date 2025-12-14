@@ -95,8 +95,37 @@ export async function GET(req: NextRequest) {
       }
 
       const responseData: ExternalApiResponse = await res.json();
-      console.log(`📊 Fetched ${responseData.data.transactions.length} transactions for merchantId: ${merchantId} from API`);
-      return NextResponse.json(responseData.data.transactions);
+      const transactions = responseData.data.transactions;
+      console.log(`📊 Fetched ${transactions.length} transactions for merchantId: ${merchantId} from API`);
+
+      // Calculate stats to match /api/sync-transactions payload structure
+      const totalVolume = transactions.reduce((sum: number, tx: any) => sum + (parseFloat(tx.amount) || 0), 0);
+      
+      const completedCount = transactions.filter((tx: any) => {
+        const status = (tx.status || '').toLowerCase();
+        return status === 'completed' || status === 'success' || status === 'settled';
+      }).length;
+      
+      const pendingCount = transactions.filter((tx: any) => {
+        const status = (tx.status || '').toLowerCase();
+        return status === 'pending';
+      }).length;
+      
+      const failedCount = transactions.filter((tx: any) => {
+        const status = (tx.status || '').toLowerCase();
+        return status === 'failed' || status === 'refunded' || status === 'expired';
+      }).length;
+
+      return NextResponse.json({
+        transactions,
+        stats: {
+          totalVolume,
+          totalCount: transactions.length,
+          completedCount,
+          pendingCount,
+          failedCount
+        }
+      });
     }
 
     // No valid query params provided
