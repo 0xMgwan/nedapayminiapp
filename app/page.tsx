@@ -723,9 +723,9 @@ export default function FarcasterMiniApp() {
       } catch (error) {
         console.warn('Failed to fetch transaction details:', error);
       }
-      alert(`This notification has a transaction ID but the transaction details couldn't be loaded.`);
+      console.log('Transaction details could not be loaded for this notification');
     } else {
-      alert(`This notification doesn't have any linked transaction data. It might be an older notification created before transaction tracking was added.`);
+      console.log('No linked transaction data for this notification');
     }
   }, []);
   

@@ -320,16 +320,12 @@ export default function NotificationTab() {
           setShowTransactionModal(true);
         } else {
           console.error('Failed to fetch transaction details');
-          alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nTransaction details couldn't be loaded.`);
         }
       } catch (error) {
         console.error('Error fetching transaction:', error);
-        alert(`Notification: ${notification.message}\nTime: ${notification.displayTimestamp}\n\nError loading transaction details.`);
       }
     } else {
       console.log('No related transaction data found for notification:', notification);
-      // If no transaction data, show a simple alert
-      alert(`This notification doesn't have any linked transaction data. It might be an older notification created before transaction tracking was added.`);
     }
   };
 
