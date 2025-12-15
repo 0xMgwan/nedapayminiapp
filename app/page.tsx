@@ -746,7 +746,7 @@ export default function FarcasterMiniApp() {
     }
   }, []);
 
-  // Function to load user transactions (syncs from Paycrest API)
+  // Function to load user transactions (fetches from API)
   const loadUserTransactions = useCallback(async () => {
     if (!walletAddress) {
       console.log('⚠️ No wallet address, skipping transaction load');
@@ -755,23 +755,23 @@ export default function FarcasterMiniApp() {
     
     // Normalize wallet address to lowercase for consistent querying
     const normalizedWallet = walletAddress.toLowerCase();
-    console.log(`🔄 Syncing transactions for wallet: ${normalizedWallet}`);
+    console.log(`🔄 Fetching transactions for wallet: ${normalizedWallet}`);
     setTransactionsLoading(true);
     try {
-      // Use sync endpoint that fetches from Paycrest and stores in DB
-      const response = await fetch(`/api/sync-transactions?walletAddress=${normalizedWallet}`);
-      console.log(`📡 Sync API response status: ${response.status}`);
+      // Use transactions endpoint that fetches from NedaPay API
+      const response = await fetch(`/api/transactions?merchantId=${normalizedWallet}`);
+      console.log(`📡 Transactions API response status: ${response.status}`);
       if (response.ok) {
         const data = await response.json();
         setUserTransactions(data.transactions || []);
-        console.log(`✅ Synced ${data.syncedCount} new, loaded ${data.transactions?.length || 0} total transactions`);
+        console.log(`✅ Loaded ${data.transactions?.length || 0} total transactions`);
         console.log(`📊 Stats:`, data.stats);
       } else {
         const errorText = await response.text();
-        console.error('❌ Failed to sync transactions:', errorText);
+        console.error('❌ Failed to fetch transactions:', errorText);
       }
     } catch (error) {
-      console.warn('⚠️ Failed to sync transactions:', error);
+      console.warn('⚠️ Failed to fetch transactions:', error);
     } finally {
       setTransactionsLoading(false);
     }
@@ -6116,7 +6116,7 @@ export default function FarcasterMiniApp() {
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
                   <p className="text-xs text-gray-400 mb-1">Total Volume</p>
                   <p className="text-lg font-bold text-white">
-                    ${userTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0).toFixed(2)}
+                    ${userTransactions.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
@@ -6126,15 +6126,24 @@ export default function FarcasterMiniApp() {
               </div>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-green-500/10 rounded-lg p-2 border border-green-500/20 text-center">
-                  <p className="text-xs text-green-400">{userTransactions.filter(tx => tx.status === 'Completed' || tx.status === 'Success').length}</p>
+                  <p className="text-xs text-green-400">{userTransactions.filter(tx => {
+                    const s = (tx.status || '').toLowerCase();
+                    return s === 'completed' || s === 'success' || s === 'settled';
+                  }).length}</p>
                   <p className="text-[10px] text-green-300">Completed</p>
                 </div>
                 <div className="bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20 text-center">
-                  <p className="text-xs text-yellow-400">{userTransactions.filter(tx => tx.status === 'Pending').length}</p>
+                  <p className="text-xs text-yellow-400">{userTransactions.filter(tx => {
+                    const s = (tx.status || '').toLowerCase();
+                    return s === 'pending';
+                  }).length}</p>
                   <p className="text-[10px] text-yellow-300">Pending</p>
                 </div>
                 <div className="bg-red-500/10 rounded-lg p-2 border border-red-500/20 text-center">
-                  <p className="text-xs text-red-400">{userTransactions.filter(tx => tx.status === 'Failed').length}</p>
+                  <p className="text-xs text-red-400">{userTransactions.filter(tx => {
+                    const s = (tx.status || '').toLowerCase();
+                    return s === 'failed' || s === 'refunded' || s === 'expired';
+                  }).length}</p>
                   <p className="text-[10px] text-red-300">Failed</p>
                 </div>
               </div>
