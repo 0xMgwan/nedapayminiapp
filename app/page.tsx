@@ -746,7 +746,7 @@ export default function FarcasterMiniApp() {
     }
   }, []);
 
-  // Function to load user transactions (syncs from Paycrest API)
+  // Function to load user transactions (fetches from API)
   const loadUserTransactions = useCallback(async () => {
     if (!walletAddress) {
       console.log('⚠️ No wallet address, skipping transaction load');
@@ -755,23 +755,23 @@ export default function FarcasterMiniApp() {
     
     // Normalize wallet address to lowercase for consistent querying
     const normalizedWallet = walletAddress.toLowerCase();
-    console.log(`🔄 Syncing transactions for wallet: ${normalizedWallet}`);
+    console.log(`🔄 Fetching transactions for wallet: ${normalizedWallet}`);
     setTransactionsLoading(true);
     try {
-      // Use sync endpoint that fetches from Paycrest and stores in DB
-      const response = await fetch(`/api/sync-transactions?walletAddress=${normalizedWallet}`);
-      console.log(`📡 Sync API response status: ${response.status}`);
+      // Use transactions endpoint that fetches from NedaPay API
+      const response = await fetch(`/api/transactions?merchantId=${normalizedWallet}`);
+      console.log(`📡 Transactions API response status: ${response.status}`);
       if (response.ok) {
         const data = await response.json();
         setUserTransactions(data.transactions || []);
-        console.log(`✅ Synced ${data.syncedCount} new, loaded ${data.transactions?.length || 0} total transactions`);
+        console.log(`✅ Loaded ${data.transactions?.length || 0} total transactions`);
         console.log(`📊 Stats:`, data.stats);
       } else {
         const errorText = await response.text();
-        console.error('❌ Failed to sync transactions:', errorText);
+        console.error('❌ Failed to fetch transactions:', errorText);
       }
     } catch (error) {
-      console.warn('⚠️ Failed to sync transactions:', error);
+      console.warn('⚠️ Failed to fetch transactions:', error);
     } finally {
       setTransactionsLoading(false);
     }
