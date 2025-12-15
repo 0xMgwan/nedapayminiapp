@@ -6157,12 +6157,12 @@ export default function FarcasterMiniApp() {
                   {userTransactions.slice(0, 5).map((tx) => (
                     <div key={tx.id} className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/30 flex justify-between items-center">
                       <div>
-                        <p className="text-sm text-white font-medium">${tx.amount?.toFixed(2)} USD</p>
+                        <p className="text-sm text-white font-medium">{tx.amount} {tx.currency}</p>
                         <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</p>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        tx.status === 'Completed' || tx.status === 'Success' || tx.status === 'settled' ? 'bg-green-500/20 text-green-400' :
-                        tx.status === 'Pending' || tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                        tx.status === 'Completed' || tx.status === 'Success' ? 'bg-green-500/20 text-green-400' :
+                        tx.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-red-500/20 text-red-400'
                       }`}>{tx.status}</span>
                     </div>
@@ -6207,12 +6207,12 @@ export default function FarcasterMiniApp() {
                     <div key={tx.id} className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <p className="text-white font-bold">${tx.amount?.toFixed(2)} USD</p>
+                          <p className="text-white font-bold">{tx.amount} {tx.currency}</p>
                           <p className="text-xs text-gray-500">{tx.type || 'Transaction'}</p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          tx.status === 'Completed' || tx.status === 'Success' || tx.status === 'settled' ? 'bg-green-500/20 text-green-400' :
-                          tx.status === 'Pending' || tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          tx.status === 'Completed' || tx.status === 'Success' ? 'bg-green-500/20 text-green-400' :
+                          tx.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-red-500/20 text-red-400'
                         }`}>{tx.status}</span>
                       </div>
