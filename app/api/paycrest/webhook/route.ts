@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 const CLIENT_SECRET = process.env.PAYCREST_CLIENT_SECRET!;
 
 function verifyPaycrestSignature(requestBody: string, signatureHeader: string): boolean {
