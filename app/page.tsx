@@ -6116,7 +6116,7 @@ export default function FarcasterMiniApp() {
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
                   <p className="text-xs text-gray-400 mb-1">Total Volume</p>
                   <p className="text-lg font-bold text-white">
-                    ${userTransactions.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0).toFixed(2)}
+                    ${userTransactions.reduce((sum, tx) => sum + (tx.amount|| 0), 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
@@ -6157,7 +6157,7 @@ export default function FarcasterMiniApp() {
                   {userTransactions.slice(0, 5).map((tx) => (
                     <div key={tx.id} className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/30 flex justify-between items-center">
                       <div>
-                        <p className="text-sm text-white font-medium">{tx.amount} {tx.currency}</p>
+                        <p className="text-sm text-white font-medium">{tx.amount} USD</p>
                         <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</p>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded-full ${

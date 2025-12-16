@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model User {
@@ -17,10 +15,171 @@ model User {
   updatedAt        DateTime          @updatedAt
   isActive         Boolean           @default(true)
   name             String?
+  profileDisplayName String?
+  avatarSource     AvatarSource      @default(GENERATED)
+  preferredSubname String?
+  environment      String            @default("webapp")
   apiKeys          ApiKey[]
   merchantSettings MerchantSettings?
-  kycApplications  KYCApplication[]
-  kybApplications  KYBApplication[]
+  sumsubApplications SumsubApplication[]
+  referrals        Referral[]
+
+  // referrals
+  influencerProfile    InfluencerProfile?
+
+  //cookies
+  cookieConsent      CookieConsent?
+
+  // IDRX onboarding (one-to-one)
+  idrxOnboarded     IdrxOnboarded?
+
+  // Smile ID KYC verifications
+  smileIdVerifications SmileIDVerification[]
+
+  // Email notifications sent to this user
+  emailNotifications EmailNotification[]
+
+  // Contacts - contacts owned by this user (contacts they created)
+  ownedContacts     Contact[]  @relation("OwnedContacts")
+  
+  // Contacts that link to this user (other users saved this user as a contact)
+  linkedAsContact   Contact[]  @relation("LinkedContacts")
+
+  // ENS Offchain Subnames
+  ensSubnames       ENSSubname[]
+  
+  // IDRX webhook transactions
+  idrxTransactions  IDRXTransaction[]
+  
+  // Yellow Card onboarding (one-to-one)
+  yellowCardOnboarded  YellowCardOnboarded?
+  
+  // Yellow Card bank accounts
+  yellowCardBankAccounts YellowCardBankAccount[]
+  
+  // Yellow Card transactions
+  yellowCardTransactions YellowCardTransaction[]
+  
+  // cNGN virtual account (one-to-one)
+  cngnVirtualAccount    CNGNVirtualAccount?
+  
+  // cNGN bank accounts
+  cngnBankAccounts      CNGNBankAccount[]
+  
+  // cNGN transactions
+  cngnTransactions      CNGNTransaction[]
+  
+  // cNGN whitelisted addresses
+  cngnWhitelistedAddrs  CNGNWhitelistedAddress[]
+}
+
+model Referral {
+  id                String   @id @default(uuid())
+  privyUserId       String   @unique
+  user              User     @relation(fields: [privyUserId], references: [privyUserId], onDelete: Cascade)
+  influencerCode    String   // customCode from InfluencerProfile
+  influencerName    String   // displayName snapshot
+  bonusSnapshot     String?  // whatever you promised the invitee
+  createdAt         DateTime @default(now())
+
+  @@index([influencerCode])
+}
+
+model Counter {
+  shard    String   @id // single char A-Z, 2-9
+  nextVal  Int      @default(0)
+  @@map("referral_counter")
+}
+
+model InfluencerProfile {
+  id                   String                @id @default(uuid())
+  userId               String                @unique
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Influencer details
+  displayName          String
+  description          String?
+  socialLinks          Json?                 // {twitter: "...", instagram: "..."}
+  isActive             Boolean               @default(true)
+  
+  // Referral settings
+  customCode           String                @unique // Custom referral code
+  
+  // Tracking
+  totalReferrals       Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  
+  // Disbursement tracking (relations)
+  earnings             InfluencerEarning[]
+  disbursements        InfluencerDisbursement[]
+  
+  @@map("influencer_profiles")
+}
+
+model InfluencerEarning {
+  id                   String                @id @default(uuid())
+  influencerProfileId  String
+  influencerProfile    InfluencerProfile     @relation(fields: [influencerProfileId], references: [id], onDelete: Cascade)
+  
+  // Earning details
+  referralId           String                // Reference to the Referral that generated this earning
+  amount               String                // Decimal as string (e.g., "10.5")
+  currency             String                // USD, USDC, USDT, etc.
+  transactionId        String?               // Off-ramp transaction that triggered the earning
+  
+  // Status tracking
+  status               InfluencerEarningStatus @default(PENDING)
+  disbursementId       String?               // Links to disbursement when paid
+  disbursement         InfluencerDisbursement? @relation(fields: [disbursementId], references: [id])
+  
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  
+  @@index([influencerProfileId, status])
+  @@index([disbursementId])
+  @@map("influencer_earnings")
+}
+
+model InfluencerDisbursement {
+  id                   String                @id @default(uuid())
+  influencerProfileId  String
+  influencerProfile    InfluencerProfile     @relation(fields: [influencerProfileId], references: [id], onDelete: Cascade)
+  
+  // Payment details
+  amount               String                // Total amount paid in this disbursement
+  currency             String                // Currency of payment
+  transactionHash      String?               // Blockchain transaction hash
+  recipientAddress     String                // Wallet address paid to
+  
+  // Metadata
+  adminUserId          String?               // Admin who initiated the disbursement
+  notes                String?               // Optional notes
+  status               DisbursementStatus    @default(PENDING)
+  
+  // Relations
+  earnings             InfluencerEarning[]   // Earnings included in this disbursement
+  
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  
+  @@index([influencerProfileId, status])
+  @@index([status])
+  @@map("influencer_disbursements")
+}
+
+enum InfluencerEarningStatus {
+  PENDING       // Earned but not yet disbursed
+  DISBURSED     // Paid out to influencer
+  CANCELLED     // Cancelled (e.g., refund)
+}
+
+enum DisbursementStatus {
+  PENDING       // Initiated but not yet confirmed
+  PROCESSING    // Transaction in progress
+  COMPLETED     // Successfully paid
+  FAILED        // Payment failed
+  CANCELLED     // Cancelled by admin
 }
 
 model MerchantSettings {
@@ -51,7 +210,8 @@ model MerchantSettings {
 
 model ApiKey {
   id          String    @id @default(uuid())
-  userId      String
+  userId      String?
+  appId       String?
   keyId       String    @unique
   hashedKey   String
   environment String
@@ -60,48 +220,144 @@ model ApiKey {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  app         App?      @relation(fields: [appId], references: [id], onDelete: Cascade)
 
   @@index([keyId])
   @@index([userId, environment])
+  @@index([appId])
+}
+
+model App {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  apiKeys     ApiKey[]
+  webhookUrl  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("apps")
+}
+
+// Transaction type enum for operation categorization
+enum TransactionType {
+  PAYMENT_LINK      // Payment via payment link
+  WALLET_SEND       // Direct wallet send
+  WALLET_RECEIVE    // Direct wallet receive
+  SWAP              // Token swap
+  BRIDGE            // Cross-chain bridge
+  OFF_RAMP          // Off-ramp (for reference, actual data in OffRampTransaction)
+}
+
+// Transaction status enum
+enum TransactionStatus {
+  PENDING           // Transaction initiated
+  CONFIRMING        // Waiting for confirmations
+  COMPLETED         // Successfully completed
+  FAILED            // Transaction failed
+  CANCELLED         // User cancelled
 }
 
 model Transaction {
-  id           String        @id @default(uuid())
-  merchantId   String
-  wallet       String
-  amount       Float
-  currency     String
-  status       String
-  txHash       String
-  recipient    String?       // Who received the transaction
-  orderId      String?       // Paycrest order ID
-  type         String?       // 'send', 'pay', 'deposit', etc.
-  network      String?       // 'celo', 'base', etc.
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt @default(now())
-  invoiceId    String?       @unique
-  Notification Notification? @relation("TransactionNotification")
+  id           String              @id @default(uuid())
+  merchantId   String              // User who owns this transaction
+  wallet       String              // User's wallet address
+  amount       Float               // Transaction amount
+  currency     String              // Currency symbol (USDC, ETH, etc.)
+  status       TransactionStatus   @default(PENDING)
+  txHash       String              // Blockchain transaction hash
   
+  // Transaction classification
+  type         TransactionType     @default(PAYMENT_LINK)
+  label        String?             // Human-readable label (e.g., "Swap USDC to USDT")
+  
+  // Network information
+  network      String?             // Network name (e.g., "Base", "Ethereum")
+  chainId      Int?                // Chain ID for precise network identification
+  
+  // Parties involved
+  sender       String?             // Sender address (for receives, this is the other party)
+  recipient    String?             // Recipient address (for sends, this is the other party)
+  
+  // Additional context
+  description  String?             // User-provided description
+  invoiceId    String?       @unique // Link to invoice if applicable
+  orderId      String?             // External order ID if applicable
+  
+  // Metadata for type-specific data (JSON)
+  // For SWAP: { fromToken, toToken, fromAmount, toAmount, exchangeRate, dex }
+  // For BRIDGE: { fromChain, toChain, bridgeProvider, destinationTxHash }
+  // For PAYMENT_LINK: { linkId, paymentLinkUrl }
+  metadata     Json?               // Type-specific metadata
+  
+  // Blockchain confirmations
+  confirmations Int?               // Number of confirmations
+  blockNumber   Int?               // Block number
+  
+  // Timestamps
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  confirmedAt  DateTime?           // When transaction was confirmed
+  
+  // Error tracking
+  errorMessage String?             // Error message if failed
+  retryCount   Int          @default(0) // Number of storage retry attempts
+  
+  // Relations
+  // TEMPORARILY COMMENTED FOR MIGRATION - UNCOMMENT AFTER DATA RESTORE
+  // Notification Notification? @relation("TransactionNotification")
+
+  @@index([wallet])
+  @@index([currency])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
   @@index([merchantId, createdAt])
+  @@index([merchantId, type])
   @@index([txHash])
+  @@index([chainId])
+  @@map("transactions")
 }
 
 model PaymentLink {
   id           String        @id @default(uuid())
   merchantId   String
   url          String        @unique
-  amount       Float
+  amount       Float?
   currency     String?
   description  String?
   status       String
   createdAt    DateTime      @default(now())
   redeemedAt   DateTime?
   invoiceId    String?       @unique
-  expiresAt    DateTime      @default(now())
+  expiresAt    DateTime?     // Made optional
   signature    String        @default("")
   linkId       String?       @unique
   invoice      Invoice?      @relation("PaymentLinkInvoice")
+  linkType     LinkType      @default(NORMAL) // Added link type
+  offRampType  OffRampType?  // Added off-ramp type
+  offRampValue String?       // Phone/bank account
+  accountName String?       // Phone/bank account
+  offRampProvider String?    // MNO/Bank name
+  chainId      Int?          // Added chain ID
+}
+
+enum LinkType {
+  NORMAL
+  OFF_RAMP
+}
+
+enum OffRampType {
+  PHONE
+  BANK_ACCOUNT
+}
+
+enum AvatarSource {
+  GENERATED
+  ENS
+  SUBNAME
 }
 
 model Notification {
@@ -111,8 +367,11 @@ model Notification {
   type                 String
   status               String
   createdAt            DateTime     @default(now())
+  broadcastId          String?
   relatedTransactionId String?      @unique
-  relatedTransaction   Transaction? @relation("TransactionNotification", fields: [relatedTransactionId], references: [id])
+  // TEMPORARILY COMMENTED FOR MIGRATION - UNCOMMENT AFTER DATA RESTORE
+  // relatedTransaction   Transaction? @relation("TransactionNotification", fields: [relatedTransactionId], references: [id])
+  broadcastNotification BroadcastNotification? @relation(fields: [broadcastId], references: [id])
 }
 
 model Invoice {
@@ -150,243 +409,976 @@ model OffRampTransaction {
   merchantId   String
   status       String
   amount       String        @default("...")
+  rate         String        @default("2460")
   currency     String        @default("...")
   accountName  String        @default("...")
   accountNumber String       @default("...")
   institution  String        @default("...")
+
+  @@index([merchantId])
+  @@index([currency])
+  @@index([createdAt])
 }
 
-// KYC ---models
-// Enums
-enum ApplicationStatus {
-  DRAFT
-  PENDING_DOCUMENTS
-  PENDING_FINANCIAL_INFO
-  PENDING_REVIEW
-  SUBMITTED
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
-  REQUIRES_ADDITIONAL_INFO
+// broadcast notification
+model BroadcastNotification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  notifications Notification[]
 }
 
-enum DocumentType {
-  PASSPORT
-  DRIVERS_LICENSE
-  NATIONAL_ID
-  UTILITY_BILL
-  BANK_STATEMENT
-  CERTIFICATE_OF_INCORPORATION
-  MEMORANDUM_OF_ASSOCIATION
-  BOARD_RESOLUTION
-  SHAREHOLDER_REGISTER
-  FINANCIAL_STATEMENTS
-  BUSINESS_REGISTRATION
-  TAX_CERTIFICATE
-  KYB_FINANCIAL_STATEMENT
-  SELFIE
-  GOVERNMENT_ISSUED_ID
+// Store credentials returned from IDRX onboarding securely
+model IdrxOnboarded {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  idrxId        Int
+  provider      String   @default("IDRXCO")
+
+  // Encrypted fields (AES-GCM encoded payload)
+  apiKeyEnc     String
+  apiSecretEnc  String
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([idrxId])
 }
 
-enum DocumentStatus {
-  UPLOADED
-  VERIFIED
-  REJECTED
-  PENDING_REVIEW
+//SUMSUB----------------------------------------------------------------------------------------
+// Add these enums to your existing schema
+enum SumsubVerificationStatus {
+  INIT
+  PENDING
+  QUEUED
+  PRECHECKED
+  ON_HOLD
+  COMPLETED
 }
 
-enum UserType {
-  INDIVIDUAL
-  BUSINESS
+enum SumsubReviewAnswer {
+  GREEN   // Approved
+  RED     // Rejected
+  YELLOW  // Manual review required
 }
 
-enum EmploymentStatus {
-  EMPLOYED
-  SELF_EMPLOYED
-  UNEMPLOYED
-  RETIRED
-  STUDENT
+enum SumsubReviewRejectType {
+  FINAL
+  RETRY
 }
 
-enum BusinessType {
-  CORPORATION
-  LLC
-  PARTNERSHIP
-  SOLE_PROPRIETORSHIP
-  NON_PROFIT
-  TRUST
-  NGO
-  GOVERNMENT
+enum SumsubWebhookEventType {
+  APPLICANT_CREATED
+  APPLICANT_PENDING
+  APPLICANT_REVIEWED
+  APPLICANT_ON_HOLD
+  APPLICANT_RESET
+  APPLICANT_DELETED
+  VIDEO_IDENT_STATUS_CHANGED
 }
 
-model KYCApplication {
-  id                String            @id @default(cuid())
-  userId            String            @unique
-  wallet            String            @unique
-  email             String            @unique
-  status            ApplicationStatus @default(DRAFT)
-  submittedAt       DateTime?
-  approvedAt        DateTime?
-  rejectedAt        DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+// Main Sumsub application tracking
+model SumsubApplication {
+  id                    String                    @id @default(cuid())
+  userId                String
+  applicantId           String                    @unique  // Sumsub's applicant ID
+  inspectionId          String                    @unique  // Sumsub's inspection ID
+  externalUserId        String?                   // Your user ID sent to Sumsub
+  levelName             String                    // Sumsub verification level
+  applicantType         String?                   // individual, company
+  verificationStatus    SumsubVerificationStatus  @default(INIT)
+  reviewAnswer          SumsubReviewAnswer?
+  reviewRejectType      SumsubReviewRejectType?
+  sandboxMode           Boolean                   @default(false)
   
-  // Personal Information
-  firstName         String?
-  middleName        String?
-  lastName          String?
-  dateOfBirth       DateTime?
-  nationality       String?
-  countryOfResidence String?
-  phoneNumber       String?
-  
-  // Address
-  street            String?
-  city              String?
-  state             String?
-  postalCode        String?
-  country           String?
-  
-  // Financial Information
-  sourceOfFunds     String?
-  expectedTransactionVolume String?
-  employmentStatus  EmploymentStatus?
-  annualIncome      String?
-  isPEP             Boolean          @default(false)
-  
-  // Legal Agreements
-  termsAccepted     Boolean          @default(false)
-  privacyAccepted   Boolean          @default(false)
-  acceptedAt        DateTime?
+  // Timestamps
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  submittedAt           DateTime?                 // When applicant submitted docs
+  reviewedAt            DateTime?                 // When review was completed
   
   // Relations
-  user              User?            @relation(fields: [userId], references: [privyUserId])
-  documents         Document[]
-  reviews           ApplicationReview[]
+  user                  User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webhookEvents         SumsubWebhookEvent[]
+  reviewHistory         SumsubReviewHistory[]
   
-  @@map("kyc_applications")
+  @@map("sumsub_applications")
 }
 
-model KYBApplication {
-  id                String            @id @default(cuid())
-  userId            String            @unique
-  wallet            String            @unique
-  email             String            @unique
-  status            ApplicationStatus @default(DRAFT)
-  submittedAt       DateTime?
-  approvedAt        DateTime?
-  rejectedAt        DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
-  // Business Information
-  businessName      String?
-  registrationNumber String?
-  businessType      BusinessType?
-  industry          String?
-  incorporationDate DateTime?
-  taxId             String?
-  website           String?
-  description       String?
-  
-  // Business Address
-  street            String?
-  city              String?
-  state             String?
-  postalCode        String?
-  country           String?
-  
-  // Contact Information
-  contactEmail      String?
-  contactPhone      String?
-  
-  // Legal Agreements
-  termsAccepted     Boolean          @default(false)
-  privacyAccepted   Boolean          @default(false)
-  corporateAccepted Boolean          @default(false)
-  acceptedAt        DateTime?
+// Track all webhook events received from Sumsub
+model SumsubWebhookEvent {
+  id                    String                    @id @default(cuid())
+  sumsubApplicationId   String
+  correlationId         String                    @unique  // Sumsub's correlation ID for idempotency
+  eventType             SumsubWebhookEventType
+  payload               Json                      // Store full webhook payload
+  processed             Boolean                   @default(false)
+  processedAt           DateTime?
+  errorMessage          String?                   // If processing failed
+  createdAt             DateTime                  @default(now())
   
   // Relations
-  user              User?            @relation(fields: [userId], references: [privyUserId])
-  documents         Document[]
-  // representatives   AuthorizedRepresentative[]
-  reviews           ApplicationReview[]
+  sumsubApplication     SumsubApplication         @relation(fields: [sumsubApplicationId], references: [id], onDelete: Cascade)
   
-  @@map("kyb_applications")
+  @@index([correlationId])
+  @@index([eventType, createdAt])
+  @@map("sumsub_webhook_events")
 }
 
-// model AuthorizedRepresentative {
-//   id                String         @id @default(cuid())
-//   kybApplicationId  String
-//   firstName         String
-//   lastName          String
-//   position          String
-//   email             String
-//   phone             String?
-//   dateOfBirth       DateTime?
-//   nationality       String?
-//   isSignatory       Boolean        @default(false)
-//   createdAt         DateTime       @default(now())
-  
-//   // Relations
-//   kybApplication    KYBApplication @relation(fields: [kybApplicationId], references: [id], onDelete: Cascade)
-  
-//   @@map("authorized_representatives")
-// }
-
-model Document {
-  id                String         @id @default(cuid())
-  filename          String
-  originalName      String
-  fileSize          Int
-  mimeType          String
-  documentType      DocumentType
-  status            DocumentStatus @default(UPLOADED)
-  uploadedAt        DateTime       @default(now())
-  verifiedAt        DateTime?
-  rejectedAt        DateTime?
-  rejectionReason   String?
-  
-  // File storage information
-  storageKey        String         // S3 key or file path
-  storageUrl        String?        // Public URL if needed
+// Track review history and status changes
+model SumsubReviewHistory {
+  id                    String                    @id @default(cuid())
+  sumsubApplicationId   String
+  reviewAnswer          SumsubReviewAnswer
+  reviewRejectType      SumsubReviewRejectType?
+  rejectLabels          String[]                  // Array of rejection reasons
+  buttonIds             String[]                  // Sumsub button IDs for rejection reasons
+  moderationComment     String?                   // Sumsub's moderation comment
+  clientComment         String?                   // Your custom comment
+  reviewMode            String?                   // ongoingAML, ongoingDocExpired, etc.
+  reviewedAt            DateTime                  @default(now())
   
   // Relations
-  kycApplicationId  String?
-  kycApplication    KYCApplication? @relation(fields: [kycApplicationId], references: [id], onDelete: Cascade)
-  kybApplicationId  String?
-  kybApplication    KYBApplication? @relation(fields: [kybApplicationId], references: [id], onDelete: Cascade)
+  sumsubApplication     SumsubApplication         @relation(fields: [sumsubApplicationId], references: [id], onDelete: Cascade)
   
-  @@map("documents")
+  @@map("sumsub_review_history")
 }
 
-model ApplicationReview {
-  id                String         @id @default(cuid())
-  reviewerId        String         // Admin user ID
-  status            ApplicationStatus
-  comments          String?
-  reviewedAt        DateTime       @default(now())
+//Cookies
+model CookieConsent {
+id                      String @id @default(uuid())
+privyUserId             String @unique // Also store Privy user id for convenience
+region                  String? // e.g., "EEA", "UK", "US-CA", "ROW"
+version                 String @default("v1")
+preferences             Json // { necessary: true, analytics: false, marketing: false }
+consentedAt             DateTime @default(now())
+updatedAt               DateTime @updatedAt
+
+
+user User? @relation(fields: [privyUserId], references: [privyUserId], onDelete: Cascade)
+
+
+@@index([privyUserId])
+}
+
+// Admin Settings for controlling platform features
+model AdminSettings {
+  id                    String   @id @default(uuid())
+  
+  // Payramp/Paycrest Bank Withdrawal Controls
+  allowBankWithdrawals  Json     @default("{\"TZS\": false, \"KES\": true, \"UGX\": true, \"NGN\": true, \"GHS\": true}")
+  // Format: { "TZS": false, "KES": true, "UGX": true, "NGN": true, "GHS": true }
+  
+  // Additional feature flags
+  maintenanceMode       Boolean  @default(false)
+  allowNewRegistrations Boolean  @default(true)
+  
+  // Metadata
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastModifiedBy        String?  // Admin who last modified
+  
+  @@map("admin_settings")
+}
+
+// ============================================================================
+// CONTACTS MANAGEMENT SYSTEM
+// ============================================================================
+
+// Contact - Save recipient details for quick transactions
+model Contact {
+  id                String                 @id @default(uuid())
+  userId            String                 // Contact owner (who created this contact)
+  user              User                   @relation("OwnedContacts", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Optional link to existing NedaPay user (recipient)
+  linkedUserId      String?                // If recipient is a NedaPay user
+  linkedUser        User?                  @relation("LinkedContacts", fields: [linkedUserId], references: [id], onDelete: SetNull)
+  
+  // Basic Information
+  name              String                 // Display name
+  nickname          String?                // Optional nickname
+  country           String?                // ISO country code (TZ, KE, etc) - optional
+  notes             String?                // User notes
+  isNedaPayUser     Boolean                @default(false) // Quick flag for linked users
   
   // Relations
-  kycApplicationId  String?
-  kycApplication    KYCApplication? @relation(fields: [kycApplicationId], references: [id], onDelete: Cascade)
-  kybApplicationId  String?
-  kybApplication    KYBApplication? @relation(fields: [kybApplicationId], references: [id], onDelete: Cascade)
+  bankAccounts      ContactBankAccount[]
+  phoneNumbers      ContactPhoneNumber[]
+  cryptoAddresses   ContactCryptoAddress[]
   
-  @@map("application_reviews")
+  // Metadata
+  favorite          Boolean                @default(false)
+  lastUsed          DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  
+  @@index([userId])
+  @@index([userId, name])
+  @@index([userId, favorite])
+  @@index([userId, lastUsed])
+  @@index([linkedUserId])
 }
 
-// Audit Trail
-model AuditLog {
+// ContactBankAccount - Bank account details for a contact
+model ContactBankAccount {
+  id                String    @id @default(uuid())
+  contactId         String
+  contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Bank Account Details
+  accountNumber     String
+  accountName       String    // Account holder name
+  bankName          String    // Institution name
+  bankCode          String?   // Bank identifier/code
+  currency          String    @default("TZS") // Account currency
+  
+  // Metadata
+  isPrimary         Boolean   @default(false) // Primary account for this contact
+  isVerified        Boolean   @default(false) // Has been used successfully
+  label             String?   // User-defined label (e.g., "Salary Account")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([contactId])
+  @@index([contactId, isPrimary])
+}
+
+// ContactPhoneNumber - Phone number details for a contact
+model ContactPhoneNumber {
+  id                String    @id @default(uuid())
+  contactId         String
+  contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Phone Number Details
+  phoneNumber       String    // E.164 format (e.g., +255712345678)
+  provider          String?   // MNO (Mobile Network Operator) name - optional
+  country           String?   // ISO country code - optional
+  
+  // Metadata
+  isPrimary         Boolean   @default(false)
+  isVerified        Boolean   @default(false)
+  label             String?   // User-defined label (e.g., "Work Phone")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([contactId])
+  @@index([contactId, isPrimary])
+}
+
+// ContactCryptoAddress - Cryptocurrency address details for a contact
+model ContactCryptoAddress {
+  id                String    @id @default(uuid())
+  contactId         String
+  contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Crypto Address Details
+  address           String    // Wallet address (0x...)
+  ensName           String?   // ENS name if available
+  chainId           Int?      // Preferred chain ID
+  
+  // Metadata
+  isPrimary         Boolean   @default(false)
+  isVerified        Boolean   @default(false)
+  label             String?   // User-defined label (e.g., "Hardware Wallet")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([contactId])
+  @@index([contactId, isPrimary])
+  @@index([address])
+}
+
+// ============================================================================
+// SMILE ID KYC INTEGRATION
+// ============================================================================
+
+enum SmileIDVerificationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+}
+
+enum SmileIDVerificationMethod {
+  DOC_VERIFICATION     // Document verification only
+  BIOMETRIC_KYC       // Document + biometric matching
+}
+
+// Main Smile ID verification tracking
+model SmileIDVerification {
+  id                    String                      @id @default(cuid())
+  userId                String
+  privyUserId           String                      @unique // Use Privy ID instead of wallet
+  platform              String                      @default("smile_id")
+  platformRef           String                      // Smile ID reference ID
+  verificationUrl       String                      // Smile Link URL
+  status                SmileIDVerificationStatus   @default(PENDING)
+  
+  // Verification details
+  country               String?                     // ISO country code
+  idType                String?                     // ID document type
+  verificationMethod    SmileIDVerificationMethod?  // Verification method used
+  
+  // Results
+  resultCode            String?                     // Smile ID result code
+  resultText            String?                     // Smile ID result description
+  
+  // ============================================================================
+  // YELLOW CARD KYC METADATA (extracted from Smile ID on verification success)
+  // ============================================================================
+  
+  // Personal Information (from ID authority database)
+  fullName              String?                     // Full name from ID verification
+  dateOfBirth           DateTime?                   // Date of birth (Yellow Card: dob)
+  gender                String?                     // Gender of ID owner
+  phoneNumber           String?                     // Phone number (Yellow Card: phone) - collected from user
+  address               String?                     // Address of ID owner (Yellow Card: address)
+  
+  // ID Information
+  idNumber              String?                     // ID number verified (Yellow Card: idNumber)
+  issuanceDate          DateTime?                   // ID issuance date
+  expirationDate        DateTime?                   // ID expiration date
+  
+  // Nigeria Special Case: Additional ID for BVN
+  additionalIdType      String?                     // For Nigeria: "BVN" when idType is "NIN"
+  additionalIdNumber    String?                     // For Nigeria: BVN number
+  
+  // Verification Metadata
+  confidenceValue       String?                     // Smile ID confidence score
+  smileJobId            String?                     // Smile ID internal job ID
+  
+  // Image/Document Links (stored as URLs, not base64)
+  selfieImageUrl        String?                     // URL to user's selfie
+  idPhotoImageUrl       String?                     // URL to ID photo
+  documentPhotoUrl      String?                     // URL to ID card photo (if available)
+  kycReceiptUrl         String?                     // URL to KYC receipt PDF
+  
+  // ============================================================================
+  
+  // Email notification tracking
+  emailSent             Boolean                     @default(false)
+  emailSentAt           DateTime?
+  
+  // Timestamps
+  expiresAt             DateTime                    // When verification URL expires
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  submittedAt           DateTime?                   // When user submitted documents
+  completedAt           DateTime?                   // When verification completed
+  
+  // Relations
+  user                  User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webhookEvents         SmileIDWebhookEvent[]
+  
+  @@index([privyUserId])
+  @@index([userId])
+  @@index([status])
+  @@index([platformRef])
+  @@index([country])
+  @@index([idType])
+  @@map("smile_id_verifications")
+}
+
+// Track all webhook events from Smile ID
+model SmileIDWebhookEvent {
+  id                    String                @id @default(cuid())
+  smileIdVerificationId String
+  correlationId         String?               // For idempotency
+  resultCode            String                // Smile ID result code
+  resultText            String?               // Result description
+  payload               Json                  // Full webhook payload
+  signature             String                // Webhook signature for validation
+  processed             Boolean               @default(false)
+  processedAt           DateTime?
+  errorMessage          String?               // If processing failed
+  createdAt             DateTime              @default(now())
+  
+  // Relations
+  smileIdVerification   SmileIDVerification   @relation(fields: [smileIdVerificationId], references: [id], onDelete: Cascade)
+  
+  @@index([smileIdVerificationId])
+  @@index([resultCode])
+  @@index([createdAt])
+  @@map("smile_id_webhook_events")
+}
+
+// Store supported ID types configuration
+model SmileIDSupportedType {
+  id                    String                      @id @default(cuid())
+  country               String                      // ISO country code
+  countryName           String                      // Full country name
+  idType                String                      // ID document type
+  verificationMethod    SmileIDVerificationMethod   // Supported verification method
+  isActive              Boolean                     @default(true)
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  
+  @@unique([country, idType])
+  @@index([country])
+  @@index([verificationMethod])
+  @@map("smile_id_supported_types")
+}
+
+// ============================================================================
+// EMAIL NOTIFICATION TRACKING
+// ============================================================================
+
+enum EmailNotificationType {
+  INVOICE_SENT
+  WELCOME
+  KYC_REMINDER
+  KYC_STATUS_APPROVED
+  KYC_STATUS_REJECTED
+  KYC_STATUS_PENDING
+  KYC_STATUS_ADDITIONAL_INFO
+  PASSWORD_RESET
+  PAYMENT_RECEIVED
+  WITHDRAWAL_PROCESSED
+  PAYMENT_SETTLED
+  PAYMENT_REFUNDED
+  // IDRX-specific notifications
+  IDRX_MINT_COMPLETED
+  IDRX_MINT_FAILED
+  IDRX_MINT_EXPIRED
+  IDRX_REDEEM_COMPLETED
+  IDRX_REDEEM_FAILED
+  IDRX_REDEEM_PENDING
+}
+
+enum EmailNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+  DELIVERED
+}
+
+// Track all emails sent by the system
+model EmailNotification {
+  id                    String                      @id @default(cuid())
+  userId                String?                     // Related user (optional)
+  recipientEmail        String                      // Email address
+  recipientName         String?                     // Recipient name
+  
+  // Email details
+  type                  EmailNotificationType       // Type of email
+  subject               String                      // Email subject
+  status                EmailNotificationStatus     @default(PENDING)
+  
+  // Provider details
+  providerMessageId     String?                     // Message ID from email provider (e.g., Resend)
+  providerResponse      Json?                       // Full response from provider
+  
+  // Error tracking
+  errorMessage          String?                     // Error if send failed
+  retryCount            Int                         @default(0)
+  maxRetries            Int                         @default(3)
+  
+  // Metadata
+  metadata              Json?                       // Additional context (e.g., invoice ID, KYC status)
+  
+  // Timestamps
+  createdAt             DateTime                    @default(now())
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  failedAt              DateTime?
+  
+  // Relations
+  user                  User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([recipientEmail])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_notifications")
+}
+
+// ============================================================================
+// ENS OFFCHAIN SUBNAMES INTEGRATION
+// ============================================================================
+
+enum ENSSubnameStatus {
+  CREATING      // Subname creation in progress
+  ACTIVE        // Subname is active and available
+  UPDATING      // Text records or addresses being updated
+  FAILED        // Creation or update failed
+  DELETED       // Subname has been deleted
+}
+
+// ENS Offchain Subname - Track subnames created via namespace.ninja
+model ENSSubname {
+  id                    String              @id @default(cuid())
+  userId                String
+  privyUserId           String              @unique // One subname per user
+  
+  // Subname details
+  label                 String              // Just the label (e.g., "alice")
+  fullName              String              @unique // Full subname (e.g., "alice.nedapay.eth")
+  parentName            String              // Parent ENS name (e.g., "nedapay.eth")
+  
+  // Resolution data
+  resolvedAddress       String?             // Primary address this subname resolves to
+  chainName             String?             // Chain name (e.g., "ethereum")
+  
+  // Text records (stored as JSON for flexibility)
+  textRecords           Json?               // { "avatar": "...", "description": "...", etc. }
+  
+  // Metadata
+  namehash              String?             // ENS namehash for the subname
+  status                ENSSubnameStatus    @default(CREATING)
+  
+  // Avatar management
+  avatarUrl             String?             // Current avatar URL
+  avatarLastUpdated     DateTime?           // When avatar was last updated
+  
+  // API tracking
+  namespaceResponse     Json?               // Store full response from namespace.ninja
+  lastSyncedAt          DateTime?           // Last time we synced with namespace.ninja
+  
+  // Error tracking
+  errorMessage          String?             // Last error message if any
+  retryCount            Int                 @default(0)
+  
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updateHistory         ENSSubnameUpdate[]
+  
+  @@index([userId])
+  @@index([privyUserId])
+  @@index([fullName])
+  @@index([status])
+  @@index([label])
+  @@map("ens_subnames")
+}
+
+// Track updates to ENS subnames (text records, addresses, etc.)
+model ENSSubnameUpdate {
+  id                    String              @id @default(cuid())
+  subnameId             String
+  
+  // Update details
+  updateType            String              // "text_record", "address", "avatar", "multiple"
+  fieldName             String?             // Field that was updated (e.g., "avatar")
+  oldValue              String?             // Previous value
+  newValue              String?             // New value
+  
+  // Metadata
+  requestPayload        Json?               // Full request payload
+  responsePayload       Json?               // Response from namespace.ninja
+  success               Boolean             @default(true)
+  errorMessage          String?
+  
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  
+  // Relations
+  subname               ENSSubname          @relation(fields: [subnameId], references: [id], onDelete: Cascade)
+  
+  @@index([subnameId])
+  @@index([updateType])
+  @@index([createdAt])
+  @@map("ens_subname_updates")
+}
+
+// ==================== IDRX Webhook Models ====================
+
+// Track IDRX transactions from webhooks (mints and redeems)
+model IDRXTransaction {
+  id                 String   @id @default(cuid())
+  
+  // IDRX identifiers
+  idrxTransactionId  String   @unique       // IDRX's transaction ID (from webhook payload)
+  merchantOrderId    String?                // Merchant order ID (for mints)
+  
+  // User relationship
+  userId             String?
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Transaction details
+  type               IDRXTransactionType    // MINT or REDEEM
+  status             IDRXTransactionStatus  // PENDING, PROCESSING, COMPLETED, FAILED
+  
+  // Amounts
+  amount             Float                  // Amount in IDR
+  currency           String                 // IDRX, USDT, USDC, etc.
+  fees               Float?                 // Total fees (calculated from metadata)
+  
+  // Blockchain details
+  txHash             String                 // Blockchain transaction hash
+  chainId            Int                    // Blockchain chain ID
+  walletAddress      String?                // Destination wallet (for mints) or source (for redeems)
+  
+  // Bank details (for redeems only)
+  bankName           String?
+  bankAccountNumber  String?                // Last 4 digits for privacy
+  disburseId         Int?                   // Payment provider disbursement ID
+  custRefNumber      String?                // Customer reference number
+  
+  // IDRX-specific statuses
+  paymentStatus      String?                // For mints: PENDING, PAID, EXPIRED
+  mintStatus         String?                // For mints: PENDING, MINTED
+  burnStatus         String?                // For redeems: PENDING, SUCCESS, FAILED
+  
+  // Full webhook payload for debugging and data recovery
+  metadata           Json?                  // Complete webhook payload
+  
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  processedAt        DateTime?              // When webhook was processed
+  
+  // Error tracking
+  errorMessage       String?
+  retryCount         Int      @default(0)
+  
+  @@index([userId])
+  @@index([txHash])
+  @@index([status])
+  @@index([type])
+  @@index([chainId])
+  @@index([createdAt])
+  @@index([idrxTransactionId])
+  @@index([merchantOrderId])
+  @@map("idrx_transactions")
+}
+
+// Track all webhook deliveries for debugging and audit
+model WebhookLog {
   id          String   @id @default(cuid())
-  userId      String?
-  action      String
-  entityType  String   // "KYCApplication", "KYBApplication", "Document", etc.
-  entityId    String
-  changes     Json?    // Store the changes made
-  ipAddress   String?
-  userAgent   String?
+  
+  // Webhook metadata
+  source      String                       // "IDRX", "SmileID", "Sumsub", etc.
+  type        String?                      // "MINT", "REDEEM", "KYC_UPDATE", etc.
+  
+  // Payload
+  payload     Json                         // Full webhook payload
+  headers     Json?                        // Request headers
+  
+  // Processing
+  processed   Boolean  @default(false)    // Was webhook successfully processed?
+  processedAt DateTime?                   // When was it processed?
+  
+  // Results
+  success     Boolean  @default(false)    // Did processing succeed?
+  error       String?                     // Error message if failed
+  
+  // Response
+  responseCode Int?                       // HTTP response code sent
+  responseBody Json?                      // Response body sent
+  
+  // Related records
+  relatedId   String?                     // ID of related record (e.g., IDRXTransaction.id)
+  
+  // Timestamps
   createdAt   DateTime @default(now())
   
-  @@map("audit_logs")
+  @@index([source])
+  @@index([type])
+  @@index([processed])
+  @@index([success])
+  @@index([createdAt])
+  @@index([relatedId])
+  @@map("webhook_logs")
 }
+
+// Enums for IDRX transactions
+enum IDRXTransactionType {
+  MINT      // User deposits IDR and receives IDRX/USDT
+  REDEEM    // User redeems IDRX/USDT for IDR
+}
+
+enum IDRXTransactionStatus {
+  PENDING      // Webhook received but not yet processed
+  PROCESSING   // Payment received, minting/burning in progress
+  COMPLETED    // Transaction completed successfully
+  FAILED       // Transaction failed
+  EXPIRED      // Transaction expired (for mints)
+}
+
+// ==================== YELLOW CARD MODELS ====================
+
+// Store Yellow Card KYC credentials (admin-onboarded, similar to IDRX)
+model YellowCardOnboarded {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Yellow Card KYC details (onboarded by admin)
+  fullName      String
+  email         String
+  phoneNumber   String
+  country       String   // ISO country code (e.g., "NG", "KE")
+  idType        String   // "passport", "license", "national_id"
+  idNumber      String
+  dateOfBirth   String   // MM/DD/YYYY format
+  address       String
+  
+  // KYC status
+  kycStatus     YellowCardKYCStatus  @default(PENDING)
+  kycApprovedAt DateTime?
+  kycNotes      String?              // Admin notes about KYC status
+  
+  // Metadata
+  onboardedBy   String               // Admin user who onboarded
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  
+  @@index([userId])
+  @@index([country])
+  @@map("yellowcard_onboarded")
+}
+
+// User's bank accounts for Yellow Card transactions
+model YellowCardBankAccount {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Bank account details
+  accountName     String
+  accountNumber   String
+  bankName        String?              // Optional if networkId is provided
+  networkId       String?              // Yellow Card network ID (from /networks endpoint)
+  accountType     String               // "bank" or "momo"
+  country         String               // ISO country code
+  currency        String               // Currency code (e.g., "NGN", "KES")
+  
+  // Status
+  isDefault       Boolean              @default(false)
+  isActive        Boolean              @default(true)
+  
+  // Metadata
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  
+  @@index([userId])
+  @@index([country])
+  @@map("yellowcard_bank_accounts")
+}
+
+// Track Yellow Card collection/payment transactions
+model YellowCardTransaction {
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Transaction identifiers
+  yellowCardId          String?              @unique // Yellow Card's transaction ID
+  sequenceId            String               @unique // Our internal sequence ID
+  
+  // Transaction type
+  type                  YellowCardTxType     // COLLECTION (on-ramp) or PAYMENT (off-ramp)
+  
+  // Amounts
+  fiatAmount            Float
+  fiatCurrency          String               // "NGN", "KES", etc.
+  cryptoAmount          Float?
+  cryptoCurrency        String               // "USDT", "BTC", etc.
+  cryptoNetwork         String               // "TRC20", "ERC20", etc.
+  
+  // Channel and network details
+  channelId             String
+  channelType           String               // "bank", "momo", "p2p"
+  networkId             String?
+  
+  // User details (snapshot from onboarding)
+  recipientName         String
+  recipientPhone        String
+  recipientCountry      String
+  
+  // Bank/payment details
+  accountNumber         String?
+  accountName           String?
+  bankName              String?
+  
+  // Wallet address (for collections)
+  walletAddress         String?
+  
+  // Status tracking
+  status                YellowCardTxStatus   @default(PENDING)
+  statusMessage         String?
+  
+  // Payment/deposit instructions
+  depositInstructions   Json?                // Yellow Card's payment instructions
+  
+  // Webhooks
+  webhookEvents         YellowCardWebhookEvent[]
+  
+  // Metadata
+  expiresAt             DateTime?
+  completedAt           DateTime?
+  failedAt              DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  
+  @@index([userId])
+  @@index([yellowCardId])
+  @@index([sequenceId])
+  @@index([status])
+  @@index([type])
+  @@map("yellowcard_transactions")
+}
+
+// Track Yellow Card webhook events
+model YellowCardWebhookEvent {
+  id                    String   @id @default(cuid())
+  transactionId         String?
+  transaction           YellowCardTransaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  // Webhook metadata
+  eventType             String               // "collection.success", "payment.completed", etc.
+  yellowCardTxId        String?              // Transaction ID from Yellow Card
+  sequenceId            String?              // Our sequence ID
+  
+  // Webhook data
+  payload               Json                 // Full webhook payload
+  signature             String?              // Webhook signature for validation
+  
+  // Processing status
+  processed             Boolean              @default(false)
+  processedAt           DateTime?
+  errorMessage          String?
+  
+  // Metadata
+  receivedAt            DateTime             @default(now())
+  
+  @@index([transactionId])
+  @@index([yellowCardTxId])
+  @@index([sequenceId])
+  @@index([processed])
+  @@map("yellowcard_webhook_events")
+}
+
+// Yellow Card KYC status
+enum YellowCardKYCStatus {
+  PENDING       // Admin has created record but not yet approved
+  APPROVED      // Admin approved KYC
+  REJECTED      // Admin rejected KYC
+  SUSPENDED     // Temporarily suspended
+}
+
+// Yellow Card transaction type
+enum YellowCardTxType {
+  COLLECTION    // On-ramp (fiat → crypto)
+  PAYMENT       // Off-ramp (crypto → fiat)
+}
+
+// Yellow Card transaction status
+enum YellowCardTxStatus {
+  PENDING       // Transaction created, awaiting payment
+  PROCESSING    // Payment received, processing
+  COMPLETED     // Transaction completed successfully
+  FAILED        // Transaction failed
+  EXPIRED       // Transaction expired (user didn't pay)
+  CANCELLED     // User or admin cancelled
+}
+
+// CNGN Models
+
+model CNGNVirtualAccount {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  accountReference String
+  accountNumber    String
+  bankName         String?
+  provider         String   @default("korapay")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountNumber])
+}
+
+model CNGNBankAccount {
+  id            String   @id @default(cuid())
+  userId        String
+  accountName   String
+  accountNumber String
+  bankCode      String
+  bankName      String
+  isDefault     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions CNGNTransaction[]
+
+  @@unique([userId, accountNumber, bankCode])
+  @@index([userId])
+}
+
+model CNGNTransaction {
+  id              String                @id @default(cuid())
+  userId          String
+  type            CNGNTransactionType
+  amount          String
+  status          CNGNTransactionStatus @default(PENDING)
+  trxRef          String                @unique
+  network         String?
+  assetType       String?
+  assetSymbol     String?
+  baseTrxHash     String?
+  extlTrxHash     String?
+  explorerLink    String?
+  description     String?
+  bankAccountId   String?
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount CNGNBankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@index([userId])
+  @@index([trxRef])
+  @@index([status])
+  @@index([type])
+}
+
+enum CNGNTransactionType {
+  MINT      // On-ramp: Fiat → cNGN
+  REDEEM    // Off-ramp: cNGN → Fiat
+  TRANSFER  // Chain-to-chain bridge
+  WITHDRAW  // Withdrawal to external address
+}
+
+enum CNGNTransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model CNGNWhitelistedAddress {
+  id        String   @id @default(cuid())
+  userId    String
+  address   String
+  network   String
+  label     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, address, network])
+  @@index([userId])
+}
+
+
