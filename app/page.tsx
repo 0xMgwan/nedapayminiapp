@@ -6116,7 +6116,7 @@ export default function FarcasterMiniApp() {
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
                   <p className="text-xs text-gray-400 mb-1">Total Volume</p>
                   <p className="text-lg font-bold text-white">
-                    ${userTransactions.reduce((sum, tx) => sum + (tx.amount|| 0), 0).toFixed(2)}
+                    ${(userTransactions.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0)).toFixed(2)}
                   </p>
                 </div>
                 <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">

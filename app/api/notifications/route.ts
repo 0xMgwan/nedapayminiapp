@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
 import prisma from '@/lib/prisma';
 
 // POST - Create a new notification
@@ -67,7 +65,7 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        relatedTransaction: true, // Include transaction details if needed
+        broadcastNotification: true,
       },
     };
 
