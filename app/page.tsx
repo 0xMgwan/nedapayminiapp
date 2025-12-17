@@ -6161,9 +6161,13 @@ export default function FarcasterMiniApp() {
                         <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</p>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        tx.status === 'Completed' || tx.status === 'Success' ? 'bg-green-500/20 text-green-400' :
-                        tx.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
+                        tx.status?.toLowerCase().includes('settled') || tx.status?.toLowerCase().includes('completed') || tx.status?.toLowerCase().includes('success')
+                          ? 'bg-green-500/20 text-green-400'
+                          : tx.status?.toLowerCase().includes('pending') || tx.status?.toLowerCase().includes('processing')
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : tx.status?.toLowerCase().includes('failed') || tx.status?.toLowerCase().includes('refunded')
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-gray-500/20 text-gray-400'
                       }`}>{tx.status}</span>
                     </div>
                   ))}
