@@ -280,13 +280,13 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      (() => {
-                        const s = (tx.status || '').toLowerCase().trim();
-                        if (s.includes('completed') || s.includes('success') || s.includes('settled')) return 'bg-green-500/20 text-green-400';
-                        if (s.includes('pending') || s.includes('processing')) return 'bg-yellow-500/20 text-yellow-400';
-                        if (s.includes('failed') || s.includes('refunded') || s.includes('cancelled') || s.includes('expired')) return 'bg-red-500/20 text-red-400';
-                        return 'bg-gray-500/20 text-gray-400';
-                      })()
+                      tx.status?.toLowerCase().includes('settled') || tx.status?.toLowerCase().includes('completed') || tx.status?.toLowerCase().includes('success')
+                        ? 'bg-green-500/20 text-green-400'
+                        : tx.status?.toLowerCase().includes('pending') || tx.status?.toLowerCase().includes('processing')
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : tx.status?.toLowerCase().includes('failed') || tx.status?.toLowerCase().includes('refunded')
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-gray-500/20 text-gray-400'
                     }`}>
                       {tx.status}
                     </span>
