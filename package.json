@@ -101,7 +101,7 @@
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.503.0",
     "mailtrap": "^4.1.0",
-    "next": "15.3.6",
+    "next": "15.3.8",
     "next-themes": "^0.4.6",
     "nodemailer": "^6.10.1",
     "os-browserify": "^0.3.0",
