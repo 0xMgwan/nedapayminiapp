@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   
   console.log('🔍 Payment meta API parameters:', { id, amount, token, description, merchant });
   
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
   
   // Create the exact payment request URL with all parameters
   let paymentUrl = `${baseUrl}/payment-request?id=${id}&amount=${amount}&token=${token}&description=${encodeURIComponent(description)}&merchant=${merchant}`;

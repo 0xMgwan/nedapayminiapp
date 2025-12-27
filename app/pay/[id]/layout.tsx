@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-const URL = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+const URL = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
 const PROJECT_NAME = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay';
 
 export async function generateMetadata({ 

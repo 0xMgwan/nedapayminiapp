@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const sig = searchParams.get('sig');
     
     // Construct the payment URL with all parameters
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
     const paymentParams = new URLSearchParams();
     
     if (amount) paymentParams.set('amount', amount);
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     console.error('Frame redirect error:', error);
     
     // Fallback to main app if there's an error
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
     return NextResponse.redirect(baseUrl, { status: 302 });
   }
 }

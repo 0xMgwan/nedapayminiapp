@@ -343,7 +343,7 @@ export default function FarcasterMiniApp() {
       hasMiniKit ||
       isMobileWebview ||
       // If mobile and not our main domain, likely Farcaster
-      (!url.includes('nedapayminiapp.vercel.app') && !url.includes('localhost'))
+      (!url.includes('miniapp.nedapay.xyz') && !url.includes('localhost'))
     );
     
     const result = isFarcasterOfficial || hasMiniKit || isMobileWebview || isMobileFarcaster;

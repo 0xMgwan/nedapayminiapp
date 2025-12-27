@@ -15,7 +15,7 @@ export function Providers(props: { children: ReactNode }) {
           appearance: {
             theme: 'dark',
             accentColor: '#676FFF',
-            logo: 'https://nedapayminiapp.vercel.app/NEDApayLogo.png',
+            logo: 'https://miniapp.nedapay.xyz/NEDApayLogo.png',
             showWalletLoginFirst: false,
             walletChainType: 'ethereum-only',
             // Mobile-specific UI improvements

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const description = searchParams.get('description') || 'Payment Request';
   const link = searchParams.get('link') || '';
   
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
   
   // Create the Farcaster MiniApp embed metadata
   const miniappData = {

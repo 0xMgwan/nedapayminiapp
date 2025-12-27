@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
-  const URL = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+  const URL = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
   const PROJECT_NAME = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'NedaPay';
 
   const html = `

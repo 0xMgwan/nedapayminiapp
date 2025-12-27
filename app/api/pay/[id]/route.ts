@@ -25,7 +25,7 @@ export async function GET(
       protocolFeeParams = `&protocolFee=${protocolFee}&feeTier=${encodeURIComponent(feeTier)}&protocolEnabled=true`;
     }
     
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
     const paymentUrl = `${baseUrl}/payment-request?id=${linkId}&amount=${amount}&token=${currency}&description=${encodeURIComponent(description || '')}&merchant=${merchant}${protocolFeeParams}`;
     
     // Check if this is a request for metadata (from Farcaster crawlers)
@@ -129,7 +129,7 @@ export async function GET(
     
   } catch (error) {
     console.error('Error processing payment redirect:', error);
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://nedapayminiapp.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://miniapp.nedapay.xyz';
     return NextResponse.redirect(baseUrl);
   }
 }
