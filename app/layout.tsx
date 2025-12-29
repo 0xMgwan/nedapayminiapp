@@ -43,6 +43,8 @@ export async function generateMetadata(): Promise<Metadata> {
     // Note: Removed Farcaster metadata from main layout to prevent conflicts
     // Payment-request pages have their own specific Farcaster metadata
     other: {
+      // Base app verification
+      'base:app_id': '68a5c58dd3f637a5b9984595',
       // OpenFrames
       'of:version': 'vNext',
       'of:accepts:xmtp': '2024-02-01',
