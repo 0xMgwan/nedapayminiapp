@@ -6,22 +6,28 @@
   },
   "frame": {
     "version": "1",
-    "name": "NedaPay",
-    "iconUrl": "https://miniapp.nedapay.xyz/icon-512.png",
-    "homeUrl": "https://miniapp.nedapay.xyz",
-    "imageUrl": "https://miniapp.nedapay.xyz/og-image.png",
-    "buttonTitle": "Open NedaPay",
-    "splashImageUrl": "https://miniapp.nedapay.xyz/splash.png",
-    "splashBackgroundColor": "#1e40af",
-    "webhookUrl": "https://miniapp.nedapay.xyz/api/webhook",
-    "subtitle": "Accept Stablecoins, Swap instantly, Cash Out Easily",
+    "name": "NEDApay",
+    "subtitle": "Global Stablecoin payments",
     "description": "NedaPay is a stablecoin payment solution for Africa. Send money to mobile money, create payment links, generate invoices, and accept crypto payments seamlessly.",
-    "primaryCategory": "finance",
-    "tags": ["payments", "stablecoins", "mobile-money", "africa", "crypto"],
     "screenshotUrls": [
       "https://miniapp.nedapay.xyz/screenshot-send.png",
       "https://miniapp.nedapay.xyz/screenshot-invoice.png",
       "https://miniapp.nedapay.xyz/screenshot-link.png"
-    ]
+    ],
+    "iconUrl": "https://miniapp.nedapay.xyz/icon-512.png",
+    "splashImageUrl": "https://miniapp.nedapay.xyz/splash.png",
+    "splashBackgroundColor": "#1e40af",
+    "homeUrl": "https://miniapp.nedapay.xyz",
+    "webhookUrl": "https://miniapp.nedapay.xyz/api/webhook",
+    "primaryCategory": "finance",
+    "tags": ["payments", "stablecoins", "mobile-money", "africa", "crypto"],
+    "heroImageUrl": "https://miniapp.nedapay.xyz/og-image.png",
+    "tagline": "Pay anywhere, Settle instantly",
+    "ogTitle": "NEDApay - Stablecoin Payments",
+    "ogDescription": "Send stablecoins to mobile money and bank accounts globally instantly.",
+    "ogImageUrl": "https://miniapp.nedapay.xyz/og-image.png",
+    "castShareUrl": "https://miniapp.nedapay.xyz",
+    "imageUrl": "https://miniapp.nedapay.xyz/og-image.png",
+    "buttonTitle": "☄️ Launch NEDApay"
   }
 }
